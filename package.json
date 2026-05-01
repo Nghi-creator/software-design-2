@@ -1,0 +1,5 @@
+{
+  "devDependencies": {
+    "@types/opossum": "^8.1.9"
+  }
+}
