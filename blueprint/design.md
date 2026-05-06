@@ -251,10 +251,17 @@ RBAC được chọn vì tính đơn giản, dễ triển khai và bảo trì. C
 
 ### Kiểm soát tải đột biến
 Sử dụng **Token Bucket Rate Limiting** bằng Redis Lua Script. Khi 12,000 sinh viên vào cùng lúc, API sẽ giới hạn (ví dụ: 5 requests / 10s / IP). Vượt ngưỡng sẽ trả về 429 Too Many Requests, bảo vệ DB không bị sập.
+- **Đánh đổi**: Ưu tiên tính ổn định của hệ thống hơn là trải nghiệm của một nhóm nhỏ người dùng bị chặn nhầm trong lúc tải cực cao.
+- **Thay thế**: *Fixed-window limiting*. Lý do không chọn: Dễ bị hiện tượng burst load tại thời điểm chuyển giao giữa các khung thời gian.
 
 ### Xử lý cổng thanh toán không ổn định
 Áp dụng **Circuit Breaker (Thư viện Opossum)**. Khi cổng thanh toán mock trả về lỗi liên tục (vượt ngưỡng 50% trong thời gian nhất định), Circuit Breaker chuyển sang trạng thái **OPEN**. Các request đăng ký mới yêu cầu thanh toán sẽ lập tức bị chặn (Fail Fast) with thông báo thân thiện mà không cần chờ timeout từ cổng thanh toán, giúp giải phóng connection cho server.
+- **Đánh đổi**: Chấp nhận từ chối giao dịch ngay lập tức thay vì để người dùng chờ đợi vô ích và làm nghẽn tài nguyên server.
+- **Thay thế**: *Infinite retries* với timeout lớn. Lý do không chọn: Gây ra lỗi dây chuyền (cascading failure) cho toàn bộ backend API.
 
 ### Chống trừ tiền hai lần
 Áp dụng **Idempotency Key**. Frontend sinh một mã UUID (Idempotency-Key) cho mỗi phiên đăng ký và gửi kèm trong Header.
 Backend lưu key này vào Redis (TTL 24h) and PostgreSQL. Nếu người dùng bấm liên tục tạo ra nhiều request trùng key, backend sẽ phát hiện key đã tồn tại và trả về nguyên trạng thái (response) của request đầu tiên mà không gọi lại hàm trừ tiền hay tạo vé mới.
+- **Đánh đổi**: Chấp nhận tốn thêm dung lượng lưu trữ key để đảm bảo tính toàn vẹn dữ liệu tài chính.
+- **Thay thế**: Chỉ xử lý logic ở Frontend (disable button). Lý do không chọn: Không bảo vệ được trước các lỗi mạng gây retry tự động hoặc tấn công API trực tiếp.
+
