@@ -166,28 +166,102 @@ Dưới đây là các phương án đã được xem xét nhưng không đượ
 - **In-memory Store (Redis)**: Caching, Rate Limiting, Idempotency keys.
 
 ## Thiết kế cơ sở dữ liệu
-Sử dụng **PostgreSQL**. Lý do: Bài toán đăng ký chỗ ngồi cần tính toàn vẹn giao dịch (ACID) rất cao. PostgreSQL hỗ trợ tốt Row-level Locking (`SELECT ... FOR UPDATE`), giúp tránh được race conditions hiệu quả hơn NoSQL.
-Các Entity chính:
-- `User`: Lưu thông tin sinh viên, admin, staff.
-- `Workshop`: Lưu thông tin sự kiện, số ghế tổng, số ghế còn lại.
-- `Registration`: Bảng nối giữa User và Workshop, lưu QR Code và trạng thái đăng ký.
-- `IdempotencyKey`: Bảng phụ lưu trữ các response đã được xử lý để tránh trừ tiền 2 lần.
+Sử dụng **PostgreSQL**. Lý do: Bài toán đăng ký chỗ ngồi cần tính toàn vẹn giao dịch (**ACID**) và khả năng kiểm soát tranh chấp cao. PostgreSQL hỗ trợ tốt **Row-level Locking** (`SELECT ... FOR UPDATE`), giúp ngăn chặn race conditions khi nhiều sinh viên cùng đăng ký một chỗ ngồi cuối cùng.
+
+### Các Entity chính
+
+#### 1. User
+Lưu trữ thông tin cơ bản của người dùng hệ thống (Sinh viên, Ban tổ chức, Nhân sự check-in).
+- `id`: Primary Key (UUID).
+- `student_id`: Mã số sinh viên (Dùng để đồng bộ và hiển thị).
+- `full_name`: Họ và tên.
+- `email`: Email liên hệ.
+- `role`: Phân quyền (STUDENT, ORGANIZER, CHECKIN_STAFF).
+
+#### 2. Room
+Quản lý thông tin địa điểm tổ chức.
+- `id`: Primary Key.
+- `name`: Tên phòng (ví dụ: A.102).
+- `location`: Vị trí tòa nhà/tầng.
+- `capacity`: Sức chứa tối đa của phòng.
+
+#### 3. Workshop
+Thông tin về các buổi hội thảo.
+- `id`: Primary Key.
+- `title`: Tên hội thảo.
+- `speaker`: Diễn giả.
+- `room_id`: Foreign Key (Rooms).
+- `start_time`: Thời gian bắt đầu.
+- `capacity`: Tổng số ghế mở đăng ký.
+- `seats_remaining`: Số ghế còn trống (Cập nhật real-time).
+
+#### 4. Registration
+Thông tin đăng ký của sinh viên.
+- `id`: Primary Key.
+- `student_id`: Foreign Key (Users).
+- `workshop_id`: Foreign Key (Workshops).
+- `status`: Trạng thái (PENDING, CONFIRMED, CANCELLED).
+- `qr_code`: Chuỗi dữ liệu mã QR duy nhất.
+
+#### 5. Payment
+Thông tin thanh toán (Nếu workshop có phí).
+- `id`: Primary Key.
+- `registration_id`: Foreign Key (Registrations).
+- `amount`: Số tiền thanh toán.
+- `status`: Trạng thái (SUCCESS, FAILED).
+- `transaction_id`: Mã giao dịch từ cổng thanh toán.
+- `idempotency_key`: Khóa chống trùng lặp request thanh toán.
+
+#### 6. Checkin
+Theo dõi sự tham gia thực tế tại phòng.
+- `id`: Primary Key.
+- `registration_id`: Foreign Key (Registrations).
+- `checkin_time`: Thời gian quét mã QR.
+- `staff_id`: Foreign Key (Users - Nhân sự thực hiện quét).
+
+#### 7. Notification
+Lịch sử gửi thông báo đến người dùng.
+- `id`: Primary Key.
+- `user_id`: Foreign Key (Users).
+- `message`: Nội dung thông báo.
+- `type`: Loại (EMAIL, APP_PUSH).
+- `sent_at`: Thời điểm gửi.
+
 
 ## Thiết kế kiểm soát truy cập
-Hệ thống sử dụng Role-Based Access Control (RBAC):
-- `STUDENT`: Chỉ được gọi API GET workshop và POST register.
-- `ORGANIZER`: Được quyền CRUD workshop, upload file.
-- `CHECKIN_STAFF`: Chỉ được gọi API POST checkin và POST sync.
-(Trong mã nguồn hiện tại lược bỏ phần authentication middleware để tập trung vào logic cốt lõi, nhưng schema đã hỗ trợ Role).
+Hệ thống sử dụng **Role-Based Access Control (RBAC)** để quản lý quyền hạn của người dùng.
+
+### Lý do lựa chọn
+RBAC được chọn vì tính đơn giản, dễ triển khai và bảo trì. Các vai trò trong hệ thống UniHub (Sinh viên, Ban tổ chức, Nhân sự check-in) có ranh giới quyền hạn rất rõ ràng và ít khi thay đổi theo thời gian.
+
+### Các vai trò (Roles)
+- `STUDENT`: Chỉ được quyền xem danh sách workshop (`GET /workshops`) và đăng ký tham gia (`POST /register`).
+- `ORGANIZER`: Có toàn quyền quản lý workshop (CRUD), upload tài liệu và xem thống kê.
+- `CHECKIN_STAFF`: Chỉ được quyền quét mã QR (`POST /checkin`) và đồng bộ dữ liệu check-in (`POST /sync`).
+
+### Đánh đổi (Trade-offs)
+*   **Tính linh hoạt vs. Sự đơn giản (Flexibility vs. Simplicity)**: RBAC có thể gặp hạn chế nếu trong tương lai hệ thống cần phân quyền cực kỳ chi tiết dựa trên các điều kiện động (ví dụ: chỉ được check-in trong một khung giờ cụ thể tại một vị trí cụ thể). **Tuy nhiên**, sự đánh đổi này là chấp nhận được vì độ phức tạp tăng thêm của các mô hình khác sẽ làm chậm quá trình phát triển và tăng nguy cơ lỗi bảo mật. Khi cần, chúng ta có thể bổ sung các tầng kiểm tra logic (Logic-based checks) phía trên RBAC.
+
+### Phương án thay thế (Alternatives)
+*   **ABAC (Attribute-Based Access Control)**: Phân quyền dựa trên thuộc tính của người dùng, tài nguyên và môi trường. 
+    *   **Lý do không chọn**: ABAC cung cấp khả năng kiểm soát cao nhất nhưng đi kèm với chi phí thiết kế Policy và công cụ thực thi (Policy Engine) vô cùng phức tạp. Với quy mô dự án hiện tại, ABAC là một giải pháp không mang lại lợi ích tương xứng với công sức bỏ ra.
+
 
 ## Thiết kế các cơ chế bảo vệ hệ thống
 
 ### Kiểm soát tải đột biến
 Sử dụng **Token Bucket Rate Limiting** bằng Redis Lua Script. Khi 12,000 sinh viên vào cùng lúc, API sẽ giới hạn (ví dụ: 5 requests / 10s / IP). Vượt ngưỡng sẽ trả về 429 Too Many Requests, bảo vệ DB không bị sập.
+- **Đánh đổi**: Ưu tiên tính ổn định của hệ thống hơn là trải nghiệm của một nhóm nhỏ người dùng bị chặn nhầm trong lúc tải cực cao.
+- **Thay thế**: *Fixed-window limiting*. Lý do không chọn: Dễ bị hiện tượng burst load tại thời điểm chuyển giao giữa các khung thời gian.
 
 ### Xử lý cổng thanh toán không ổn định
 Áp dụng **Circuit Breaker (Thư viện Opossum)**. Khi cổng thanh toán mock trả về lỗi liên tục (vượt ngưỡng 50% trong thời gian nhất định), Circuit Breaker chuyển sang trạng thái **OPEN**. Các request đăng ký mới yêu cầu thanh toán sẽ lập tức bị chặn (Fail Fast) with thông báo thân thiện mà không cần chờ timeout từ cổng thanh toán, giúp giải phóng connection cho server.
+- **Đánh đổi**: Chấp nhận từ chối giao dịch ngay lập tức thay vì để người dùng chờ đợi vô ích và làm nghẽn tài nguyên server.
+- **Thay thế**: *Infinite retries* với timeout lớn. Lý do không chọn: Gây ra lỗi dây chuyền (cascading failure) cho toàn bộ backend API.
 
 ### Chống trừ tiền hai lần
 Áp dụng **Idempotency Key**. Frontend sinh một mã UUID (Idempotency-Key) cho mỗi phiên đăng ký và gửi kèm trong Header.
 Backend lưu key này vào Redis (TTL 24h) and PostgreSQL. Nếu người dùng bấm liên tục tạo ra nhiều request trùng key, backend sẽ phát hiện key đã tồn tại và trả về nguyên trạng thái (response) của request đầu tiên mà không gọi lại hàm trừ tiền hay tạo vé mới.
+- **Đánh đổi**: Chấp nhận tốn thêm dung lượng lưu trữ key để đảm bảo tính toàn vẹn dữ liệu tài chính.
+- **Thay thế**: Chỉ xử lý logic ở Frontend (disable button). Lý do không chọn: Không bảo vệ được trước các lỗi mạng gây retry tự động hoặc tấn công API trực tiếp.
+
