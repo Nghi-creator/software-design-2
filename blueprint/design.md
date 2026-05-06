@@ -229,10 +229,23 @@ Lịch sử gửi thông báo đến người dùng.
 
 
 ## Thiết kế kiểm soát truy cập
-Hệ thống sử dụng Role-Based Access Control (RBAC):
-- `STUDENT`: Chỉ được gọi API GET workshop và POST register.
-- `ORGANIZER`: Được quyền CRUD workshop, upload file.
-- `CHECKIN_STAFF`: Chỉ được gọi API POST checkin và POST sync.
+Hệ thống sử dụng **Role-Based Access Control (RBAC)** để quản lý quyền hạn của người dùng.
+
+### Lý do lựa chọn
+RBAC được chọn vì tính đơn giản, dễ triển khai và bảo trì. Các vai trò trong hệ thống UniHub (Sinh viên, Ban tổ chức, Nhân sự check-in) có ranh giới quyền hạn rất rõ ràng và ít khi thay đổi theo thời gian.
+
+### Các vai trò (Roles)
+- `STUDENT`: Chỉ được quyền xem danh sách workshop (`GET /workshops`) và đăng ký tham gia (`POST /register`).
+- `ORGANIZER`: Có toàn quyền quản lý workshop (CRUD), upload tài liệu và xem thống kê.
+- `CHECKIN_STAFF`: Chỉ được quyền quét mã QR (`POST /checkin`) và đồng bộ dữ liệu check-in (`POST /sync`).
+
+### Đánh đổi (Trade-offs)
+*   **Tính linh hoạt vs. Sự đơn giản (Flexibility vs. Simplicity)**: RBAC có thể gặp hạn chế nếu trong tương lai hệ thống cần phân quyền cực kỳ chi tiết dựa trên các điều kiện động (ví dụ: chỉ được check-in trong một khung giờ cụ thể tại một vị trí cụ thể). **Tuy nhiên**, sự đánh đổi này là chấp nhận được vì độ phức tạp tăng thêm của các mô hình khác sẽ làm chậm quá trình phát triển và tăng nguy cơ lỗi bảo mật. Khi cần, chúng ta có thể bổ sung các tầng kiểm tra logic (Logic-based checks) phía trên RBAC.
+
+### Phương án thay thế (Alternatives)
+*   **ABAC (Attribute-Based Access Control)**: Phân quyền dựa trên thuộc tính của người dùng, tài nguyên và môi trường. 
+    *   **Lý do không chọn**: ABAC cung cấp khả năng kiểm soát cao nhất nhưng đi kèm với chi phí thiết kế Policy và công cụ thực thi (Policy Engine) vô cùng phức tạp. Với quy mô dự án hiện tại, ABAC là một giải pháp không mang lại lợi ích tương xứng với công sức bỏ ra.
+
 
 ## Thiết kế các cơ chế bảo vệ hệ thống
 
