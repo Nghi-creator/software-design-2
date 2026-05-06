@@ -166,19 +166,73 @@ Dưới đây là các phương án đã được xem xét nhưng không đượ
 - **In-memory Store (Redis)**: Caching, Rate Limiting, Idempotency keys.
 
 ## Thiết kế cơ sở dữ liệu
-Sử dụng **PostgreSQL**. Lý do: Bài toán đăng ký chỗ ngồi cần tính toàn vẹn giao dịch (ACID) rất cao. PostgreSQL hỗ trợ tốt Row-level Locking (`SELECT ... FOR UPDATE`), giúp tránh được race conditions hiệu quả hơn NoSQL.
-Các Entity chính:
-- `User`: Lưu thông tin sinh viên, admin, staff.
-- `Workshop`: Lưu thông tin sự kiện, số ghế tổng, số ghế còn lại.
-- `Registration`: Bảng nối giữa User và Workshop, lưu QR Code và trạng thái đăng ký.
-- `IdempotencyKey`: Bảng phụ lưu trữ các response đã được xử lý để tránh trừ tiền 2 lần.
+Sử dụng **PostgreSQL**. Lý do: Bài toán đăng ký chỗ ngồi cần tính toàn vẹn giao dịch (**ACID**) và khả năng kiểm soát tranh chấp cao. PostgreSQL hỗ trợ tốt **Row-level Locking** (`SELECT ... FOR UPDATE`), giúp ngăn chặn race conditions khi nhiều sinh viên cùng đăng ký một chỗ ngồi cuối cùng.
+
+### Các Entity chính
+
+#### 1. User
+Lưu trữ thông tin cơ bản của người dùng hệ thống (Sinh viên, Ban tổ chức, Nhân sự check-in).
+- `id`: Primary Key (UUID).
+- `student_id`: Mã số sinh viên (Dùng để đồng bộ và hiển thị).
+- `full_name`: Họ và tên.
+- `email`: Email liên hệ.
+- `role`: Phân quyền (STUDENT, ORGANIZER, CHECKIN_STAFF).
+
+#### 2. Room
+Quản lý thông tin địa điểm tổ chức.
+- `id`: Primary Key.
+- `name`: Tên phòng (ví dụ: A.102).
+- `location`: Vị trí tòa nhà/tầng.
+- `capacity`: Sức chứa tối đa của phòng.
+
+#### 3. Workshop
+Thông tin về các buổi hội thảo.
+- `id`: Primary Key.
+- `title`: Tên hội thảo.
+- `speaker`: Diễn giả.
+- `room_id`: Foreign Key (Rooms).
+- `start_time`: Thời gian bắt đầu.
+- `capacity`: Tổng số ghế mở đăng ký.
+- `seats_remaining`: Số ghế còn trống (Cập nhật real-time).
+
+#### 4. Registration
+Thông tin đăng ký của sinh viên.
+- `id`: Primary Key.
+- `student_id`: Foreign Key (Users).
+- `workshop_id`: Foreign Key (Workshops).
+- `status`: Trạng thái (PENDING, CONFIRMED, CANCELLED).
+- `qr_code`: Chuỗi dữ liệu mã QR duy nhất.
+
+#### 5. Payment
+Thông tin thanh toán (Nếu workshop có phí).
+- `id`: Primary Key.
+- `registration_id`: Foreign Key (Registrations).
+- `amount`: Số tiền thanh toán.
+- `status`: Trạng thái (SUCCESS, FAILED).
+- `transaction_id`: Mã giao dịch từ cổng thanh toán.
+- `idempotency_key`: Khóa chống trùng lặp request thanh toán.
+
+#### 6. Checkin
+Theo dõi sự tham gia thực tế tại phòng.
+- `id`: Primary Key.
+- `registration_id`: Foreign Key (Registrations).
+- `checkin_time`: Thời gian quét mã QR.
+- `staff_id`: Foreign Key (Users - Nhân sự thực hiện quét).
+
+#### 7. Notification
+Lịch sử gửi thông báo đến người dùng.
+- `id`: Primary Key.
+- `user_id`: Foreign Key (Users).
+- `message`: Nội dung thông báo.
+- `type`: Loại (EMAIL, APP_PUSH).
+- `sent_at`: Thời điểm gửi.
+
 
 ## Thiết kế kiểm soát truy cập
 Hệ thống sử dụng Role-Based Access Control (RBAC):
 - `STUDENT`: Chỉ được gọi API GET workshop và POST register.
 - `ORGANIZER`: Được quyền CRUD workshop, upload file.
 - `CHECKIN_STAFF`: Chỉ được gọi API POST checkin và POST sync.
-(Trong mã nguồn hiện tại lược bỏ phần authentication middleware để tập trung vào logic cốt lõi, nhưng schema đã hỗ trợ Role).
 
 ## Thiết kế các cơ chế bảo vệ hệ thống
 
