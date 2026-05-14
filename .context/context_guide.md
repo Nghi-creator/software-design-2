@@ -2,6 +2,8 @@
 
 This folder is the lightweight memory pack for future agents. Keep files short, factual, and current. Prefer links between files over repeating the same details.
 
+Repo-local Codex skill: `.codex/skills/use-context`. Use it when working from `.context` or updating this memory pack.
+
 ## Read Order
 
 For a new conversation, read:
