@@ -1,5 +1,4 @@
-import { Prisma } from '@prisma/client';
-import { prisma } from '../lib/prisma';
+import { withTransaction } from '../lib/db';
 import { paymentCircuitBreaker } from './payment';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -16,25 +15,27 @@ export const registerForWorkshop = async ({
   paymentToken,
   idempotencyKey
 }: RegisterInput) => {
-  const reservation = await prisma.$transaction(async (tx) => {
-    const lockedWorkshops = await tx.$queryRaw<Array<{
+  const reservation = await withTransaction(async (client) => {
+    const lockedWorkshops = await client.query<{
       id: string;
-      price: Prisma.Decimal;
+      price: string;
       seatsRemaining: number;
-    }>>`
-      SELECT id, price, "seatsRemaining" FROM "Workshop" WHERE id = ${workshopId} FOR UPDATE
-    `;
+    }>(
+      'select id, price, seats_remaining as "seatsRemaining" from workshops where id = $1 for update',
+      [workshopId]
+    );
 
-    const workshop = lockedWorkshops[0];
+    const workshop = lockedWorkshops.rows[0];
     if (!workshop) {
       throw Object.assign(new Error('Workshop not found'), { statusCode: 404 });
     }
 
-    const existing = await tx.registration.findUnique({
-      where: { userId_workshopId: { userId, workshopId } }
-    });
+    const existing = await client.query(
+      'select id from registrations where user_id = $1 and workshop_id = $2',
+      [userId, workshopId]
+    );
 
-    if (existing) {
+    if (existing.rows[0]) {
       throw Object.assign(new Error('Already registered'), { statusCode: 400 });
     }
 
@@ -42,56 +43,52 @@ export const registerForWorkshop = async ({
       throw Object.assign(new Error('Workshop is full'), { statusCode: 400 });
     }
 
-    await tx.workshop.update({
-      where: { id: workshopId },
-      data: { seatsRemaining: { decrement: 1 } }
-    });
+    await client.query(
+      'update workshops set seats_remaining = seats_remaining - 1, updated_at = now() where id = $1',
+      [workshopId]
+    );
 
-    const registration = await tx.registration.create({
-      data: {
-        userId,
-        workshopId,
-        qrCode: uuidv4(),
-        status: 'PENDING'
-      }
-    });
+    const registration = await client.query(
+      `
+        insert into registrations (user_id, workshop_id, qr_code, status)
+        values ($1, $2, $3, 'PENDING')
+        returning id, user_id as "userId", workshop_id as "workshopId", qr_code as "qrCode", status
+      `,
+      [userId, workshopId, uuidv4()]
+    );
 
-    const payment = await tx.payment.create({
-      data: {
-        registrationId: registration.id,
-        amount: workshop.price,
-        status: 'PENDING',
-        idempotencyKey
-      }
-    });
+    const payment = await client.query(
+      `
+        insert into payments (registration_id, amount, status, idempotency_key)
+        values ($1, $2, 'PENDING', $3)
+        returning id, registration_id as "registrationId", amount, status, idempotency_key as "idempotencyKey"
+      `,
+      [registration.rows[0].id, workshop.price, idempotencyKey]
+    );
 
     return {
-      registration,
-      payment,
-      price: workshop.price
+      registration: registration.rows[0],
+      payment: payment.rows[0],
+      price: Number(workshop.price)
     };
   });
 
-  if (reservation.price.greaterThan(0)) {
+  if (reservation.price > 0) {
     if (!paymentToken) {
       await cancelReservation(reservation.registration.id, workshopId, 'Payment token required');
       throw Object.assign(new Error('Payment token required'), { statusCode: 400 });
     }
 
     try {
-      const transactionId = await paymentCircuitBreaker.fire(userId, Number(reservation.price), paymentToken);
+      const transactionId = await paymentCircuitBreaker.fire(userId, reservation.price, paymentToken);
 
-      return prisma.$transaction(async (tx) => {
-        await tx.payment.update({
-          where: { id: reservation.payment.id },
-          data: { status: 'SUCCESS', transactionId }
-        });
+      return withTransaction(async (client) => {
+        await client.query(
+          'update payments set status = $2, transaction_id = $3, updated_at = now() where id = $1',
+          [reservation.payment.id, 'SUCCESS', transactionId]
+        );
 
-        return tx.registration.update({
-          where: { id: reservation.registration.id },
-          data: { status: 'CONFIRMED' },
-          include: { payment: true }
-        });
+        return confirmRegistration(client, reservation.registration.id);
       });
     } catch (error: any) {
       await cancelReservation(reservation.registration.id, workshopId, error.message);
@@ -99,35 +96,55 @@ export const registerForWorkshop = async ({
     }
   }
 
-  return prisma.$transaction(async (tx) => {
-    await tx.payment.update({
-      where: { id: reservation.payment.id },
-      data: { status: 'SUCCESS', transactionId: 'free' }
-    });
+  return withTransaction(async (client) => {
+    await client.query(
+      'update payments set status = $2, transaction_id = $3, updated_at = now() where id = $1',
+      [reservation.payment.id, 'SUCCESS', 'free']
+    );
 
-    return tx.registration.update({
-      where: { id: reservation.registration.id },
-      data: { status: 'CONFIRMED' },
-      include: { payment: true }
-    });
+    return confirmRegistration(client, reservation.registration.id);
   });
 };
 
 const cancelReservation = async (registrationId: string, workshopId: string, _reason: string) => {
-  await prisma.$transaction(async (tx) => {
-    await tx.payment.update({
-      where: { registrationId },
-      data: { status: 'FAILED' }
-    });
+  await withTransaction(async (client) => {
+    await client.query(
+      'update payments set status = $2, updated_at = now() where registration_id = $1',
+      [registrationId, 'FAILED']
+    );
 
-    await tx.registration.update({
-      where: { id: registrationId },
-      data: { status: 'CANCELLED' }
-    });
+    await client.query(
+      'update registrations set status = $2, updated_at = now() where id = $1',
+      [registrationId, 'CANCELLED']
+    );
 
-    await tx.workshop.update({
-      where: { id: workshopId },
-      data: { seatsRemaining: { increment: 1 } }
-    });
+    await client.query(
+      'update workshops set seats_remaining = seats_remaining + 1, updated_at = now() where id = $1',
+      [workshopId]
+    );
   });
+};
+
+const confirmRegistration = async (client: any, registrationId: string) => {
+  const result = await client.query(
+    `
+      update registrations
+      set status = 'CONFIRMED', updated_at = now()
+      where id = $1
+      returning id, user_id as "userId", workshop_id as "workshopId", qr_code as "qrCode", status, checked_in_at as "checkedInAt"
+    `,
+    [registrationId]
+  );
+
+  const payment = await client.query(
+    `
+      select id, registration_id as "registrationId", amount, status, transaction_id as "transactionId",
+        idempotency_key as "idempotencyKey"
+      from payments
+      where registration_id = $1
+    `,
+    [registrationId]
+  );
+
+  return { ...result.rows[0], payment: payment.rows[0] };
 };

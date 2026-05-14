@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { createWorkshop, listWorkshops } from '../services/workshop';
 import { registerForWorkshop } from '../services/registration';
+import { getRequestUser } from '../types/request';
 
 export const getWorkshops = async (_req: Request, res: Response) => {
   const workshops = await listWorkshops();
@@ -31,11 +32,12 @@ export const postWorkshop = async (req: Request, res: Response) => {
 export const postWorkshopRegistration = async (req: Request, res: Response) => {
   const workshopId = req.params.id as string;
   const idempotencyKey = req.header('idempotency-key') as string;
+  const user = getRequestUser(req);
 
   try {
     const registration = await registerForWorkshop({
       workshopId,
-      userId: req.user!.id,
+      userId: user.id,
       paymentToken: req.body.paymentToken,
       idempotencyKey
     });

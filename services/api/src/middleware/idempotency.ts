@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { Prisma } from '@prisma/client';
-import { prisma } from '../lib/prisma';
+import { query } from '../lib/db';
 import { redis } from '../lib/redis';
 
 export const idempotency = async (req: Request, res: Response, next: NextFunction) => {
@@ -17,22 +16,25 @@ export const idempotency = async (req: Request, res: Response, next: NextFunctio
       return res.status(cached.statusCode).json(cached.body);
     }
 
-    await prisma.idempotencyKey.create({
-      data: {
-        key,
-        status: 'IN_PROGRESS'
-      }
-    });
+    await query(
+      'insert into idempotency_keys (key, status) values ($1, $2)',
+      [key, 'IN_PROGRESS']
+    );
   } catch (error: any) {
-    if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2002') {
+    if (error.code !== '23505') {
       return next(error);
     }
 
-    const existingKey = await prisma.idempotencyKey.findUnique({
-      where: { key }
-    });
+    const existingKey = await query<{
+      status: string;
+      response: string | null;
+      statusCode: number | null;
+    }>(
+      'select status, response, status_code as "statusCode" from idempotency_keys where key = $1',
+      [key]
+    ).then((result) => result.rows[0]);
 
-    if (existingKey?.status === 'COMPLETED' && existingKey.response && existingKey.statusCode) {
+    if (existingKey?.status === 'COMPLETED' && existingKey.response && existingKey.statusCode !== null) {
       const body = JSON.parse(existingKey.response);
       await redis.setex(
         `idempotency:${key}`,
@@ -56,14 +58,14 @@ export const idempotency = async (req: Request, res: Response, next: NextFunctio
       
       redis.setex(`idempotency:${key}`, 86400, cacheBody).catch(console.error);
       
-      prisma.idempotencyKey.update({
-        where: { key },
-        data: {
-          status: 'COMPLETED',
-          statusCode: res.statusCode,
-          response: responseString
-        }
-      }).catch(console.error);
+      query(
+        `
+          update idempotency_keys
+          set status = $2, status_code = $3, response = $4, updated_at = now()
+          where key = $1
+        `,
+        [key, 'COMPLETED', res.statusCode, responseString]
+      ).catch(console.error);
     }
     
     return originalJson.call(this, body);

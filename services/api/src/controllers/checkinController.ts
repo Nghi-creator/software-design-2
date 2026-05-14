@@ -1,9 +1,11 @@
 import { Request, Response } from 'express';
 import { checkInOnline, syncOfflineCheckins } from '../services/checkin';
+import { getRequestUser } from '../types/request';
 
 export const postCheckin = async (req: Request, res: Response) => {
   try {
-    const result = await checkInOnline(req.body.qrCode, req.user!.id);
+    const user = getRequestUser(req);
+    const result = await checkInOnline(req.body.qrCode, user.id);
     if (result.status === 'invalid') {
       return res.status(404).json({ success: false, error: 'QR Code not found or not confirmed' });
     }
@@ -22,7 +24,8 @@ export const postCheckinSync = async (req: Request, res: Response) => {
   }
 
   try {
-    const results = await syncOfflineCheckins(items, req.user!.id);
+    const user = getRequestUser(req);
+    const results = await syncOfflineCheckins(items, user.id);
     res.json({ success: true, results });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });

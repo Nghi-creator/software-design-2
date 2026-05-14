@@ -1,5 +1,5 @@
-import { CheckinSource } from '@prisma/client';
-import { prisma } from '../lib/prisma';
+import { query, withTransaction } from '../lib/db';
+import { CheckinSource } from '../types/domain';
 
 export type SyncItem = {
   localId?: string;
@@ -53,42 +53,50 @@ const checkInOne = async ({
   source: CheckinSource;
   scannedAt?: string;
 }) => {
-  const registration = await prisma.registration.findUnique({
-    where: { qrCode },
-    include: { checkin: true }
-  });
+  const registrationResult = await query<{
+    id: string;
+    status: string;
+    checkedInAt: Date | null;
+    checkinId: string | null;
+  }>(
+    `
+      select
+        r.id,
+        r.status,
+        r.checked_in_at as "checkedInAt",
+        c.id as "checkinId"
+      from registrations r
+      left join checkins c on c.registration_id = r.id
+      where r.qr_code = $1
+    `,
+    [qrCode]
+  );
+  const registration = registrationResult.rows[0];
 
   if (!registration || registration.status !== 'CONFIRMED') {
     return { status: 'invalid', registrationId: registration?.id };
   }
 
-  if (registration.checkedInAt || registration.checkin) {
+  if (registration.checkedInAt || registration.checkinId) {
     return { status: 'already_checked_in', registrationId: registration.id };
   }
 
   const checkinTime = scannedAt ? new Date(scannedAt) : new Date();
 
-  await prisma.$transaction(async (tx) => {
-    const updated = await tx.registration.updateMany({
-      where: {
-        id: registration.id,
-        checkedInAt: null
-      },
-      data: { checkedInAt: checkinTime }
-    });
+  await withTransaction(async (client) => {
+    const updated = await client.query(
+      'update registrations set checked_in_at = $2 where id = $1 and checked_in_at is null returning id',
+      [registration.id, checkinTime]
+    );
 
-    if (updated.count === 0) {
+    if (updated.rowCount === 0) {
       return;
     }
 
-    await tx.checkin.create({
-      data: {
-        registrationId: registration.id,
-        staffId,
-        checkinTime,
-        source
-      }
-    });
+    await client.query(
+      'insert into checkins (registration_id, staff_id, checkin_time, source) values ($1, $2, $3, $4)',
+      [registration.id, staffId, checkinTime, source]
+    );
   });
 
   return { status: 'checked_in', registrationId: registration.id };
