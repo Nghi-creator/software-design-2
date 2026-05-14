@@ -1,0 +1,4 @@
+interface:
+  display_name: "Use Context"
+  short_description: "Use the repo .context pack efficiently."
+  default_prompt: "Use the project context files to answer or implement accurately without loading unnecessary context."
