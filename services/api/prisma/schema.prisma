@@ -14,38 +14,50 @@ enum Role {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
+  id        String  @id @default(uuid())
+  email     String  @unique
   name      String
-  role      Role     @default(STUDENT)
-  studentId String?  @unique // Cần khi sync CSV
+  role      Role    @default(STUDENT)
+  studentId String? @unique
   
   registrations Registration[]
+  checkins      Checkin[]
   createdAt     DateTime       @default(now())
+}
+
+model Room {
+  id        String     @id @default(uuid())
+  name      String
+  location  String
+  capacity  Int
+
+  workshops Workshop[]
 }
 
 model Workshop {
   id             String   @id @default(uuid())
   title          String
   speaker        String
-  room           String
-  totalSeats     Int
-  availableSeats Int
-  price          Float    @default(0) // 0 là miễn phí
+  room           Room     @relation(fields: [roomId], references: [id])
+  roomId         String
+  capacity       Int
+  seatsRemaining Int
+  price          Decimal  @default(0)
   startTime      DateTime
-  endTime        DateTime
-  summary        String?  // Text from AI summary
+  pdfUrl         String?
+  aiSummary      String?
   
   registrations Registration[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+
+  @@index([startTime])
 }
 
 enum RegistrationStatus {
   PENDING
-  SUCCESS
-  FAILED
-  CHECKED_IN
+  CONFIRMED
+  CANCELLED
 }
 
 model Registration {
@@ -56,15 +68,62 @@ model Registration {
   workshopId String
   qrCode     String             @unique
   status     RegistrationStatus @default(PENDING)
+  checkedInAt DateTime?
   
+  payment    Payment?
+  checkin    Checkin?
   createdAt  DateTime           @default(now())
   updatedAt  DateTime           @updatedAt
 
   @@unique([userId, workshopId])
+  @@index([workshopId])
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+model Payment {
+  id             String        @id @default(uuid())
+  registration   Registration  @relation(fields: [registrationId], references: [id])
+  registrationId String        @unique
+  amount         Decimal
+  status         PaymentStatus @default(PENDING)
+  transactionId  String?
+  idempotencyKey String        @unique
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+enum CheckinSource {
+  ONLINE
+  OFFLINE_SYNC
+}
+
+model Checkin {
+  id             String        @id @default(uuid())
+  registration   Registration  @relation(fields: [registrationId], references: [id])
+  registrationId String        @unique
+  staff          User          @relation(fields: [staffId], references: [id])
+  staffId        String
+  checkinTime    DateTime
+  source         CheckinSource
+
+  @@index([registrationId])
+}
+
+enum IdempotencyStatus {
+  IN_PROGRESS
+  COMPLETED
 }
 
 model IdempotencyKey {
-  key       String   @id
-  response  String   @db.Text
-  createdAt DateTime @default(now())
+  key        String            @id
+  status     IdempotencyStatus @default(IN_PROGRESS)
+  response   String?           @db.Text
+  statusCode Int?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
 }
