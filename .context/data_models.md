@@ -7,9 +7,10 @@ PostgreSQL is the source of truth. Use transactions for multi-step writes and ro
 ### User
 - `id` UUID primary key
 - `student_id` string, nullable, unique when present
-- `full_name` string
+- `name` string
 - `email` string, unique
 - `role` enum: `STUDENT`, `ORGANIZER`, `CHECKIN_STAFF`
+- `password_hash` string, nullable for legacy/seed users
 
 ### Room
 - `id` primary key

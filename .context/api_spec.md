@@ -1,15 +1,43 @@
 # API Spec
 
-Status: partially defined. Current contracts cover room CRUD, workshop browse/create, registration/payment, online check-in, and offline check-in sync. Auth is a development header contract, not production JWT yet.
+Status: partially defined. Current contracts cover JWT auth, room CRUD, workshop browse/create, registration/payment, online check-in, and offline check-in sync.
 
 ## Auth
 
-Development API identity is attached from headers:
+JWT is the production auth mechanism. Send authenticated requests with:
+
+- `Authorization: Bearer <accessToken>`
+
+Tokens are HS256 JWTs signed with `JWT_SECRET`; default token lifetime is 24 hours and can be overridden with `JWT_EXPIRES_IN_SECONDS`.
+
+```text
+POST /api/auth/register
+Auth: public
+Request: { email, password, name, role?, studentId? }
+Response: { user: { id, email, name, role, studentId }, accessToken }
+Errors: 400, 403, 409, 500
+Notes: password must be at least 8 characters; role defaults to STUDENT. Elevated role self-registration requires `AUTH_ALLOW_ROLE_REGISTRATION=true`.
+```
+
+```text
+POST /api/auth/login
+Auth: public
+Request: { email, password }
+Response: { user: { id, email, name, role, studentId }, accessToken }
+Errors: 401, 500
+```
+
+```text
+GET /api/auth/me
+Auth: any authenticated user
+Response: { user: { id, email, name, role, studentId } }
+Errors: 401, 404, 500
+```
+
+Development header identity is still accepted for local compatibility when no bearer token is present:
 
 - `x-user-id`: UUID/string user id.
 - `x-user-role`: one of `STUDENT`, `ORGANIZER`, `CHECKIN_STAFF`.
-
-Production auth/JWT is still not defined.
 
 ## Rooms
 
@@ -98,7 +126,6 @@ Notes: item statuses include checked_in, already_checked_in, invalid, failed.
 
 ## Still Undefined
 
-- Production JWT/session auth.
 - Student workshop browsing/search pagination params.
 - QR code retrieval/validation endpoint separate from check-in.
 - Admin statistics.
