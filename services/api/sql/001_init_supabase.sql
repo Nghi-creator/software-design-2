@@ -106,3 +106,103 @@ create index if not exists workshops_start_time_idx on workshops(start_time);
 create index if not exists registrations_workshop_id_idx on registrations(workshop_id);
 create index if not exists payments_idempotency_key_idx on payments(idempotency_key);
 create index if not exists checkins_registration_id_idx on checkins(registration_id);
+
+alter table users enable row level security;
+alter table rooms enable row level security;
+alter table workshops enable row level security;
+alter table registrations enable row level security;
+alter table payments enable row level security;
+alter table checkins enable row level security;
+alter table idempotency_keys enable row level security;
+
+do $$ begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'rooms' and policyname = 'rooms_are_public_read'
+  ) then
+    create policy rooms_are_public_read
+      on rooms
+      for select
+      to anon, authenticated
+      using (true);
+  end if;
+end $$;
+
+do $$ begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'workshops' and policyname = 'workshops_are_public_read'
+  ) then
+    create policy workshops_are_public_read
+      on workshops
+      for select
+      to anon, authenticated
+      using (true);
+  end if;
+end $$;
+
+do $$ begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'users' and policyname = 'users_can_read_own_profile'
+  ) then
+    create policy users_can_read_own_profile
+      on users
+      for select
+      to authenticated
+      using (id = auth.uid());
+  end if;
+end $$;
+
+do $$ begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'registrations' and policyname = 'students_can_read_own_registrations'
+  ) then
+    create policy students_can_read_own_registrations
+      on registrations
+      for select
+      to authenticated
+      using (user_id = auth.uid());
+  end if;
+end $$;
+
+do $$ begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'payments' and policyname = 'students_can_read_own_payments'
+  ) then
+    create policy students_can_read_own_payments
+      on payments
+      for select
+      to authenticated
+      using (
+        exists (
+          select 1
+          from registrations
+          where registrations.id = payments.registration_id
+            and registrations.user_id = auth.uid()
+        )
+      );
+  end if;
+end $$;
+
+do $$ begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'checkins' and policyname = 'students_can_read_own_checkins'
+  ) then
+    create policy students_can_read_own_checkins
+      on checkins
+      for select
+      to authenticated
+      using (
+        exists (
+          select 1
+          from registrations
+          where registrations.id = checkins.registration_id
+            and registrations.user_id = auth.uid()
+        )
+      );
+  end if;
+end $$;
