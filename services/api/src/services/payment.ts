@@ -1,3 +1,5 @@
+/// <reference path="../types/opossum.d.ts" />
+
 import CircuitBreaker from 'opossum';
 
 // Mock payment gateway call
