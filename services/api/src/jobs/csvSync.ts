@@ -1,8 +1,8 @@
 import cron from 'node-cron';
 import fs from 'fs';
 import csv from 'csv-parser';
-import { prisma } from '../lib/prisma';
 import path from 'path';
+import { query } from '../lib/db';
 
 export const startCsvSyncJob = () => {
   // Run everyday at 2 AM
@@ -26,19 +26,15 @@ export const startCsvSyncJob = () => {
 
         for (const student of students) {
           try {
-            await prisma.user.upsert({
-              where: { studentId: student.studentId },
-              update: {
-                name: student.name,
-                email: student.email
-              },
-              create: {
-                studentId: student.studentId,
-                name: student.name,
-                email: student.email,
-                role: 'STUDENT'
-              }
-            });
+            await query(
+              `
+                insert into users (student_id, name, email, role)
+                values ($1, $2, $3, 'STUDENT')
+                on conflict (student_id)
+                do update set name = excluded.name, email = excluded.email
+              `,
+              [student.studentId, student.name, student.email]
+            );
             successCount++;
           } catch (error) {
             console.error(`Failed to sync student ${student.studentId}:`, error);
