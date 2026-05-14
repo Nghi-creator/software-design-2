@@ -32,7 +32,7 @@ export const idempotency = async (req: Request, res: Response, next: NextFunctio
     }>(
       'select status, response, status_code as "statusCode" from idempotency_keys where key = $1',
       [key]
-    ).then((result) => result.rows[0]);
+    ).then((result: { rows: Array<{ status: string; response: string | null; statusCode: number | null }> }) => result.rows[0]);
 
     if (existingKey?.status === 'COMPLETED' && existingKey.response && existingKey.statusCode !== null) {
       const body = JSON.parse(existingKey.response);

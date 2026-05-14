@@ -12,8 +12,27 @@ type CreateWorkshopInput = {
   pdfBuffer?: Buffer;
 };
 
+type Workshop = {
+  id: string;
+  title: string;
+  speaker: string;
+  roomId: string;
+  capacity: number;
+  seatsRemaining: number;
+  price: string;
+  startTime: Date;
+  pdfUrl: string | null;
+  aiSummary: string | null;
+  room?: {
+    id: string;
+    name: string;
+    location: string;
+    capacity: number;
+  };
+};
+
 export const listWorkshops = () => {
-  return query(`
+  return query<Workshop>(`
     select
       w.id,
       w.title,
@@ -49,7 +68,7 @@ export const createWorkshop = async ({
 }: CreateWorkshopInput) => {
   const aiSummary = pdfBuffer ? await generateWorkshopSummary(pdfBuffer) : null;
 
-  return query(
+  return query<Workshop>(
     `
       insert into workshops (
         title, speaker, room_id, capacity, seats_remaining, price, start_time, pdf_url, ai_summary

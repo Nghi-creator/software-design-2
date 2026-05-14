@@ -1,0 +1,30 @@
+flowchart TD
+    Student["Sinh viên"] --> Browse["Xem danh sách workshop"]
+    Browse --> Select["Chọn workshop"]
+    Select --> FreeOrPaid{"Workshop miễn phí?"}
+
+    FreeOrPaid -- "Có" --> SeatLock["Lock ghế trong PostgreSQL"]
+    FreeOrPaid -- "Không" --> Idempotency["Kiểm tra Idempotency-Key"]
+    Idempotency --> SeatLock
+    SeatLock --> SeatAvailable{"Còn ghế?"}
+
+    SeatAvailable -- "Không" --> Full["Trả lỗi hết chỗ"]
+    SeatAvailable -- "Có" --> Paid{"Cần thanh toán?"}
+    Paid -- "Không" --> CreateRegistration["Tạo registration"]
+    Paid -- "Có" --> Payment["Gọi payment gateway qua circuit breaker"]
+    Payment --> PaymentOk{"Thanh toán thành công?"}
+    PaymentOk -- "Không" --> Rollback["Rollback transaction"]
+    PaymentOk -- "Có" --> CreateRegistration
+
+    CreateRegistration --> QR["Sinh QR code"]
+    QR --> Notify["Gửi thông báo app/email"]
+    Notify --> Success["Sinh viên nhận xác nhận"]
+
+    Staff["Nhân sự check-in"] --> Scan["Quét QR bằng mobile app"]
+    Scan --> Online{"Có mạng?"}
+    Online -- "Có" --> CheckinApi["POST /api/checkin"]
+    Online -- "Không" --> LocalQueue["Lưu vào offline queue"]
+    LocalQueue --> NetworkBack["Mạng phục hồi"]
+    NetworkBack --> Sync["POST /api/checkin/sync"]
+    CheckinApi --> CheckedIn["Cập nhật trạng thái CHECKED_IN"]
+    Sync --> CheckedIn
