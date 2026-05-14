@@ -1,6 +1,2 @@
 .idea/
-.codexrules
-.gitignore
-REQUIREMENTS.md
-.codex/
-.context/
+services/api/.env

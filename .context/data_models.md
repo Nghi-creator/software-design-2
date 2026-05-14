@@ -1,30 +1,78 @@
 # Data Models: UniHub Workshop
 
-## Key Entities
+PostgreSQL is the source of truth. Use transactions for multi-step writes and row-level locks for registration capacity updates.
+
+## Entities
 
 ### User
-- `id` (UUID)
-- `student_id` (String, nullable)
-- `full_name`, `email`, `role` (STUDENT, ORGANIZER, CHECKIN_STAFF)
+- `id` UUID primary key
+- `student_id` string, nullable, unique when present
+- `full_name` string
+- `email` string, unique
+- `role` enum: `STUDENT`, `ORGANIZER`, `CHECKIN_STAFF`
 
 ### Room
-- `id`, `name`, `location`, `capacity`
+- `id` primary key
+- `name` string
+- `location` string
+- `capacity` integer
 
 ### Workshop
-- `id`, `title`, `speaker`
-- `room_id` (FK)
-- `start_time`, `capacity`, `seats_remaining`
+- `id` primary key
+- `title` string
+- `speaker` string
+- `room_id` foreign key to `Room`
+- `start_time` timestamp
+- `capacity` integer
+- `seats_remaining` integer
+- `pdf_url` string, nullable
+- `ai_summary` text, nullable
 
 ### Registration
-- `id`, `student_id` (FK), `workshop_id` (FK)
-- `status` (PENDING, CONFIRMED, CANCELLED)
-- `qr_code`
+- `id` primary key
+- `student_id` foreign key to `User`
+- `workshop_id` foreign key to `Workshop`
+- `status` enum: `PENDING`, `CONFIRMED`, `CANCELLED`
+- `qr_code` string, unique
+- `checked_in_at` timestamp, nullable
 
 ### Payment
-- `id`, `registration_id` (FK), `amount`, `status`, `idempotency_key`
+- `id` primary key
+- `registration_id` foreign key to `Registration`
+- `amount` decimal
+- `status` enum: `PENDING`, `SUCCESS`, `FAILED`
+- `transaction_id` string, nullable
+- `idempotency_key` string, unique
 
 ### Checkin
-- `id`, `registration_id` (FK), `staff_id` (FK), `checkin_time`
+- `id` primary key
+- `registration_id` foreign key to `Registration`
+- `staff_id` foreign key to `User`
+- `checkin_time` timestamp
+- `source` enum: `ONLINE`, `OFFLINE_SYNC`
 
 ### Notification
-- `id`, `user_id` (FK), `message`, `type`, `sent_at`
+- `id` primary key
+- `user_id` foreign key to `User`
+- `message` text
+- `type` enum: `EMAIL`, `APP_PUSH`
+- `sent_at` timestamp, nullable
+
+## Relationships
+
+- One `Room` has many `Workshop`.
+- One `User` can have many `Registration`.
+- One `Workshop` can have many `Registration`.
+- One `Registration` can have zero or one `Payment`.
+- One `Registration` can have zero or one `Checkin`.
+- One `User` can receive many `Notification`.
+
+## Constraints And Indexes
+
+- Unique registration per `(student_id, workshop_id)`.
+- `Workshop.seats_remaining` must stay between `0` and `capacity`.
+- `Registration.qr_code` must be unique and hard to guess.
+- Index `Workshop.start_time` for browsing and upcoming workshop queries.
+- Index `Registration.workshop_id` for admin stats.
+- Index `Payment.idempotency_key` for duplicate-payment protection.
+- Index `Checkin.registration_id` for QR validation and sync.
