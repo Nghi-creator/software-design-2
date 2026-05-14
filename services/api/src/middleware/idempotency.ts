@@ -55,17 +55,22 @@ export const idempotency = async (req: Request, res: Response, next: NextFunctio
     if (res.statusCode !== 409) {
       const responseString = JSON.stringify(body);
       const cacheBody = JSON.stringify({ statusCode: res.statusCode, body });
-      
-      redis.setex(`idempotency:${key}`, 86400, cacheBody).catch(console.error);
-      
-      query(
-        `
-          update idempotency_keys
-          set status = $2, status_code = $3, response = $4, updated_at = now()
-          where key = $1
-        `,
-        [key, 'COMPLETED', res.statusCode, responseString]
-      ).catch(console.error);
+
+      void (async () => {
+        await query(
+          `
+            update idempotency_keys
+            set status = $2, status_code = $3, response = $4, updated_at = now()
+            where key = $1
+          `,
+          [key, 'COMPLETED', res.statusCode, responseString]
+        );
+
+        await redis.setex(`idempotency:${key}`, 86400, cacheBody).catch(console.error);
+        originalJson.call(this, body);
+      })().catch(next);
+
+      return this;
     }
     
     return originalJson.call(this, body);

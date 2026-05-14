@@ -10,10 +10,11 @@
 - **Supabase Postgres Switch**: API no longer uses Prisma Client. Database access now uses `pg` against Supabase Postgres, with schema setup in `services/api/sql/001_init_supabase.sql`.
 - **Supabase Seed SQL**: Added `services/api/sql/002_seed_supabase.sql` with sample users, rooms, workshops, registrations, payments, and check-ins for local/demo data.
 - **JWT Auth**: Added `/api/auth/register`, `/api/auth/login`, `/api/auth/me`, HS256 access tokens via `JWT_SECRET`, scrypt password hashes, bearer-token middleware, `users.password_hash`, and seed login hashes (`Password123`).
+- **Registration Consistency**: Seat reservation now reuses cancelled registration/payment rows for retries, cancellation releases a seat only once, confirmation requires `PENDING`, and idempotency completion is persisted before sending JSON responses.
 
 ## In Progress
 - API contract still partial; repository layer, request validation, admin stats, QR retrieval, async upload/summary status, and CSV import status endpoints remain undefined. Supabase SQL schema must be applied manually per environment.
 
 ## Next Steps
-- Add tests for registration/payment idempotency and offline check-in sync.
+- Add tests for registration/payment idempotency, cancelled-registration retry, idempotent seat release, and offline check-in sync.
 - Add remaining API endpoints from `api_spec.md` Still Undefined section.
