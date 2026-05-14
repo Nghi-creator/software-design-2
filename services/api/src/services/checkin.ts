@@ -1,5 +1,5 @@
 import { query, withTransaction } from '../lib/db';
-import { CheckinSource } from '../types/domain';
+import { CheckinSource, Role, Roles } from '../types/domain';
 
 export type SyncItem = {
   localId?: string;
@@ -9,6 +9,64 @@ export type SyncItem = {
 
 export const checkInOnline = async (qrCode: string, staffId: string) => {
   return checkInOne({ qrCode, staffId, source: 'ONLINE' });
+};
+
+export const generateRegistrationQr = async ({
+  registrationId,
+  requesterId,
+  requesterRole
+}: {
+  registrationId: string;
+  requesterId: string;
+  requesterRole: Role;
+}) => {
+  const result = await query<{
+    id: string;
+    userId: string;
+    workshopId: string;
+    workshopTitle: string;
+    qrCode: string;
+    status: string;
+  }>(
+    `
+      select
+        r.id,
+        r.user_id as "userId",
+        r.workshop_id as "workshopId",
+        w.title as "workshopTitle",
+        r.qr_code as "qrCode",
+        r.status
+      from registrations r
+      join workshops w on w.id = r.workshop_id
+      where r.id = $1
+    `,
+    [registrationId]
+  );
+  const registration = result.rows[0];
+
+  if (!registration) {
+    throw Object.assign(new Error('Registration not found'), { statusCode: 404 });
+  }
+
+  const canRead =
+    requesterRole === Roles.CHECKIN_STAFF ||
+    requesterRole === Roles.ORGANIZER ||
+    registration.userId === requesterId;
+
+  if (!canRead) {
+    throw Object.assign(new Error('Forbidden'), { statusCode: 403 });
+  }
+
+  if (registration.status !== 'CONFIRMED') {
+    throw Object.assign(new Error('Registration is not confirmed'), { statusCode: 409 });
+  }
+
+  return {
+    registrationId: registration.id,
+    workshopId: registration.workshopId,
+    workshopTitle: registration.workshopTitle,
+    qrCode: registration.qrCode
+  };
 };
 
 export const syncOfflineCheckins = async (items: SyncItem[], staffId: string) => {
