@@ -8,11 +8,13 @@ Before suggesting or writing code:
 
 1. Read `REQUIREMENTS.md`.
 2. Read `.context/unihub-logic.md`.
-3. Check relevant files in `.context/` when working on architecture, data models, or project decisions.
+3. Review the rendered C4 diagrams in `blueprint/diagrams/C4_Context.png` and `blueprint/diagrams/C4_Container.png` so code changes preserve the intended system boundaries.
+4. Check relevant files in `.context/` when working on architecture, data models, or project decisions.
 
 ## Coding Rules
 
 - Keep the three required roles explicit: Sinh viên, BTC, Nhân sự check-in.
+- Keep implementation changes consistent with the C4 Context and Container diagrams unless the diagrams and design docs are updated in the same change.
 - Use Repository pattern for database access when adding or expanding service logic.
 - All registration and payment-related `POST` endpoints must support `Idempotency-Key`.
 - Paid registration must avoid double charge when clients retry.

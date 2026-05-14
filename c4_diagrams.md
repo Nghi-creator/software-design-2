@@ -2,6 +2,17 @@
 
 Tài liệu này dùng PlantUML để mô tả hai cấp đầu của C4 diagram và các luồng runtime quan trọng của UniHub Workshop. Nội dung bám theo `REQUIREMENTS.md`: sự kiện kéo dài 5 ngày, mỗi ngày có 8-12 workshop song song, sinh viên đăng ký workshop miễn phí hoặc có phí, nhận QR để check-in, BTC quản trị workshop, và nhân sự check-in dùng mobile app có hỗ trợ offline sync.
 
+## Rendered Diagrams
+
+Các file PNG đã render được lưu trong `blueprint/diagrams/` để dùng trực tiếp trong báo cáo hoặc khi rà soát kiến trúc trước khi code:
+
+- `blueprint/diagrams/C4_Context.png`
+- `blueprint/diagrams/C4_Container.png`
+
+![C4 Context](blueprint/diagrams/C4_Context.png)
+
+![C4 Container](blueprint/diagrams/C4_Container.png)
+
 ## Level 1 - System Context
 
 Level 1 đặt UniHub Workshop trong bức tranh tổng thể của trường đại học. Sinh viên, BTC và nhân sự check-in cùng sử dụng một hệ thống chung để xem workshop, tạo workshop, đăng ký, thanh toán nếu cần, nhận QR và điểm danh tại cửa phòng. Hệ thống tích hợp với cổng thanh toán mock, Google Gemini API để tạo tóm tắt từ PDF, và nguồn CSV sinh viên từ hệ thống quản lý cũ.

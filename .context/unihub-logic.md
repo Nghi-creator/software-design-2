@@ -29,5 +29,6 @@
 ## Implementation Guardrails
 
 - Before changing code, check `REQUIREMENTS.md` and this file for scope.
+- Before changing code, review `blueprint/diagrams/C4_Context.png` and `blueprint/diagrams/C4_Container.png` to preserve the agreed system context and container boundaries.
 - Do not invent new roles, event formats, or workshop calendar assumptions unless requirements are updated.
 - Keep docs aligned with actual implementation; mark future work clearly when a mechanism is designed but not implemented.
