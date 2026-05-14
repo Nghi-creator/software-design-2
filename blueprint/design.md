@@ -1,321 +1,296 @@
-# UniHub Workshop — Technical Design
+# UniHub Workshop - Thiết kế kỹ thuật
 
 ## Kiến trúc tổng thể
 
-### Architectural Style
+UniHub Workshop hiện được triển khai theo mô hình **modular monolith backend + client prototypes**:
 
-Hệ thống **UniHub Workshop** sử dụng kiến trúc **Layered Architecture** kết hợp **Event-Driven** cho các tác vụ bất đồng bộ.
+- **Web App**: Vite, React, TypeScript. Hiện là prototype UI cho sinh viên và admin, thể hiện lịch workshop, đăng ký có phí, áp lực chỗ ngồi, QR/check-in và bản xem trước admin dashboard.
+- **Mobile App**: Flutter, Material 3. Hiện là prototype UI cho nhân sự check-in, gồm màn hình scanner, hàng đợi đồng bộ offline, lịch sử và hồ sơ cá nhân.
+- **Backend API**: Node.js, Express, TypeScript, Prisma. Đây là container nghiệp vụ chính, cung cấp REST API cho workshop, đăng ký, check-in và đồng bộ offline.
+- **PostgreSQL**: database chính, chạy qua docker-compose với image `postgres:15-alpine`.
+- **Redis**: in-memory store cho rate limiting và idempotency response cache, chạy qua docker-compose với image `redis:7-alpine`.
 
-- **Layered Architecture**: Được sử dụng cho các chức năng nghiệp vụ chính (xem workshop, đăng ký, check-in).
-- **Event-Driven Architecture**: Được sử dụng cho các tác vụ nền như gửi thông báo, xử lý AI summary và nhập dữ liệu CSV.
+Implementation hiện tại **không có message broker, worker service riêng, email service hay authentication middleware**. Các tác vụ nền đang có trong code, như CSV sync, chạy trong cùng process với Backend API bằng `node-cron`.
 
-Cách tiếp cận này giúp hệ thống:
+## Architectural Style
 
-- Tách biệt rõ presentation layer, business logic và data layer.
-- Giảm sự phụ thuộc giữa các thành phần.
-- Tăng khả năng mở rộng và chịu lỗi (**fault tolerance**) khi hệ thống có tải lớn hoặc khi một thành phần gặp sự cố.
+Kiến trúc thực tế là **layered modular monolith**:
 
-### Các thành phần chính của hệ thống
+- Presentation layer nằm ở `apps/web` và `apps/mobile`.
+- API layer nằm ở `services/api/src/routes`.
+- Middleware layer xử lý các cross-cutting concerns như Redis rate limiting và idempotency.
+- Service layer bọc các tích hợp payment và AI summary.
+- Data layer dùng Prisma để truy cập PostgreSQL.
+- Scheduled job layer nằm trong API process và đồng bộ CSV mỗi ngày lúc 02:00.
 
-Hệ thống gồm 7 thành phần chính:
+Cách tiếp cận này phù hợp với quy mô hiện tại: code đơn giản để chạy local, các boundary rõ ràng, và các cơ chế quan trọng như Redis, database lock, circuit breaker đã nằm đúng chỗ trong request path.
 
-1.  **Web Student Application**
-2.  **Web Admin Application**
-3.  **Mobile Check-in Application**
-4.  **Backend API Service**
-5.  **Database**
-6.  **Cache Layer**
-7.  **Message Queue + Worker Services**
+## Các thành phần chính
 
-Các thành phần này giao tiếp thông qua **HTTP API** và **message queue**.
+### 1. Web App
 
-#### 1. Web Student Application
+**Đường dẫn:** `apps/web`
 
-Web Student là ứng dụng web dành cho sinh viên.
+**Công nghệ:** Vite + React + TypeScript.
 
-- **Chức năng chính**:
-  - Xem danh sách các workshop đang mở.
-  - Đăng ký tham gia workshop.
-  - Thanh toán qua cổng thanh toán (mock).
-  - Nhận và hiển thị mã QR Code sau khi đăng ký thành công.
-- Web Student giao tiếp với **Backend API** thông qua **REST API**.
-- Đảm bảo giao diện tối ưu cho cả mobile and desktop (Responsive).
+Web App hiện tại là giao diện prototype cho cả trải nghiệm student-facing và admin-facing:
 
-#### 2. Web Admin Application
+- Hiển thị danh sách workshop mẫu, topic, phòng, giá và số ghế còn lại.
+- Mô tả flow đăng ký, thanh toán, nhận QR và check-in.
+- Có admin preview cho registration metrics, seat pressure và payment incidents.
+- Chưa wire trực tiếp đến Backend API trong code hiện tại; phần API contract đã nằm ở Express service.
 
-Web Admin là ứng dụng web dành cho ban tổ chức.
+### 2. Mobile Check-in App
 
-- **Chức năng chính**:
-  - Tạo workshop mới.
-  - Chỉnh sửa thông tin workshop.
-  - Thay đổi phòng hoặc thời gian.
-  - Tải lên file PDF giới thiệu workshop.
-  - Xem thống kê đăng ký.
-- Web Admin giao tiếp với **Backend API** thông qua **REST API qua HTTPS**.
+**Đường dẫn:** `apps/mobile`
 
-#### 3. Mobile Check-in Application
+**Công nghệ:** Flutter + Material 3.
 
-Ứng dụng mobile được sử dụng bởi nhân sự check-in tại cửa phòng.
+Mobile App hiện tại là prototype UI cho nhân sự check-in:
 
-- **Chức năng**:
-  - Quét mã QR của sinh viên.
-  - Xác nhận check-in.
-  - Lưu check-in tạm thời khi mất mạng.
-  - Đồng bộ dữ liệu khi kết nối internet được khôi phục.
-- Ứng dụng giao tiếp với **Backend API** qua **HTTP**.
-- Trong trường hợp mất kết nối:
-  - Dữ liệu check-in được lưu tạm trong local storage trên thiết bị.
-  - Sau đó gửi lại backend theo dạng **batch synchronization**.
+- Scanner tab cho QR check-in.
+- Offline queue tab thể hiện các scan đang chờ mạng và kết quả sync.
+- History tab cho lịch sử điểm danh theo phòng.
+- Profile tab cho thông tin staff và quyền truy cập.
 
-#### 4. Backend API Service
+Backend đã implement hai endpoint phù hợp với mobile flow:
 
-Backend API là thành phần trung tâm của hệ thống, chịu trách nhiệm xử lý toàn bộ logic nghiệp vụ.
+- `POST /api/checkin`: check-in online từng QR code.
+- `POST /api/checkin/sync`: batch sync danh sách QR code đã scan offline.
 
-- **Các chức năng chính**:
-  - Xác thực và phân quyền người dùng.
-  - Quản lý workshop.
-  - Xử lý đăng ký workshop.
-  - Xử lý thanh toán.
-  - Tạo và xác nhận QR code.
-  - Xử lý check-in.
-  - Cung cấp dữ liệu cho web và mobile app.
-- Backend API cũng chịu trách nhiệm:
-  - Kiểm soát tranh chấp chỗ ngồi.
-  - **Rate limiting** để chống tải đột biến.
-  - Tích hợp với **message queue** cho các tác vụ nền.
-- Backend được triển khai dưới dạng **stateless service**, giúp có thể mở rộng theo chiều ngang nếu cần.
+Local storage/camera/network detection chưa được implement trong Flutter code. Tài liệu này xem đó là client-side extension tiếp theo, còn server contract đã có.
 
-#### 5. Database
+### 3. Backend API
 
-Hệ thống sử dụng **relational database (PostgreSQL)** để lưu trữ dữ liệu chính.
+**Đường dẫn:** `services/api`
 
-- **Các loại dữ liệu được lưu trữ**:
-  - Thông tin sinh viên.
-  - Thông tin workshop.
-  - Đăng ký workshop.
-  - Giao dịch thanh toán.
-  - Dữ liệu check-in.
-- Database đảm bảo:
-  - **ACID transactions**.
-  - **Row-level locking**.
-- Giúp giải quyết vấn đề tranh chấp chỗ ngồi khi nhiều sinh viên đăng ký cùng lúc.
+**Công nghệ:** Node.js + Express + TypeScript + Prisma.
 
-#### 6. Cache Layer
+Backend API expose:
 
-Cache layer được sử dụng để:
+- `GET /api/workshops`: lấy danh sách workshop.
+- `POST /api/workshops`: tạo workshop, upload PDF bằng `multer`, tạo AI summary nếu có file.
+- `POST /api/workshops/:id/register`: đăng ký workshop, có rate limiting, idempotency, Postgres locking và payment circuit breaker.
+- `POST /api/checkin`: check-in một QR code.
+- `POST /api/checkin/sync`: đồng bộ batch QR code offline.
+- `GET /health`: health check đơn giản.
 
-- Lưu trữ dữ liệu truy cập thường xuyên.
-- Hỗ trợ cơ chế **rate limiting**.
-- Lưu trữ **idempotency key** cho thanh toán.
-- Giúp giảm tải cho database khi có nhiều request đồng thời.
+Khi server start, `src/index.ts` gọi `startCsvSyncJob()` để schedule CSV sync.
 
-#### 7. Message Queue và Worker Services
+### 4. PostgreSQL
 
-Một số tác vụ trong hệ thống không cần xử lý ngay lập tức, ví dụ:
+**Schema:** `services/api/prisma/schema.prisma`
 
-- Gửi thông báo.
-- Xử lý AI summary.
-- Nhập dữ liệu CSV từ hệ thống cũ.
-- Các tác vụ này được gửi vào **message queue** để xử lý bất đồng bộ.
-- **Worker service** sẽ tiêuhtu message từ queue và thực hiện các tác vụ tương ứng.
+Database lưu các model đang có:
 
-**Lợi ích**:
+- `User`: email, name, role, optional `studentId`.
+- `Workshop`: title, speaker, room, total/available seats, price, start/end time, optional AI `summary`.
+- `Registration`: user/workshop relation, unique `qrCode`, status `PENDING | SUCCESS | FAILED | CHECKED_IN`, unique pair `[userId, workshopId]`.
+- `IdempotencyKey`: persistent response cache theo key.
 
-- Giảm tải cho backend API.
-- Tránh làm chậm request của người dùng.
-- Giúp hệ thống chịu lỗi tốt hơn.
-- Ví dụ: Nếu hệ thống gửi email bị lỗi, request đăng ký workshop vẫn hoàn tất; worker có thể retry job sau.
+Khác với bản thiết kế cũ, code hiện tại **không có** bảng riêng cho `Room`, `Payment`, `Checkin` hay `Notification`. Room đang là field string trong `Workshop`; check-in đang được biểu diễn bằng `Registration.status = CHECKED_IN`; kết quả thanh toán mock không được lưu vào bảng riêng.
 
-### Cách các thành phần giao tiếp với nhau
+### 5. Redis
 
-Các thành phần trong hệ thống giao tiếp theo hai cơ chế chính:
+**Thư viện:** `ioredis`.
 
-#### 1. Synchronous communication
+Redis được dùng cho hai cơ chế quan trọng:
 
-Web Student, Web Admin và Mobile App giao tiếp trực tiếp với Backend API qua **HTTP REST API**.
+- **Token Bucket Rate Limiting**: middleware `rateLimiter(5, 0.5)` trên endpoint register giới hạn 5 request với tốc độ refill 0.5 token/giây theo IP. Lua script cập nhật atomic các field `tokens` và `last_refill`, key hết hạn sau 60 giây.
+- **Idempotency Response Cache**: middleware đọc `Idempotency-Key` header, trả lại response cached nếu có `idempotency:{key}`, và lưu response thành công với TTL 24h.
 
-- **Ví dụ**:
-  - **Student → Backend**: `GET /workshops`, `POST /register`
-  - **Check-in Staff → Backend**: `POST /checkin`
+Nếu Redis gặp lỗi ở rate limiter, middleware fail-open và cho request đi tiếp để tránh làm down toàn bộ API.
 
-#### 2. Asynchronous communication
+### 6. Payment Circuit Breaker
 
-Backend API gửi các sự kiện vào **message queue** để worker xử lý.
+**Đường dẫn:** `services/api/src/services/payment.ts`
 
-- **Ví dụ**:
-  - Student đăng ký workshop → Backend API tạo registration → Push event → `notification_queue` → Worker gửi email xác nhận.
-- **Các luồng sử dụng queue bao gồm**:
-  - Gửi thông báo.
-  - Tạo AI summary.
-  - Nhập dữ liệu CSV.
+Payment flow là mock gateway được bọc bằng `opossum` circuit breaker:
 
-### Lý do lựa chọn kiến trúc này
+- Gateway giả lập delay 500ms và random failure 30%.
+- Timeout: 3000ms.
+- Error threshold: 50%.
+- Reset timeout: 10000ms.
+- Khi breaker open, fallback ném lỗi "Payment Service is currently unavailable. Please try again later."
 
-Kiến trúc được chọn dựa trên các yêu cầu của hệ thống:
+Trong endpoint register, payment chỉ được gọi nếu `Workshop.price > 0`. Lỗi payment nằm trong database transaction nên registration và decrement seat sẽ rollback nếu payment fail.
 
-- Hệ thống có tải đột biến khi mở đăng ký → Cần khả năng mở rộng backend.
-- Một số tác vụ không cần xử lý ngay → Sử dụng message queue để xử lý bất đồng bộ.
-- Cần đảm bảo tính nhất quán khi nhiều sinh viên đăng ký cùng lúc → Sử dụng relational database với transaction.
-- Một số khu vực mất mạng → Mobile app cần hỗ trợ offline.
+### 7. AI Summary
 
-Kiến trúc này giúp hệ thống:
+**Đường dẫn:** `services/api/src/services/ai.ts`
 
-- Dễ phát triển.
-- Dễ mở rộng.
-- Đảm bảo tính ổn định khi tải tăng cao.
+Khi organizer tạo workshop với PDF:
 
-### Đánh đổi (Trade-offs)
+1. `multer` đọc file vào memory.
+2. `pdf-parse` trích text từ PDF buffer.
+3. `@google/genai` gọi model `gemini-2.5-flash`.
+4. API lưu text summary vào `Workshop.summary`.
 
-Mọi quyết định thiết kế đều đi kèm với sự đánh đổi. Dưới đây là các điểm mấu chốt của hệ thống:
+Nếu AI hoặc PDF parsing lỗi, service trả về chuỗi lỗi thân thiện và vẫn cho phép tạo workshop với summary fallback.
 
-- **Tính phức tạp vs. Khả năng đáp ứng (Complexity vs. Responsiveness)**: Việc sử dụng **Event-Driven Architecture (EDA)** cho các tác vụ nền (gửi thông báo, xử lý AI summary) làm tăng độ phức tạp của hệ thống (phải quản lý Message Queue, Workers, và xử lý eventual consistency). Tuy nhiên, đổi lại API chính luôn duy trì được tốc độ phản hồi cực nhanh cho các thao tác đăng ký và xem workshop của hàng chục nghìn sinh viên.
-- **Monolith vs. Microservices (Ease of development vs. Scaling)**: Chúng tôi chọn kiến trúc Monolith (với các mô-đun tách biệt) thay vì chia nhỏ thành hàng chục Microservices. Điều này giúp đội ngũ phát triển nhanh hơn, triển khai đơn giản và tránh được các chi phí quản lý vận hành (overhead) phức tạp của hệ thống phân tán ở giai đoạn hiện tại. **Vì sao nó chấp nhận được?** Với dự báo 12,000 traffic spike, một hệ thống Monolith được tối ưu và scale theo chiều ngang (stateless) vẫn hoàn toàn đủ khả năng chịu tải mà mạng lại sự nhất quán cao hơn.
-- **Tính nhất quán ACID vs. Hiệu suất ghi cực đại (Consistency vs. Throughput)**: Việc sử dụng PostgreSQL đảm bảo tính toàn vẹn dữ liệu tuyệt đối (không bao giờ xảy ra tình trạng đăng ký vượt quá số ghế), nhưng có thể bị giới hạn về hiệu suất ghi so với các NoSQL DB. Chúng tôi chấp nhận đánh đổi này và giảm tải cho DB bằng cách áp dụng **Redis Caching** và **Rate Limiting** ở tầng trước đó.
+### 8. CSV Sync Flow
 
-### Phương án thay thế (Alternatives)
+**Đường dẫn:** `services/api/src/jobs/csvSync.ts`
 
-Dưới đây là các phương án đã được xem xét nhưng không được lựa chọn:
+CSV sync chạy bằng `node-cron` trong API process:
 
-- **Kiến trúc Microservices toàn phần**: Tách mỗi chức năng (Inventory, Payment, Notification) thành một dịch vụ riêng. Phương án này bị loại bỏ vì quy mô dự án hiện tại chưa cần thiết phải đánh đổi lấy sự phức tạp trong giao tiếp mạng giữa các service (network latency) và độ phức tạp trong việc duy trì giao dịch phân tán.
-- **Xử lý đồng bộ mọi tác vụ (Synchronous processing)**: Gửi email xác nhận ngay trong request đăng ký. Phương án này bị loại bỏ vì nó sẽ làm tăng thời gian chờ của người dùng và nếu dịch vụ email gặp sự cố, toàn bộ tiến trình đăng ký cũng sẽ bị thất bại một cách không đáng có.
+- Schedule: `0 2 * * *` mỗi ngày lúc 02:00.
+- File source: `services/api/data/students.csv`.
+- Parser: `csv-parser`.
+- Mỗi dòng CSV được `prisma.user.upsert` theo `studentId`.
+- Nếu file không tồn tại, job skip và log message.
+
+Đây là import job nội bộ, không phải message queue hay worker riêng.
+
+## Luồng nghiệp vụ quan trọng
+
+### Đăng ký workshop
+
+`POST /api/workshops/:id/register`
+
+1. Client gửi `userId`, optional `paymentToken`, và optional `Idempotency-Key` header.
+2. Redis token bucket giới hạn request theo IP.
+3. Idempotency middleware kiểm tra Redis trước, sau đó PostgreSQL `IdempotencyKey`.
+4. API mở Prisma transaction.
+5. API lock workshop row bằng raw SQL:
+
+```sql
+SELECT * FROM "Workshop" WHERE id = $1 FOR UPDATE;
+```
+
+6. API kiểm tra workshop tồn tại, còn ghế và user chưa đăng ký workshop đó.
+7. Nếu workshop có phí, API yêu cầu `paymentToken` và gọi `paymentCircuitBreaker.fire`.
+8. API decrement `availableSeats`, tạo `Registration` với UUID `qrCode` và status `SUCCESS`.
+9. Response thành công được lưu vào Redis TTL 24h và bảng `IdempotencyKey`.
+
+Cơ chế này giải quyết ba rủi ro chính: spike traffic, double submit/double charge, và race condition ở ghế cuối.
+
+### Check-in online và offline sync
+
+`POST /api/checkin`
+
+- Tìm `Registration` theo `qrCode`.
+- Nếu không thấy QR, trả 404.
+- Nếu đã `CHECKED_IN`, trả 400.
+- Nếu hợp lệ, update status thành `CHECKED_IN`.
+
+`POST /api/checkin/sync`
+
+- Nhận payload `{ qrCodes: string[] }`.
+- Dùng `updateMany` với điều kiện `qrCode in qrCodes` và `status != CHECKED_IN`.
+- Trả về số bản ghi đã sync.
+
+Endpoint sync idempotent theo trạng thái: QR đã check-in sẽ không bị update lại.
 
 ## C4 Diagram
 
-### Level 1 — System Context
+Chi tiết C4 nằm trong `c4_diagrams.md`.
 
-- **Sinh viên** tương tác với **UniHub Web/Mobile App**.
-- **Admin** quản lý qua **UniHub Web App**.
-- **Check-in Staff** dùng **Mobile App**.
-- **UniHub System** giao tiếp with **Mock Payment Gateway** and **Google Gemini API**. Hệ thống nhận file định kỳ từ **Hệ thống Quản lý Sinh viên Cũ**.
+### Level 1 - System Context
 
-### Level 2 — Container
+Level 1 thể hiện UniHub Workshop như một hệ thống duy nhất trong môi trường đại học:
 
-- **Web App (React/Vue)**: Frontend cho Sinh viên và Admin.
-- **Mobile App (Flutter/React Native)**: Frontend cho Check-in Staff (có local storage).
-- **API Server (Node.js/Express)**: Backend xử lý logic chính.
-- **Relational DB (PostgreSQL)**: Lưu trữ dữ liệu.
-- **In-memory Store (Redis)**: Caching, Rate Limiting, Idempotency keys.
+- Sinh viên đăng ký, thanh toán nếu cần và nhận QR.
+- Ban tổ chức tạo workshop và upload PDF.
+- Nhân sự check-in scan QR và sync offline queue.
+- Hệ thống tích hợp Mock Payment Gateway, Google Gemini API và nguồn CSV sinh viên từ hệ thống cũ.
+
+### Level 2 - Container
+
+Level 2 phân rã đúng các container hiện có:
+
+- Web App: Vite + React + TypeScript.
+- Mobile App: Flutter.
+- Backend API: Express + TypeScript + Prisma.
+- PostgreSQL: persistent data và row-level locking.
+- Redis: rate limiting và idempotency cache.
+- Student CSV File: input cho cron sync job.
+
+Không vẽ Message Broker trong C4 Level 2 vì code hiện tại chưa có queue runtime.
 
 ## Thiết kế cơ sở dữ liệu
 
-Sử dụng **PostgreSQL**. Lý do: Bài toán đăng ký chỗ ngồi cần tính toàn vẹn giao dịch (**ACID**) và khả năng kiểm soát tranh chấp cao. PostgreSQL hỗ trợ tốt **Row-level Locking** (`SELECT ... FOR UPDATE`), giúp ngăn chặn race conditions khi nhiều sinh viên cùng đăng ký một chỗ ngồi cuối cùng.
+Hệ thống dùng **PostgreSQL** vì registration cần tính nhất quán ACID và pessimistic locking. Prisma schema hiện tại tập trung vào các bảng cần cho workshop registration và check-in state.
 
-### Các Entity chính
+### User
 
-#### 1. User
+- `id`: UUID primary key.
+- `email`: unique email.
+- `name`: tên người dùng.
+- `role`: `STUDENT`, `ORGANIZER`, `CHECKIN_STAFF`.
+- `studentId`: unique optional field cho CSV sync.
+- `registrations`: relation đến `Registration`.
 
-Lưu trữ thông tin cơ bản của người dùng hệ thống (Sinh viên, Ban tổ chức, Nhân sự check-in).
+### Workshop
 
-- `id`: Primary Key (UUID).
-- `student_id`: Mã số sinh viên (Dùng để đồng bộ và hiển thị).
-- `full_name`: Họ và tên.
-- `email`: Email liên hệ.
-- `role`: Phân quyền (STUDENT, ORGANIZER, CHECKIN_STAFF).
+- `id`: UUID primary key.
+- `title`: tên workshop.
+- `speaker`: diễn giả.
+- `room`: phòng/tòa nhà dạng string.
+- `totalSeats`: tổng số ghế.
+- `availableSeats`: số ghế còn lại.
+- `price`: giá, `0` là miễn phí.
+- `startTime`, `endTime`: thời gian workshop.
+- `summary`: AI summary optional.
 
-#### 2. Room
+### Registration
 
-Quản lý thông tin địa điểm tổ chức.
+- `id`: UUID primary key.
+- `userId`, `workshopId`: foreign keys.
+- `qrCode`: unique QR token.
+- `status`: `PENDING`, `SUCCESS`, `FAILED`, `CHECKED_IN`.
+- Unique constraint `[userId, workshopId]` ngăn một user đăng ký trùng workshop.
 
-- `id`: Primary Key.
-- `name`: Tên phòng (ví dụ: A.102).
-- `location`: Vị trí tòa nhà/tầng.
-- `capacity`: Sức chứa tối đa của phòng.
+### IdempotencyKey
 
-#### 3. Workshop
-
-Thông tin về các buổi hội thảo.
-
-- `id`: Primary Key.
-- `title`: Tên hội thảo.
-- `speaker`: Diễn giả.
-- `room_id`: Foreign Key (Rooms).
-- `start_time`: Thời gian bắt đầu.
-- `capacity`: Tổng số ghế mở đăng ký.
-- `seats_remaining`: Số ghế còn trống (Cập nhật real-time).
-
-#### 4. Registration
-
-Thông tin đăng ký của sinh viên.
-
-- `id`: Primary Key.
-- `student_id`: Foreign Key (Users).
-- `workshop_id`: Foreign Key (Workshops).
-- `status`: Trạng thái (PENDING, CONFIRMED, CANCELLED).
-- `qr_code`: Chuỗi dữ liệu mã QR duy nhất.
-
-#### 5. Payment
-
-Thông tin thanh toán (Nếu workshop có phí).
-
-- `id`: Primary Key.
-- `registration_id`: Foreign Key (Registrations).
-- `amount`: Số tiền thanh toán.
-- `status`: Trạng thái (SUCCESS, FAILED).
-- `transaction_id`: Mã giao dịch từ cổng thanh toán.
-- `idempotency_key`: Khóa chống trùng lặp request thanh toán.
-
-#### 6. Checkin
-
-Theo dõi sự tham gia thực tế tại phòng.
-
-- `id`: Primary Key.
-- `registration_id`: Foreign Key (Registrations).
-- `checkin_time`: Thời gian quét mã QR.
-- `staff_id`: Foreign Key (Users - Nhân sự thực hiện quét).
-
-#### 7. Notification
-
-Lịch sử gửi thông báo đến người dùng.
-
-- `id`: Primary Key.
-- `user_id`: Foreign Key (Users).
-- `message`: Nội dung thông báo.
-- `type`: Loại (EMAIL, APP_PUSH).
-- `sent_at`: Thời điểm gửi.
+- `key`: primary key từ `Idempotency-Key` header.
+- `response`: JSON response string.
+- `createdAt`: thời điểm tạo.
 
 ## Thiết kế kiểm soát truy cập
 
-Hệ thống sử dụng **Role-Based Access Control (RBAC)** để quản lý quyền hạn của người dùng.
+Prisma schema đã có enum `Role`, và UI/domain chia vai trò thành:
 
-### Lý do lựa chọn
+- `STUDENT`: xem workshop và đăng ký.
+- `ORGANIZER`: tạo workshop, upload PDF, quản lý thông tin.
+- `CHECKIN_STAFF`: check-in và sync offline queue.
 
-RBAC được chọn vì tính đơn giản, dễ triển khai và bảo trì. Các vai trò trong hệ thống UniHub (Sinh viên, Ban tổ chức, Nhân sự check-in) có ranh giới quyền hạn rất rõ ràng và ít khi thay đổi theo thời gian.
+Tuy nhiên, API hiện tại **chưa implement authentication/authorization middleware**. `userId` đang được nhận từ request body trong register route với comment "In real app, userId from JWT". Bước tiếp theo nếu tiếp tục productionize là thêm JWT/session middleware và enforce role theo route.
 
-### Các vai trò (Roles)
-
-- `STUDENT`: Chỉ được quyền xem danh sách workshop (`GET /workshops`) và đăng ký tham gia (`POST /register`).
-- `ORGANIZER`: Có toàn quyền quản lý workshop (CRUD), upload tài liệu và xem thống kê.
-- `CHECKIN_STAFF`: Chỉ được quyền quét mã QR (`POST /checkin`) và đồng bộ dữ liệu check-in (`POST /sync`).
-
-### Đánh đổi (Trade-offs)
-
-- **Tính linh hoạt vs. Sự đơn giản (Flexibility vs. Simplicity)**: RBAC có thể gặp hạn chế nếu trong tương lai hệ thống cần phân quyền cực kỳ chi tiết dựa trên các điều kiện động (ví dụ: chỉ được check-in trong một khung giờ cụ thể tại một vị trí cụ thể). **Tuy nhiên**, sự đánh đổi này là chấp nhận được vì độ phức tạp tăng thêm của các mô hình khác sẽ làm chậm quá trình phát triển và tăng nguy cơ lỗi bảo mật. Khi cần, chúng ta có thể bổ sung các tầng kiểm tra logic (Logic-based checks) phía trên RBAC.
-
-### Phương án thay thế (Alternatives)
-
-- **ABAC (Attribute-Based Access Control)**: Phân quyền dựa trên thuộc tính của người dùng, tài nguyên và môi trường.
-  - **Lý do không chọn**: ABAC cung cấp khả năng kiểm soát cao nhất nhưng đi kèm với chi phí thiết kế Policy và công cụ thực thi (Policy Engine) vô cùng phức tạp. Với quy mô dự án hiện tại, ABAC là một giải pháp không mang lại lợi ích tương xứng với công sức bỏ ra.
-
-## Thiết kế các cơ chế bảo vệ hệ thống
+## Cơ chế bảo vệ hệ thống
 
 ### Kiểm soát tải đột biến
 
-Sử dụng **Token Bucket Rate Limiting** bằng Redis Lua Script. Khi 12,000 sinh viên vào cùng lúc, API sẽ giới hạn (ví dụ: 5 requests / 10s / IP). Vượt ngưỡng sẽ trả về 429 Too Many Requests, bảo vệ DB không bị sập.
+Endpoint register dùng Redis Lua token bucket. Tham số hiện tại là 5 token capacity và refill 0.5 token/giây, tương đương comment trong code: 5 requests mỗi 10 giây theo IP. Vượt ngưỡng trả `429 Too Many Requests`.
 
-- **Đánh đổi**: Ưu tiên tính ổn định của hệ thống hơn là trải nghiệm của một nhóm nhỏ người dùng bị chặn nhầm trong lúc tải cực cao.
-- **Thay thế**: _Fixed-window limiting_. Lý do không chọn: Dễ bị hiện tượng burst load tại thời điểm chuyển giao giữa các khung thời gian.
+**Trade-off:** Nếu Redis lỗi, rate limiter fail-open để giữ API khả dụng; đổi lại database có thể nhận nhiều request hơn trong thời gian Redis outage.
 
-### Xử lý cổng thanh toán không ổn định
+### Chống double submit và double charge
 
-Áp dụng **Circuit Breaker (Thư viện Opossum)**. Khi cổng thanh toán mock trả về lỗi liên tục (vượt ngưỡng 50% trong thời gian nhất định), Circuit Breaker chuyển sang trạng thái **OPEN**. Các request đăng ký mới yêu cầu thanh toán sẽ lập tức bị chặn (Fail Fast) with thông báo thân thiện mà không cần chờ timeout từ cổng thanh toán, giúp giải phóng connection cho server.
+Idempotency middleware dùng hai tầng:
 
-- **Đánh đổi**: Chấp nhận từ chối giao dịch ngay lập tức thay vì để người dùng chờ đợi vô ích và làm nghẽn tài nguyên server.
-- **Thay thế**: _Infinite retries_ với timeout lớn. Lý do không chọn: Gây ra lỗi dây chuyền (cascading failure) cho toàn bộ backend API.
+- Redis fast path với key `idempotency:{key}` và TTL 24h.
+- PostgreSQL persistent fallback bằng `IdempotencyKey`.
 
-### Chống trừ tiền hai lần
+Middleware chỉ lưu response khi status code 2xx. Request trùng key sẽ nhận lại response thành công cũ mà không tạo registration mới.
 
-Áp dụng **Idempotency Key**. Frontend sinh một mã UUID (Idempotency-Key) cho mỗi phiên đăng ký và gửi kèm trong Header.
-Backend lưu key này vào Redis (TTL 24h) and PostgreSQL. Nếu người dùng bấm liên tục tạo ra nhiều request trùng key, backend sẽ phát hiện key đã tồn tại và trả về nguyên trạng thái (response) của request đầu tiên mà không gọi lại hàm trừ tiền hay tạo vé mới.
+**Trade-off:** Cần thêm storage cho response cache, nhưng giảm rủi ro double charge/double ticket khi client retry.
 
-- **Đánh đổi**: Chấp nhận tốn thêm dung lượng lưu trữ key để đảm bảo tính toàn vẹn dữ liệu tài chính.
-- **Thay thế**: Chỉ xử lý logic ở Frontend (disable button). Lý do không chọn: Không bảo vệ được trước các lỗi mạng gây retry tự động hoặc tấn công API trực tiếp.
+### PostgreSQL locking cho ghế cuối
+
+Đăng ký workshop chạy trong transaction và lock row `Workshop` bằng `FOR UPDATE`. Vì vậy hai request tranh ghế cuối sẽ được serialize tại database. Sau khi lock, API kiểm tra `availableSeats`, unique registration, payment, rồi mới decrement seat và tạo registration.
+
+**Trade-off:** Lock row làm giảm throughput trên cùng một workshop hot, nhưng đảm bảo không overbook.
+
+### Payment circuit breaker
+
+Payment mock gateway được bọc bằng Opossum. Khi gateway lỗi liên tục, breaker open và fail fast thay vì để request treo đến timeout. Flow này chỉ ảnh hưởng workshop có phí; workshop miễn phí không gọi payment.
+
+**Trade-off:** Một số payment request có thể bị từ chối nhanh trong lúc gateway đang hồi phục, nhưng API tránh cascading failure.
+
+## Alternatives đã xem xét
+
+- **Message broker + worker riêng**: Phù hợp khi cần email, notification, retry queue và job volume lớn. Chưa được implement trong code hiện tại, nên không đưa vào C4 như một container thật.
+- **Microservices**: Chưa cần thiết cho scope hiện tại; modular monolith giúp dễ debug và giữ transaction registration đơn giản.
+- **NoSQL database cho registration**: Không phù hợp bằng PostgreSQL cho bài toán ghế cuối vì cần ACID transaction và row-level locking.
+- **Chỉ disable button ở frontend để chống double click**: Không đủ vì retry mạng/API client vẫn có thể gửi trùng. Backend idempotency vẫn là bắt buộc cho paid registration.
