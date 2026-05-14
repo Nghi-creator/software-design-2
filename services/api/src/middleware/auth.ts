@@ -1,10 +1,23 @@
 import { NextFunction, Request, Response } from 'express';
+import { verifyAccessToken } from '../services/auth';
 import { Role, Roles, roleValues } from '../types/domain';
 import { RequestWithUser } from '../types/request';
 
 const roles = new Set<string>(roleValues);
 
-export const attachUser = (req: Request, _res: Response, next: NextFunction) => {
+export const attachUser = async (req: Request, res: Response, next: NextFunction) => {
+  const authorization = req.header('authorization');
+
+  if (authorization?.startsWith('Bearer ')) {
+    try {
+      const user = await verifyAccessToken(authorization.slice('Bearer '.length));
+      (req as RequestWithUser).user = user;
+      return next();
+    } catch {
+      return res.status(401).json({ success: false, error: 'Invalid or expired token' });
+    }
+  }
+
   const id = req.header('x-user-id') ?? req.body?.userId;
   const roleHeader = req.header('x-user-role') ?? req.body?.role ?? Roles.STUDENT;
   const role = roles.has(roleHeader) ? (roleHeader as Role) : Roles.STUDENT;

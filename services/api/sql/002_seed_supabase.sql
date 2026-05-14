@@ -1,20 +1,21 @@
 begin;
 
-insert into users (id, email, name, role, student_id)
+insert into users (id, email, name, role, student_id, password_hash)
 values
-  ('11111111-1111-1111-1111-111111111111', 'mai.nguyen@student.unihub.edu', 'Mai Nguyen', 'STUDENT', 'UNI2026001'),
-  ('11111111-1111-1111-1111-111111111112', 'an.tran@student.unihub.edu', 'An Tran', 'STUDENT', 'UNI2026002'),
-  ('11111111-1111-1111-1111-111111111113', 'linh.pham@student.unihub.edu', 'Linh Pham', 'STUDENT', 'UNI2026003'),
-  ('11111111-1111-1111-1111-111111111114', 'khoa.le@student.unihub.edu', 'Khoa Le', 'STUDENT', 'UNI2026004'),
-  ('11111111-1111-1111-1111-111111111115', 'nhi.vo@student.unihub.edu', 'Nhi Vo', 'STUDENT', 'UNI2026005'),
-  ('11111111-1111-1111-1111-111111111116', 'admin@unihub.edu', 'UniHub Admin', 'ORGANIZER', null),
-  ('11111111-1111-1111-1111-111111111117', 'checkin@unihub.edu', 'Check-in Staff', 'CHECKIN_STAFF', null)
+  ('11111111-1111-1111-1111-111111111111', 'mai.nguyen@student.unihub.edu', 'Mai Nguyen', 'STUDENT', 'UNI2026001', 'scrypt$unihub-demo-salt$ii9kjjGb70tIEhkY3MICyUgzrNq_8BmBjLtDew0-C7Mr1JFmzhEd8WYWE1f_7YTUMoquYTZs5WwyibdCQnQrMw'),
+  ('11111111-1111-1111-1111-111111111112', 'an.tran@student.unihub.edu', 'An Tran', 'STUDENT', 'UNI2026002', 'scrypt$unihub-demo-salt$ii9kjjGb70tIEhkY3MICyUgzrNq_8BmBjLtDew0-C7Mr1JFmzhEd8WYWE1f_7YTUMoquYTZs5WwyibdCQnQrMw'),
+  ('11111111-1111-1111-1111-111111111113', 'linh.pham@student.unihub.edu', 'Linh Pham', 'STUDENT', 'UNI2026003', 'scrypt$unihub-demo-salt$ii9kjjGb70tIEhkY3MICyUgzrNq_8BmBjLtDew0-C7Mr1JFmzhEd8WYWE1f_7YTUMoquYTZs5WwyibdCQnQrMw'),
+  ('11111111-1111-1111-1111-111111111114', 'khoa.le@student.unihub.edu', 'Khoa Le', 'STUDENT', 'UNI2026004', 'scrypt$unihub-demo-salt$ii9kjjGb70tIEhkY3MICyUgzrNq_8BmBjLtDew0-C7Mr1JFmzhEd8WYWE1f_7YTUMoquYTZs5WwyibdCQnQrMw'),
+  ('11111111-1111-1111-1111-111111111115', 'nhi.vo@student.unihub.edu', 'Nhi Vo', 'STUDENT', 'UNI2026005', 'scrypt$unihub-demo-salt$ii9kjjGb70tIEhkY3MICyUgzrNq_8BmBjLtDew0-C7Mr1JFmzhEd8WYWE1f_7YTUMoquYTZs5WwyibdCQnQrMw'),
+  ('11111111-1111-1111-1111-111111111116', 'admin@unihub.edu', 'UniHub Admin', 'ORGANIZER', null, 'scrypt$unihub-demo-salt$ii9kjjGb70tIEhkY3MICyUgzrNq_8BmBjLtDew0-C7Mr1JFmzhEd8WYWE1f_7YTUMoquYTZs5WwyibdCQnQrMw'),
+  ('11111111-1111-1111-1111-111111111117', 'checkin@unihub.edu', 'Check-in Staff', 'CHECKIN_STAFF', null, 'scrypt$unihub-demo-salt$ii9kjjGb70tIEhkY3MICyUgzrNq_8BmBjLtDew0-C7Mr1JFmzhEd8WYWE1f_7YTUMoquYTZs5WwyibdCQnQrMw')
 on conflict (id) do update
 set
   email = excluded.email,
   name = excluded.name,
   role = excluded.role,
-  student_id = excluded.student_id;
+  student_id = excluded.student_id,
+  password_hash = excluded.password_hash;
 
 insert into rooms (id, name, location, capacity)
 values

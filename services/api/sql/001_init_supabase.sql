@@ -35,9 +35,12 @@ create table if not exists users (
   email text not null unique,
   name text not null,
   role user_role not null default 'STUDENT',
+  password_hash text,
   student_id text unique,
   created_at timestamptz not null default now()
 );
+
+alter table users add column if not exists password_hash text;
 
 create table if not exists rooms (
   id uuid primary key default gen_random_uuid(),
