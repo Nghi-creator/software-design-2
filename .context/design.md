@@ -4,7 +4,7 @@
 
 UniHub uses a layered modular monolith for core product flows, with asynchronous workers for slow or retryable tasks.
 
-- Presentation: Student web, admin web, and mobile check-in clients.
+- Presentation: one React web app with student/admin routes protected by RBAC, plus a mobile check-in client.
 - API layer: Express REST controllers, validation, authentication, and response shaping.
 - Service layer: workshop, registration, payment, check-in, notification, AI summary, and CSV import logic.
 - Repository layer: all PostgreSQL access and transactions.
@@ -14,8 +14,7 @@ Keep the backend stateless so it can scale horizontally during registration spik
 
 ## Containers
 
-- Student Web App: browse workshops, register, pay through mock gateway, display QR code.
-- Admin Web App: manage workshops, rooms, PDF resources, and registration statistics.
+- React Web App: serves both students and admins. Student routes support browsing, registration, payment, and QR display. Admin routes support workshop/room management, PDF resources, and registration statistics. Route access and visible actions must follow RBAC.
 - Mobile Check-in App: scan QR codes, support offline local queue, sync when online.
 - API Server: owns business logic, auth/RBAC, registration concurrency, payment coordination, and check-in APIs.
 - PostgreSQL: primary data store for users, rooms, workshops, registrations, payments, check-ins, and notifications.
@@ -26,7 +25,7 @@ Keep the backend stateless so it can scale horizontally during registration spik
 
 ## Communication
 
-- Web and mobile clients call the API over REST.
+- The React web app and mobile client call the API over REST.
 - Backend publishes async events to RabbitMQ when work does not need to block user-facing requests.
 - Workers consume queue messages and retry transient failures where appropriate.
 - Mobile check-in stores scans locally when offline and syncs batches after connectivity returns.

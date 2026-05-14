@@ -17,3 +17,9 @@
 ### 2026-05-07: Circuit Breaker for Payments
 - **Decision**: Use Opossum for payment gateway integration.
 - **Reason**: Prevent cascading failures when external payment mocks are unstable.
+
+## Frontend
+
+### 2026-05-14: Single React Web App with RBAC
+- **Decision**: Use one React web app for both students and admins, with RBAC-protected routes and actions.
+- **Reason**: Avoid duplicated frontend shells while keeping permissions centralized and explicit.
