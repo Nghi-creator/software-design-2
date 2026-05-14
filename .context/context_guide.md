@@ -1,249 +1,51 @@
-# `project_brief.md`
-
-Ultra-short project summary. Fast context reload for new convo/agent.
-
-Contains:
-
-```text
-goal
-core features
-stack
-architecture style
-major constraints
-```
-
-Example:
-
-```text
-UniHub Workshop system.
-
-Stack:
-React
-NestJS
-PostgreSQL
-Redis
-
-Features:
-registration
-payment
-offline QR check-in
-CSV sync
-AI summaries
-```
-
----
-
-# `original_requirements.md`
-
-Full and original requirements. Used for when project brief needs more context.
-
----
-
-# `design.md`
-
-Whole-system architecture + technical decisions.
-
-Main “how system works” document.
-
-Contains:
-
-```text
-architecture style
-system components
-communication flow
-C4 diagrams
-high-level architecture
-load protection
-circuit breaker
-offline sync strategy
-```
-
-This replaces:
-
-```text
-architecture.md
-system_design.md
-```
-
----
-
-# `data_models.md`
-
-Database schema reference.
-
-Single source of truth for entities.
-
-Contains:
-
-```text
-tables
-fields
-relationships
-indexes
-constraints
-```
-
-Example:
-
-```text
-Workshop
-User
-Registration
-Payment
-Checkin
-```
-
-Include:
-
-```text
-ERD
-SQL/NoSQL justification
-```
-
----
-
-# `api_spec.md`
-
-Frontend/backend contract.
-
-Prevents hallucinated APIs.
-
-Contains:
-
-```text
-endpoints
-request body
-response body
-errors
-auth requirements
-```
-
-Example:
-
-```text
-POST /workshops/:id/register
-```
-
----
-
-# `coding_rules.md`
-
-AI + team coding standards.
-
-Very important for agentic dev.
-
-Contains:
-
-```text
-folder structure
-naming conventions
-architecture rules
-state management rules
-service boundaries
-```
-
-Example:
-
-```text
-controllers thin
-business logic in services
-repositories own DB access
-```
-
----
-
-# `roadmap.md`
-
-Build order.
-
-Prevents random feature hopping.
-
-Contains:
-
-```text
-phases
-milestones
-priorities
-dependencies
-```
-
-Example:
-
-```text
-Phase 1
-auth
-database
-basic CRUD
-
-Phase 2
-registration concurrency
-```
-
----
-
-# `progress.md`
-
-Current implementation state.
-
-Most frequently updated file.
-
-Contains:
-
-```text
-completed
-in progress
-blocked
-next tasks
-known bugs
-```
-
-Example:
-
-```text
-completed:
-JWT auth
-workshop CRUD
-
-in progress:
-seat reservation locking
-```
-
----
-
-# `decisions.md`
-
-Architecture decision log.
-
-Prevents re-debating old choices.
-
-Contains:
-
-```text
-decision
-date
-reason
-tradeoffs
-```
-
-Example:
-
-```text
-Use Redis for seat locking.
-Reason:
-fast atomic operations.
-```
-
----
-
-# File usage
-
-| File               | Create when                         | Update when                                | Read when                           |
-| ------------------ | ----------------------------------- | ------------------------------------------ | ----------------------------------- |
-| `project_brief.md` | first                               | major scope/stack changes                  | every new convo                     |
-| `design.md`        | first                               | architecture/diagram/tech decision changes | before architecture/backend work    |
-| `data_models.md`   | before DB schema                    | schema changes/migration                   | before DB/API work                  |
-| `api_spec.md`      | before frontend/backend integration | endpoint changes                           | before frontend/backend/mobile work |
-| `coding_rules.md`  | after choosing stack                | pattern/lint/folder rules change           | before coding in new convo          |
-| `roadmap.md`       | first                               | phase/order changes                        | when choosing next task             |
-| `progress.md`      | first                               | after finished task/milestone              | every new convo                     |
-| `decisions.md`     | first                               | every non-obvious decision                 | when agent questions old choices    |
+# Context Guide
+
+This folder is the lightweight memory pack for future agents. Keep files short, factual, and current. Prefer links between files over repeating the same details.
+
+## Read Order
+
+For a new conversation, read:
+
+1. `project_brief.md` for scope, stack, and core features.
+2. `progress.md` for current state and next task.
+3. `coding_rules.md` before changing code.
+
+Then read only what the task needs:
+
+| Task type | Read these files |
+| --- | --- |
+| Architecture/backend design | `design.md`, `decisions.md` |
+| Database/schema work | `data_models.md`, `design.md` |
+| API/frontend/mobile integration | `api_spec.md`, related file in `specs/` |
+| Payment flow | `specs/payment.md`, `api_spec.md`, `decisions.md` |
+| Offline check-in | `specs/checkin.md`, `api_spec.md`, `data_models.md` |
+| Planning/prioritization | `roadmap.md`, `progress.md` |
+
+## File Roles
+
+- `project_brief.md`: concise product summary, stack, and must-have features.
+- `original_requirements.md`: full assignment requirements; read when details are missing elsewhere.
+- `design.md`: system architecture, component responsibilities, communication flows, and reliability patterns.
+- `data_models.md`: entity and relationship source of truth.
+- `api_spec.md`: frontend/backend contract. If empty or marked incomplete, do not invent endpoints silently.
+- `coding_rules.md`: implementation standards and agent behavior rules.
+- `roadmap.md`: planned build order.
+- `progress.md`: completed work, current work, blockers, next steps.
+- `decisions.md`: accepted technical decisions and important tradeoffs.
+- `specs/`: focused flow specs for complex features.
+
+## Maintenance Rules
+
+- Update `progress.md` after each meaningful milestone.
+- Update `api_spec.md` before wiring frontend/mobile to backend endpoints.
+- Update `data_models.md` when schema, fields, indexes, or relationships change.
+- Update `design.md` only for architecture-level changes.
+- Add to `decisions.md` only for non-obvious decisions that future agents might re-debate.
+- Add a new file under `specs/` only when a feature flow is complex enough that it would bloat another document.
+
+## Context Budget
+
+- Keep `project_brief.md`, `progress.md`, and `roadmap.md` under about 1 page each.
+- Avoid copying full requirements into other files.
+- Put implementation details in code, not context docs, unless agents need the rule before coding.
+- Remove stale plans once implementation reality differs from them.
