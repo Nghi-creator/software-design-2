@@ -106,6 +106,18 @@ Notes:
 ## Check-In
 
 ```text
+GET /api/checkin/qr/:registrationId
+Auth: STUDENT, ORGANIZER, CHECKIN_STAFF
+Response: { success: true, qr: { registrationId, workshopId, workshopTitle, qrCode } }
+Errors: 401, 403, 404, 409, 500
+Notes:
+- Students may retrieve only their own registration QR.
+- ORGANIZER and CHECKIN_STAFF may retrieve any confirmed registration QR for operational use.
+- Only CONFIRMED registrations can retrieve a QR token; PENDING/CANCELLED registrations return 409.
+- Clients render the QR image from the stored Registration.qr_code token.
+```
+
+```text
 POST /api/checkin
 Auth: CHECKIN_STAFF
 Request: { qrCode }
@@ -127,7 +139,7 @@ Notes: item statuses include checked_in, already_checked_in, invalid, failed.
 ## Still Undefined
 
 - Student workshop browsing/search pagination params.
-- QR code retrieval/validation endpoint separate from check-in.
+- QR validation endpoint separate from check-in.
 - Admin statistics.
 - PDF upload status and async AI summary status.
 - Legacy CSV import status endpoint.
