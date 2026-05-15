@@ -27,11 +27,11 @@ This is Person A's local Codex tracker. Use it to keep workshop/admin/PDF work f
 
 ## Active Task
 
-- PDF/AI summary status endpoint.
+- None.
 
 ## Upcoming
 
-- [ ] PDF/AI summary status endpoint
+- [x] PDF/AI summary status endpoint
 
 ## Done Locally
 
@@ -41,3 +41,5 @@ This is Person A's local Codex tracker. Use it to keep workshop/admin/PDF work f
   - Moved workshop persistence into `services/api/src/repositories/workshopRepository.ts`.
 - [x] Admin statistics endpoint
   - Added organizer-only workshop stats with capacity, seats remaining, registration counts by status, checked-in count, successful payment count, and integration coverage.
+- [x] PDF/AI summary status endpoint
+  - Added organizer-only workshop summary status with truthful `not_uploaded` / `ready` states based on current synchronous summary behavior and integration coverage.

@@ -115,6 +115,17 @@ Errors: 401, 403, 404, 500
 Notes: successfulPaymentCount is the count of SUCCESS payments linked to the workshop's registrations.
 ```
 
+```text
+GET /api/workshops/:id/summary-status
+Auth: ORGANIZER
+Response: { workshopId, status, pdfUrl }
+Errors: 401, 403, 404, 500
+Notes:
+- status is `not_uploaded` when no PDF is linked to the workshop.
+- status is `ready` when an AI summary already exists.
+- The current implementation summarizes uploaded PDFs synchronously, so `processing` and `failed` are reserved for a future async pipeline and are not emitted yet.
+```
+
 ## Registration And Payment
 
 ```text
@@ -166,5 +177,4 @@ Notes: item statuses include checked_in, already_checked_in, invalid, failed.
 ## Still Undefined
 
 - QR validation endpoint separate from check-in.
-- PDF upload status and async AI summary status.
 - Legacy CSV import status endpoint.
