@@ -1,23 +1,11 @@
-import { query } from '../lib/db';
+import { Pagination, SortOrder } from '../lib/listQuery';
 import {
-  PaginatedResult,
-  Pagination,
-  SortOrder,
-  toPaginatedResult
-} from '../lib/listQuery';
-
-type RoomInput = {
-  name: string;
-  location: string;
-  capacity: number;
-};
-
-type Room = {
-  id: string;
-  name: string;
-  location: string;
-  capacity: number;
-};
+  createRoom as createRoomRecord,
+  deleteRoom as deleteRoomRecord,
+  findRooms,
+  RoomInput,
+  updateRoom as updateRoomRecord
+} from '../repositories/roomRepository';
 
 type ListRoomsOptions = {
   q?: string;
@@ -43,61 +31,11 @@ export const listRooms = async ({
   sortBy,
   sortOrder,
   pagination
-}: ListRoomsOptions): Promise<PaginatedResult<Room>> => {
+}: ListRoomsOptions) => {
   validateCapacityRange(minCapacity, maxCapacity);
-
-  const values: unknown[] = [];
-  const filters: string[] = [];
-
-  if (q) {
-    values.push(`%${q}%`);
-    filters.push(`(name ilike $${values.length} or location ilike $${values.length})`);
-  }
-
-  if (location) {
-    values.push(location);
-    filters.push(`location ilike $${values.length}`);
-  }
-
-  if (minCapacity !== undefined) {
-    values.push(minCapacity);
-    filters.push(`capacity >= $${values.length}`);
-  }
-
-  if (maxCapacity !== undefined) {
-    values.push(maxCapacity);
-    filters.push(`capacity <= $${values.length}`);
-  }
-
-  const whereClause = filters.length > 0 ? `where ${filters.join(' and ')}` : '';
   const orderBy = resolveRoomSortColumn(sortBy);
-  const offset = (pagination.page - 1) * pagination.pageSize;
 
-  values.push(pagination.pageSize, offset);
-
-  const [itemsResult, countResult] = await Promise.all([
-    query<Room>(
-      `
-        select id, name, location, capacity
-        from rooms
-        ${whereClause}
-        order by ${orderBy} ${sortOrder}
-        limit $${values.length - 1}
-        offset $${values.length}
-      `,
-      values
-    ),
-    query<{ totalItems: string }>(
-      `
-        select count(*)::text as "totalItems"
-        from rooms
-        ${whereClause}
-      `,
-      values.slice(0, -2)
-    )
-  ]);
-
-  return toPaginatedResult(itemsResult.rows, Number(countResult.rows[0].totalItems), pagination);
+  return findRooms({ q, location, minCapacity, maxCapacity, sortBy: orderBy, sortOrder, pagination });
 };
 
 const resolveRoomSortColumn = (sortBy?: string) => {
@@ -129,30 +67,23 @@ const validateCapacityRange = (minCapacity?: number, maxCapacity?: number) => {
 };
 
 export const createRoom = ({ name, location, capacity }: RoomInput) => {
-  return query<Room>(
-    'insert into rooms (name, location, capacity) values ($1, $2, $3) returning id, name, location, capacity',
-    [name, location, capacity]
-  ).then((result) => result.rows[0]);
+  return createRoomRecord({ name, location, capacity });
 };
 
-export const updateRoom = (id: string, { name, location, capacity }: RoomInput) => {
-  return query<Room>(
-    'update rooms set name = $2, location = $3, capacity = $4 where id = $1 returning id, name, location, capacity',
-    [id, name, location, capacity]
-  ).then((result) => {
-    if (!result.rows[0]) {
-      throw new Error('Room not found');
-    }
+export const updateRoom = async (id: string, { name, location, capacity }: RoomInput) => {
+  const room = await updateRoomRecord(id, { name, location, capacity });
 
-    return result.rows[0];
-  });
+  if (!room) {
+    throw new Error('Room not found');
+  }
+
+  return room;
 };
 
-export const deleteRoom = (id: string) => {
-  return query<{ id: string }>('delete from rooms where id = $1 returning id', [id])
-    .then((result) => {
-      if (!result.rows[0]) {
-        throw new Error('Room not found');
-      }
-    });
+export const deleteRoom = async (id: string) => {
+  const wasDeleted = await deleteRoomRecord(id);
+
+  if (!wasDeleted) {
+    throw new Error('Room not found');
+  }
 };
