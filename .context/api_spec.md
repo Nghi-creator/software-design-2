@@ -179,7 +179,7 @@ POST /api/checkin
 Auth: CHECKIN_STAFF
 Request: { qrCode }
 Response: { success: true, result: { status, registrationId } }
-Errors: 401, 403, 404, 500
+Errors: 400, 401, 403, 404, 500
 Notes: sets Registration.checkedInAt and creates Checkin(source=ONLINE).
 ```
 
@@ -190,7 +190,7 @@ Request: { items: [{ localId?, qrCode, scannedAt? }] }
 Response: { success: true, results: [{ localId?, qrCode, status, registrationId? }] }
 Compatibility: { qrCodes: string[] } is accepted and converted to items.
 Errors: 400, 401, 403, 500
-Notes: item statuses include checked_in, already_checked_in, invalid, failed.
+Notes: item statuses include checked_in, already_checked_in, invalid, failed. Invalid payload shape, missing qrCode, non-string localId, and invalid scannedAt values return 400 before sync runs.
 ```
 
 ## CSV Imports
@@ -206,6 +206,8 @@ Notes: returns the most recent legacy student CSV import job, including source, 
 ```text
 GET /api/imports/csv/:id/errors
 Auth: ORGANIZER
+Params:
+- id: CSV import job UUID
 Query:
 - limit?: positive integer up to 500 (default 50)
 - offset?: non-negative integer (default 0)

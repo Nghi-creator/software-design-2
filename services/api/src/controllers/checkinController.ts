@@ -32,15 +32,9 @@ export const postCheckin = async (req: Request, res: Response) => {
 };
 
 export const postCheckinSync = async (req: Request, res: Response) => {
-  const items = req.body.items ?? req.body.qrCodes?.map((qrCode: string) => ({ qrCode }));
-
-  if (!Array.isArray(items)) {
-    return res.status(400).json({ success: false, error: 'Invalid payload' });
-  }
-
   try {
     const user = getRequestUser(req);
-    const results = await syncOfflineCheckins(items, user.id);
+    const results = await syncOfflineCheckins(req.body.items, user.id);
     res.json({ success: true, results });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });

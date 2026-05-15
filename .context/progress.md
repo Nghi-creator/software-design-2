@@ -24,12 +24,13 @@
 - **Repository Layer Pass**: Moved service-layer SQL for auth, room, workshop, registration, and check-in flows into dedicated repository modules.
 - **DI/Test Merge Resolution**: Preserved repository-layer registration/check-in logic while keeping centralized DI hooks in `services/api/src/di.ts` for idempotency and offline sync tests.
 - **CSV Import Status/Error Reporting**: Added `csv_import_jobs` and `csv_import_errors`, refactored legacy student CSV sync through import service/repository code, exposed organizer status/error endpoints, and added partial-failure tests.
+- **Check-In/Import Request Validation**: Added lightweight route middleware for UUID params, online check-in QR payloads, offline sync item payloads, and CSV import error pagination, with focused middleware tests.
 
 ## In Progress
 - Backend deploy-first work remains focused on `services/`; `apps/` has not been touched yet.
-- API contract still partial; request validation and QR validation remain undefined. Supabase SQL schema must be applied manually per environment.
+- API contract still partial; QR validation remains undefined. Supabase SQL schema must be applied manually per environment.
 
 ## Next Steps
 - Add remaining API endpoints from `api_spec.md` Still Undefined section.
-- Person B next task is request validation for check-in/import endpoints; QR validation is back in upcoming pending team decision.
+- Person B next task is opt-in real Postgres/Redis integration test scaffolding; QR validation remains upcoming pending team decision.
 - Add integration tests that exercise real Postgres/Redis once backend deployment configuration is settled.
