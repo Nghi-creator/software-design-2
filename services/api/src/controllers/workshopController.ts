@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { createWorkshop, listWorkshops } from '../services/workshop';
+import { createWorkshop, getWorkshopStats, listWorkshops } from '../services/workshop';
 import { registerForWorkshop } from '../services/registration';
 import { getRequestUser } from '../types/request';
 import { parseWorkshopListQuery } from '../lib/browseQuery';
@@ -49,6 +49,16 @@ export const postWorkshopRegistration = async (req: Request, res: Response) => {
     });
 
     res.json({ success: true, registration });
+  } catch (error: any) {
+    res.status(error.statusCode ?? 500).json({ success: false, error: error.message });
+  }
+};
+
+export const getWorkshopStatistics = async (req: Request, res: Response) => {
+  try {
+    const stats = await getWorkshopStats(req.params.id as string);
+
+    res.json(stats);
   } catch (error: any) {
     res.status(error.statusCode ?? 500).json({ success: false, error: error.message });
   }

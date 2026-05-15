@@ -27,11 +27,10 @@ This is Person A's local Codex tracker. Use it to keep workshop/admin/PDF work f
 
 ## Active Task
 
-- None currently.
+- PDF/AI summary status endpoint.
 
 ## Upcoming
 
-- [ ] Admin statistics endpoint
 - [ ] PDF/AI summary status endpoint
 
 ## Done Locally
@@ -40,3 +39,5 @@ This is Person A's local Codex tracker. Use it to keep workshop/admin/PDF work f
   - Added documented filters/sorts/pagination, bounded `pageSize`, `400` handling for invalid params, and automated coverage for defaults plus invalid input.
 - [x] Workshop-side repository extraction
   - Moved workshop persistence into `services/api/src/repositories/workshopRepository.ts`.
+- [x] Admin statistics endpoint
+  - Added organizer-only workshop stats with capacity, seats remaining, registration counts by status, checked-in count, successful payment count, and integration coverage.

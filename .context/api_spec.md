@@ -100,6 +100,21 @@ Errors: 401, 403, 400
 Notes: uploaded PDF is summarized synchronously into aiSummary for now.
 ```
 
+```text
+GET /api/workshops/:id/stats
+Auth: ORGANIZER
+Response: {
+  workshopId,
+  capacity,
+  seatsRemaining,
+  registrations: { pending, confirmed, cancelled },
+  checkedInCount,
+  successfulPaymentCount
+}
+Errors: 401, 403, 404, 500
+Notes: successfulPaymentCount is the count of SUCCESS payments linked to the workshop's registrations.
+```
+
 ## Registration And Payment
 
 ```text
@@ -151,6 +166,5 @@ Notes: item statuses include checked_in, already_checked_in, invalid, failed.
 ## Still Undefined
 
 - QR validation endpoint separate from check-in.
-- Admin statistics.
 - PDF upload status and async AI summary status.
 - Legacy CSV import status endpoint.
