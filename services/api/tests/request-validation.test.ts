@@ -67,6 +67,15 @@ test('CSV import error query validation rejects invalid pagination', () => {
   });
 });
 
+test('CSV import error query validation stores parsed pagination', () => {
+  const { res, nextCalled } = runMiddleware(validateCsvImportErrorQuery, {
+    query: { limit: '25', offset: '10' }
+  });
+
+  assert.equal(nextCalled(), true);
+  assert.deepEqual(res.locals.csvImportErrorPagination, { limit: 25, offset: 10 });
+});
+
 const runMiddleware = (
   middleware: (req: Request, res: Response, next: () => void) => unknown,
   request: Partial<Request>
@@ -76,6 +85,7 @@ const runMiddleware = (
   const res = {
     statusCode: undefined as number | undefined,
     body: undefined as unknown,
+    locals: {} as Record<string, unknown>,
     status(code: number) {
       this.statusCode = code;
       return this;

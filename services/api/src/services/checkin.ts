@@ -120,7 +120,7 @@ const checkInOne = async (
 
   const checkinTime = scannedAt ? new Date(scannedAt) : new Date();
 
-  await createCheckinIfPending(
+  const wasCheckedIn = await createCheckinIfPending(
     {
       registrationId: registration.id,
       staffId,
@@ -130,5 +130,5 @@ const checkInOne = async (
     dependencies
   );
 
-  return { status: 'checked_in', registrationId: registration.id };
+  return { status: wasCheckedIn ? 'checked_in' : 'already_checked_in', registrationId: registration.id };
 };

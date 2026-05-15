@@ -54,7 +54,7 @@ export const rateLimiter = (capacity: number, refillRate: number) => {
       if (allowed === 1) {
         next();
       } else {
-        res.status(429).json({ error: 'Too Many Requests' });
+        res.status(429).json({ success: false, error: 'Too Many Requests' });
       }
     } catch (error) {
       console.error('Rate Limiter Error:', error);

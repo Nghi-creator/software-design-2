@@ -121,6 +121,8 @@ export const createWorkshop = async ({
   pdfUrl,
   pdfBuffer
 }: CreateWorkshopInput) => {
+  validateWorkshopInput({ title, speaker, roomId, capacity, price, startTime });
+
   const aiSummary = pdfBuffer ? await generateWorkshopSummary(pdfBuffer) : null;
 
   return createWorkshopRecord({
@@ -161,7 +163,7 @@ export const updateWorkshop = async (
     seatsRemaining: capacity - reservedSeatCount,
     price: price ?? 0,
     startTime: new Date(startTime),
-    pdfUrl
+    pdfUrl: pdfUrl === undefined ? currentWorkshop.pdfUrl : pdfUrl
   });
 };
 
@@ -203,7 +205,7 @@ export const getWorkshopSummaryStatus = async (workshopId: string) => {
 
   return {
     workshopId: workshop.id,
-    status: workshop.pdfUrl && workshop.aiSummary ? 'ready' : 'not_uploaded',
+    status: !workshop.pdfUrl ? 'not_uploaded' : workshop.aiSummary ? 'ready' : 'processing',
     pdfUrl: workshop.pdfUrl
   };
 };

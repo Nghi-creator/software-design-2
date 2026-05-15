@@ -52,14 +52,18 @@ export const validateCheckinSyncPayload = (req: Request, res: Response, next: Ne
 };
 
 export const validateCsvImportErrorQuery = (req: Request, res: Response, next: NextFunction) => {
-  if (!isOptionalBoundedInteger(req.query.limit, 1, 500)) {
+  const limit = parseOptionalBoundedInteger(req.query.limit, 50, 1, 500);
+  const offset = parseOptionalBoundedInteger(req.query.offset, 0, 0, Number.MAX_SAFE_INTEGER);
+
+  if (limit === null) {
     return validationError(res, 'limit must be an integer from 1 to 500');
   }
 
-  if (!isOptionalBoundedInteger(req.query.offset, 0, Number.MAX_SAFE_INTEGER)) {
+  if (offset === null) {
     return validationError(res, 'offset must be a non-negative integer');
   }
 
+  res.locals.csvImportErrorPagination = { limit, offset };
   next();
 };
 
@@ -87,17 +91,17 @@ const isValidDateString = (value: unknown) => {
   return typeof value === 'string' && !Number.isNaN(Date.parse(value));
 };
 
-const isOptionalBoundedInteger = (value: unknown, min: number, max: number) => {
+const parseOptionalBoundedInteger = (value: unknown, defaultValue: number, min: number, max: number) => {
   if (value === undefined) {
-    return true;
+    return defaultValue;
   }
 
   if (typeof value !== 'string' || !/^\d+$/.test(value)) {
-    return false;
+    return null;
   }
 
   const parsed = Number(value);
-  return parsed >= min && parsed <= max;
+  return parsed >= min && parsed <= max ? parsed : null;
 };
 
 const validationError = (res: Response, error: string) => {
