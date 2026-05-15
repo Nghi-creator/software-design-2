@@ -28,17 +28,20 @@ This is Person B's local Codex tracker. Use it to keep check-in/import/integrati
 
 ## Active Task
 
-- [ ] QR validation endpoint separate from check-in
-  - Files expected: `routes/checkin.ts`, `controllers/checkinController.ts`, `services/checkin.ts`, check-in repository/test files
-  - Acceptance: validates without mutating check-in state; tests cover valid, already checked-in, cancelled/pending, and unknown QR behavior
+- [ ] Request validation pattern for check-in/import endpoints
 
 ## Upcoming
 
-- [ ] CSV import status and error reporting
-- [ ] Request validation pattern for check-in/import endpoints
+- [ ] QR validation endpoint separate from check-in
+  - Files expected: `routes/checkin.ts`, `controllers/checkinController.ts`, `services/checkin.ts`, check-in repository/test files
+  - Acceptance: validates without mutating check-in state; tests cover valid, already checked-in, cancelled/pending, and unknown QR behavior
 - [ ] Opt-in real Postgres/Redis integration test scaffolding
 - [ ] Check-in/import repository extraction
 
 ## Done Locally
 
-- None yet.
+- [x] CSV import status and error reporting
+  - Added `csv_import_jobs` and `csv_import_errors` schema.
+  - Refactored cron CSV sync through `services/importStatus.ts` and `repositories/importRepository.ts`.
+  - Added organizer endpoints `GET /api/imports/csv/latest` and `GET /api/imports/csv/:id/errors`.
+  - Added partial-failure coverage in `services/api/tests/csv-import-status.test.ts`.

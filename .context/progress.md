@@ -16,12 +16,14 @@
 - **Browse Query Support**: Added filtering, sorting, and paginated list responses for room and workshop browse endpoints.
 - **Repository Layer Pass**: Moved service-layer SQL for auth, room, workshop, registration, and check-in flows into dedicated repository modules.
 - **DI/Test Merge Resolution**: Preserved repository-layer registration/check-in logic while keeping centralized DI hooks in `services/api/src/di.ts` for idempotency and offline sync tests.
+- **CSV Import Status/Error Reporting**: Added `csv_import_jobs` and `csv_import_errors`, refactored legacy student CSV sync through import service/repository code, exposed organizer status/error endpoints, and added partial-failure tests.
 
 ## In Progress
 - Backend deploy-first work remains focused on `services/`; `apps/` has not been touched yet.
-- API contract still partial; request validation, admin stats, QR validation, async upload/summary status, and CSV import status endpoints remain undefined. Supabase SQL schema must be applied manually per environment.
+- API contract still partial; request validation, admin stats, QR validation, and async upload/summary status remain undefined. Supabase SQL schema must be applied manually per environment.
 
 ## Next Steps
 - Add remaining API endpoints from `api_spec.md` Still Undefined section.
+- Person B next task is request validation for check-in/import endpoints; QR validation is back in upcoming pending team decision.
 - Add integration tests that exercise real Postgres/Redis once backend deployment configuration is settled.
 - Continue repository extraction for any remaining service-layer direct DB calls to match `coding_rules.md`.
