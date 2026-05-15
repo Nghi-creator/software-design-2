@@ -15,6 +15,7 @@
 - **Backend Idempotency Tests**: Added `services/api` Node test runner coverage for registration/payment idempotency middleware replay, duplicate in-progress requests, cancelled-registration retry, idempotent seat release, and offline check-in sync duplicate handling. Run with `npm test` from `services/api`.
 - **Auth Middleware Tests**: Added `services/api` coverage for bearer-only identity handling, authentication gating, and RBAC allow/deny behavior in `auth-middleware.test.ts`.
 - **Bearer-Only Auth**: Removed legacy `x-user-id` / `x-user-role` identity injection so protected routes now require valid bearer-token authentication.
+- **Auth Route Integration Tests**: Added live HTTP coverage for `/api/auth/me`, invalid bearer tokens, ignored legacy headers, and protected-route 401/403 responses.
 - **Browse Query Support**: Added filtering, sorting, and paginated list responses for room and workshop browse endpoints, with automated coverage for defaults and invalid params.
 - **Repository Layer Pass**: Moved service-layer SQL for auth, room, workshop, registration, and check-in flows into dedicated repository modules.
 - **DI/Test Merge Resolution**: Preserved repository-layer registration/check-in logic while keeping centralized DI hooks in `services/api/src/di.ts` for idempotency and offline sync tests.
