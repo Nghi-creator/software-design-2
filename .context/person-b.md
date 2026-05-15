@@ -15,7 +15,7 @@ This is Person B's local Codex tracker. Use it to keep check-in/import/integrati
 - `services/api/src/services/checkin.ts`
 - `services/api/src/jobs/csvSync.ts`
 - New import route/controller/service files
-- CSV import job/error schema in `services/api/sql/001_init_supabase.sql` and seed updates in `002_seed_supabase.sql`
+- CSV import job/error schema in `supabase/migrations/*csv_process.sql`
 - Tests named like `services/api/tests/checkin-*.test.ts`, `csv-import-*.test.ts`, and integration tests
 
 ## Avoid
@@ -28,13 +28,11 @@ This is Person B's local Codex tracker. Use it to keep check-in/import/integrati
 
 ## Active Task
 
-- [ ] Check-in/import repository extraction
+- None.
 
 ## Upcoming
 
-- [ ] QR validation endpoint separate from check-in
-  - Files expected: `routes/checkin.ts`, `controllers/checkinController.ts`, `services/checkin.ts`, check-in repository/test files
-  - Acceptance: validates without mutating check-in state; tests cover valid, already checked-in, cancelled/pending, and unknown QR behavior
+- None.
 
 ## Done Locally
 
@@ -51,3 +49,7 @@ This is Person B's local Codex tracker. Use it to keep check-in/import/integrati
   - Added `services/api/tests/real-services.integration.test.ts`.
   - Normal `npm test` skips real-service checks unless `RUN_INTEGRATION_TESTS=true`, `DATABASE_URL`, and `REDIS_URL` are set.
   - Covers registration/payment idempotency with real Postgres/Redis and offline check-in sync idempotency with real Postgres.
+- [x] Check-in/import repository extraction
+  - Routed check-in QR retrieval through `CheckinDependencies` instead of direct DB imports.
+  - Confirmed check-in/import services and controllers do not call database APIs directly.
+  - Added `services/api/tests/checkin-qr.test.ts` to cover injected repository access and authorization.

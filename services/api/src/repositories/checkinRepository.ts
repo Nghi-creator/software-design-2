@@ -1,16 +1,11 @@
 import { CheckinDependencies, checkinDependencies } from '../di';
-import { query } from '../lib/db';
 import { CheckinSource } from '../types/domain';
 
-export const findRegistrationQrById = async (registrationId: string) => {
-  const result = await query<{
-    id: string;
-    userId: string;
-    workshopId: string;
-    workshopTitle: string;
-    qrCode: string;
-    status: string;
-  }>(
+export const findRegistrationQrById = async (
+  registrationId: string,
+  dependencies: CheckinDependencies = checkinDependencies
+) => {
+  const result = await dependencies.query(
     `
       select
         r.id,
@@ -26,7 +21,14 @@ export const findRegistrationQrById = async (registrationId: string) => {
     [registrationId]
   );
 
-  return result.rows[0] ?? null;
+  return (result.rows[0] as {
+    id: string;
+    userId: string;
+    workshopId: string;
+    workshopTitle: string;
+    qrCode: string;
+    status: string;
+  } | undefined) ?? null;
 };
 
 export const findRegistrationForCheckin = async (

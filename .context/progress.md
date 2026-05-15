@@ -26,6 +26,7 @@
 - **CSV Import Status/Error Reporting**: Added `csv_import_jobs` and `csv_import_errors`, refactored legacy student CSV sync through import service/repository code, exposed organizer status/error endpoints, and added partial-failure tests.
 - **Check-In/Import Request Validation**: Added lightweight route middleware for UUID params, online check-in QR payloads, offline sync item payloads, and CSV import error pagination, with focused middleware tests.
 - **Opt-In Real-Service Integration Scaffolding**: Added skipped-by-default Postgres/Redis integration tests for registration/payment idempotency and offline check-in sync. Run with `RUN_INTEGRATION_TESTS=true DATABASE_URL=... REDIS_URL=... npm test`.
+- **Check-In/Import Repository Extraction**: Check-in QR retrieval, online/offline check-in, and CSV import status/error flows now keep DB access in repository modules with dependencies supplied through `di.ts`.
 
 ## In Progress
 - Backend deploy-first work remains focused on `services/`; `apps/` has not been touched yet.
@@ -33,4 +34,4 @@
 
 ## Next Steps
 - Add remaining API endpoints from `api_spec.md` Still Undefined section.
-- Person B next task is check-in/import repository extraction; QR validation remains upcoming pending team decision.
+- Person B has no active backend task left except QR validation, which remains upcoming pending team decision.

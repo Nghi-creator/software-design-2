@@ -12,8 +12,12 @@ export type SyncItem = {
   scannedAt?: string;
 };
 
-export const checkInOnline = async (qrCode: string, staffId: string) => {
-  return checkInOne({ qrCode, staffId, source: 'ONLINE' });
+export const checkInOnline = async (
+  qrCode: string,
+  staffId: string,
+  dependencies: CheckinDependencies = checkinDependencies
+) => {
+  return checkInOne({ qrCode, staffId, source: 'ONLINE' }, dependencies);
 };
 
 export const generateRegistrationQr = async ({
@@ -24,8 +28,8 @@ export const generateRegistrationQr = async ({
   registrationId: string;
   requesterId: string;
   requesterRole: Role;
-}) => {
-  const registration = await findRegistrationQrById(registrationId);
+}, dependencies: CheckinDependencies = checkinDependencies) => {
+  const registration = await findRegistrationQrById(registrationId, dependencies);
 
   if (!registration) {
     throw Object.assign(new Error('Registration not found'), { statusCode: 404 });
