@@ -8,9 +8,13 @@ export const startCsvSyncJob = () => {
     console.log('Starting CSV Sync Job...');
     const filePath = path.join(__dirname, '../../data/students.csv');
 
-    const job = await runCsvImportFromFile(filePath);
-    console.log(
-      `CSV Sync Completed. Status: ${job.status}. Success: ${job.successCount}, Errors: ${job.errorCount}`
-    );
+    try {
+      const job = await runCsvImportFromFile(filePath);
+      console.log(
+        `CSV Sync Completed. Status: ${job.status}. Success: ${job.successCount}, Errors: ${job.errorCount}`
+      );
+    } catch (error) {
+      console.error('CSV Sync Job Failed:', error);
+    }
   });
 };
