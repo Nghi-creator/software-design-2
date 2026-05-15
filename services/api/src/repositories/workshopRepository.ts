@@ -47,7 +47,7 @@ export type WorkshopUpdateInput = {
   seatsRemaining: number;
   price: number;
   startTime: Date;
-  pdfUrl?: string;
+  pdfUrl?: string | null;
 };
 
 export const findWorkshops = async ({
