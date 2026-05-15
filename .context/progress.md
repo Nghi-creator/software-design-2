@@ -15,7 +15,7 @@
 - **Backend Idempotency Tests**: Added `services/api` Node test runner coverage for registration/payment idempotency middleware replay, duplicate in-progress requests, cancelled-registration retry, idempotent seat release, and offline check-in sync duplicate handling. Run with `npm test` from `services/api`.
 - **Auth Middleware Tests**: Added `services/api` coverage for bearer-only identity handling, authentication gating, and RBAC allow/deny behavior in `auth-middleware.test.ts`.
 - **Bearer-Only Auth**: Removed legacy `x-user-id` / `x-user-role` identity injection so protected routes now require valid bearer-token authentication.
-- **Auth Route Integration Tests**: Added live HTTP coverage for `/api/auth/me`, invalid and expired bearer tokens, ignored legacy headers, and protected-route 401/403 responses.
+- **Auth Route Integration Tests**: Added live HTTP coverage for login success/failure, `/api/auth/me`, invalid and expired bearer tokens, ignored legacy headers, post-deletion/post-role-change token rejection, and protected-route 401/403 responses.
 - **Browse Query Support**: Added filtering, sorting, and paginated list responses for room and workshop browse endpoints, with automated coverage for defaults and invalid params.
 - **Admin Workshop Stats**: Added organizer-only `GET /api/workshops/:id/stats` with capacity, seats remaining, registration counts by status, checked-in count, successful payment count, and integration coverage for RBAC/counts.
 - **Workshop Summary Status**: Added organizer-only `GET /api/workshops/:id/summary-status` with truthful current-state reporting for PDF/AI summary availability and integration coverage for ready/not-uploaded cases.
