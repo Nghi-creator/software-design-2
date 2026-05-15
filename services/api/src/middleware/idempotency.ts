@@ -54,6 +54,7 @@ export const createIdempotencyMiddleware = (dependencies: IdempotencyDependencie
     if (res.statusCode !== 409) {
       const responseString = JSON.stringify(body);
       const cacheBody = JSON.stringify({ statusCode: res.statusCode, body });
+      const statusCode = res.statusCode;
 
       void (async () => {
         await dependencies.query(
@@ -62,14 +63,13 @@ export const createIdempotencyMiddleware = (dependencies: IdempotencyDependencie
             set status = $2, status_code = $3, response = $4, updated_at = now()
             where key = $1
           `,
-          [key, 'COMPLETED', res.statusCode, responseString]
+          [key, 'COMPLETED', statusCode, responseString]
         );
 
         await dependencies.redis.setex(`idempotency:${key}`, 86400, cacheBody).catch(console.error);
-        originalJson.call(this, body);
-      })().catch(next);
+      })().catch(console.error);
 
-      return this;
+      return originalJson.call(this, body);
     }
     
     return originalJson.call(this, body);
