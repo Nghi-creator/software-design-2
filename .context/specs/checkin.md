@@ -5,6 +5,12 @@ Nhân sự tại cửa phòng dùng mobile app quét QR code để điểm danh 
 
 File này mô tả hành vi nghiệp vụ. Contract endpoint, request, response, auth, và mã lỗi phải được định nghĩa trong `api_spec.md` trước khi implement mobile/server integration.
 
+## Phạm vi theo yêu cầu gốc
+- Yêu cầu bắt buộc trong `REQUIREMENTS.md`: app cho phép ghi nhận check-in tạm thời khi offline, lưu bền vững trên thiết bị, và tự động đồng bộ lại khi có mạng.
+- `REQUIREMENTS.md` không yêu cầu app phải xác thực QR hoàn toàn khi offline bằng danh sách cache cục bộ.
+- Vì vậy hành vi tối thiểu đúng đề là: **scan offline -> lưu cục bộ -> sync khi online -> server xác thực và trả kết quả theo từng item**.
+- Xác thực offline bằng attendee cache là một cải tiến sản phẩm có thể cân nhắc sau, không phải baseline bắt buộc của assignment.
+
 ## Luồng chính
 1. Mobile app quét QR code.
 2. App kiểm tra kết nối mạng.

@@ -29,9 +29,19 @@
 - **Check-In/Import Repository Extraction**: Check-in QR retrieval, online/offline check-in, and CSV import status/error flows now keep DB access in repository modules with dependencies supplied through `di.ts`.
 
 ## In Progress
-- Backend deploy-first work remains focused on `services/`; `apps/` has not been touched yet.
+- Backend deploy-first work remains focused on `services/`; `apps/mobile` currently has a visual Flutter scaffold only, with no real scanner, auth flow, API client, durable offline queue, or sync engine implemented yet.
 - API contract still partial; QR validation remains undefined. Supabase SQL schema must be applied manually per environment.
 
 ## Next Steps
+<<<<<<< Updated upstream
 - Add remaining API endpoints from `api_spec.md` Still Undefined section.
 - Person B has no active backend task left except QR validation, which remains upcoming pending team decision.
+=======
+- Start the mobile check-in implementation against the existing `/api/auth/*`, `/api/checkin`, and `/api/checkin/sync` contracts:
+  - staff login/session handling
+  - QR scanner integration
+  - durable local queue with retry/sync states
+  - connectivity-aware online/offline flow
+  - per-item sync result handling
+- Add remaining API endpoints from `api_spec.md` Still Undefined section, especially a separate QR validation contract if the team wants pre-check validation before committing check-in.
+>>>>>>> Stashed changes

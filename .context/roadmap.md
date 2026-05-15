@@ -16,7 +16,8 @@
 
 - [x] QR Code Generation Service.
 - [ ] Mobile Check-in App Development.
-- [x] Offline Local Storage & Syncing Mechanism.
+- [ ] Offline Local Storage & Syncing Mechanism in the mobile app.
+- [x] Backend offline sync endpoint and idempotent processing.
 
 ## Phase 4: Enhancements
 
