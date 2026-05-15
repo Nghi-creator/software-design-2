@@ -1,21 +1,17 @@
 import crypto from 'crypto';
 import { promisify } from 'util';
-import { query } from '../lib/db';
 import { Role, Roles, roleValues } from '../types/domain';
 import { RequestUser } from '../types/request';
+import {
+  AuthUserRow,
+  createUser,
+  findUserByEmail,
+  findUserById
+} from '../repositories/authRepository';
 
 const scrypt = promisify(crypto.scrypt);
 const tokenTtlSeconds = Number(process.env.JWT_EXPIRES_IN_SECONDS ?? 60 * 60 * 24);
 const roles = new Set<string>(roleValues);
-
-type AuthUserRow = {
-  id: string;
-  email: string;
-  name: string;
-  role: Role;
-  student_id: string | null;
-  password_hash: string | null;
-};
 
 export type AuthUser = {
   id: string;
@@ -130,24 +126,6 @@ const resolveRole = (role?: string): Role => {
   return role as Role;
 };
 
-const findUserByEmail = async (email: string) => {
-  const result = await query<AuthUserRow>(
-    'select id, email, name, role, student_id, password_hash from users where email = $1',
-    [email]
-  );
-
-  return result.rows[0] ?? null;
-};
-
-const findUserById = async (id: string) => {
-  const result = await query<AuthUserRow>(
-    'select id, email, name, role, student_id, password_hash from users where id = $1',
-    [id]
-  );
-
-  return result.rows[0] ?? null;
-};
-
 export const register = async ({ email, password, name, role, studentId }: RegisterInput) => {
   const normalizedEmail = normalizeEmail(email);
   validatePassword(password);
@@ -159,13 +137,13 @@ export const register = async ({ email, password, name, role, studentId }: Regis
   const passwordHash = await hashPassword(password);
 
   try {
-    const result = await query<AuthUserRow>(
-      `insert into users (email, name, role, student_id, password_hash)
-       values ($1, $2, $3, $4, $5)
-       returning id, email, name, role, student_id, password_hash`,
-      [normalizedEmail, name.trim(), resolveRole(role), studentId || null, passwordHash]
-    );
-    const user = toAuthUser(result.rows[0]);
+    const user = toAuthUser(await createUser({
+      email: normalizedEmail,
+      name: name.trim(),
+      role: resolveRole(role),
+      studentId: studentId || null,
+      passwordHash
+    }));
 
     return { user, accessToken: createAccessToken(user) };
   } catch (error: any) {

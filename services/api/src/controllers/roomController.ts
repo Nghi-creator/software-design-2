@@ -1,9 +1,28 @@
 import { Request, Response } from 'express';
 import { createRoom, deleteRoom, listRooms, updateRoom } from '../services/room';
+import {
+  getOptionalNumberQuery,
+  getPaginationQuery,
+  getSortOrderQuery,
+  getStringQuery
+} from '../lib/listQuery';
 
-export const getRooms = async (_req: Request, res: Response) => {
-  const rooms = await listRooms();
-  res.json(rooms);
+export const getRooms = async (req: Request, res: Response) => {
+  try {
+    const rooms = await listRooms({
+      q: getStringQuery(req.query, 'q'),
+      location: getStringQuery(req.query, 'location'),
+      minCapacity: getOptionalNumberQuery(req.query, 'minCapacity'),
+      maxCapacity: getOptionalNumberQuery(req.query, 'maxCapacity'),
+      sortBy: getStringQuery(req.query, 'sortBy'),
+      sortOrder: getSortOrderQuery(req.query),
+      pagination: getPaginationQuery(req.query)
+    });
+
+    res.json(rooms);
+  } catch (error: any) {
+    res.status(400).json({ success: false, error: error.message });
+  }
 };
 
 export const postRoom = async (req: Request, res: Response) => {

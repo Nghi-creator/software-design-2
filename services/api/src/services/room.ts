@@ -1,48 +1,89 @@
-import { query } from '../lib/db';
+import { Pagination, SortOrder } from '../lib/listQuery';
+import {
+  createRoom as createRoomRecord,
+  deleteRoom as deleteRoomRecord,
+  findRooms,
+  RoomInput,
+  updateRoom as updateRoomRecord
+} from '../repositories/roomRepository';
 
-type RoomInput = {
-  name: string;
-  location: string;
-  capacity: number;
+type ListRoomsOptions = {
+  q?: string;
+  location?: string;
+  minCapacity?: number;
+  maxCapacity?: number;
+  sortBy?: string;
+  sortOrder: SortOrder;
+  pagination: Pagination;
 };
 
-type Room = {
-  id: string;
-  name: string;
-  location: string;
-  capacity: number;
+const roomSortColumns: Record<string, string> = {
+  name: 'name',
+  location: 'location',
+  capacity: 'capacity'
 };
 
-export const listRooms = () => {
-  return query<Room>('select id, name, location, capacity from rooms order by name asc')
-    .then((result) => result.rows);
+export const listRooms = async ({
+  q,
+  location,
+  minCapacity,
+  maxCapacity,
+  sortBy,
+  sortOrder,
+  pagination
+}: ListRoomsOptions) => {
+  validateCapacityRange(minCapacity, maxCapacity);
+  const orderBy = resolveRoomSortColumn(sortBy);
+
+  return findRooms({ q, location, minCapacity, maxCapacity, sortBy: orderBy, sortOrder, pagination });
+};
+
+const resolveRoomSortColumn = (sortBy?: string) => {
+  if (!sortBy) {
+    return roomSortColumns.name;
+  }
+
+  const sortColumn = roomSortColumns[sortBy];
+
+  if (!sortColumn) {
+    throw new Error('sortBy must be one of name, location, capacity');
+  }
+
+  return sortColumn;
+};
+
+const validateCapacityRange = (minCapacity?: number, maxCapacity?: number) => {
+  if (minCapacity !== undefined && minCapacity < 0) {
+    throw new Error('minCapacity must be greater than or equal to 0');
+  }
+
+  if (maxCapacity !== undefined && maxCapacity < 0) {
+    throw new Error('maxCapacity must be greater than or equal to 0');
+  }
+
+  if (minCapacity !== undefined && maxCapacity !== undefined && minCapacity > maxCapacity) {
+    throw new Error('minCapacity must be less than or equal to maxCapacity');
+  }
 };
 
 export const createRoom = ({ name, location, capacity }: RoomInput) => {
-  return query<Room>(
-    'insert into rooms (name, location, capacity) values ($1, $2, $3) returning id, name, location, capacity',
-    [name, location, capacity]
-  ).then((result) => result.rows[0]);
+  return createRoomRecord({ name, location, capacity });
 };
 
-export const updateRoom = (id: string, { name, location, capacity }: RoomInput) => {
-  return query<Room>(
-    'update rooms set name = $2, location = $3, capacity = $4 where id = $1 returning id, name, location, capacity',
-    [id, name, location, capacity]
-  ).then((result) => {
-    if (!result.rows[0]) {
-      throw new Error('Room not found');
-    }
+export const updateRoom = async (id: string, { name, location, capacity }: RoomInput) => {
+  const room = await updateRoomRecord(id, { name, location, capacity });
 
-    return result.rows[0];
-  });
+  if (!room) {
+    throw new Error('Room not found');
+  }
+
+  return room;
 };
 
-export const deleteRoom = (id: string) => {
-  return query<{ id: string }>('delete from rooms where id = $1 returning id', [id])
-    .then((result) => {
-      if (!result.rows[0]) {
-        throw new Error('Room not found');
-      }
-    });
+export const deleteRoom = async (id: string) => {
+  const wasDeleted = await deleteRoomRecord(id);
+
+  if (!wasDeleted) {
+    throw new Error('Room not found');
+  }
 };

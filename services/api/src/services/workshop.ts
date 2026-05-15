@@ -1,4 +1,8 @@
-import { query } from '../lib/db';
+import { Pagination, SortOrder } from '../lib/listQuery';
+import {
+  createWorkshop as createWorkshopRecord,
+  findWorkshops
+} from '../repositories/workshopRepository';
 import { generateWorkshopSummary } from './ai';
 
 type CreateWorkshopInput = {
@@ -12,48 +16,92 @@ type CreateWorkshopInput = {
   pdfBuffer?: Buffer;
 };
 
-type Workshop = {
-  id: string;
-  title: string;
-  speaker: string;
-  roomId: string;
-  capacity: number;
-  seatsRemaining: number;
-  price: string;
-  startTime: Date;
-  pdfUrl: string | null;
-  aiSummary: string | null;
-  room?: {
-    id: string;
-    name: string;
-    location: string;
-    capacity: number;
-  };
+type ListWorkshopsOptions = {
+  q?: string;
+  roomId?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  startsFrom?: Date;
+  startsTo?: Date;
+  hasSeats?: boolean;
+  sortBy?: string;
+  sortOrder: SortOrder;
+  pagination: Pagination;
 };
 
-export const listWorkshops = () => {
-  return query<Workshop>(`
-    select
-      w.id,
-      w.title,
-      w.speaker,
-      w.room_id as "roomId",
-      w.capacity,
-      w.seats_remaining as "seatsRemaining",
-      w.price,
-      w.start_time as "startTime",
-      w.pdf_url as "pdfUrl",
-      w.ai_summary as "aiSummary",
-      json_build_object(
-        'id', r.id,
-        'name', r.name,
-        'location', r.location,
-        'capacity', r.capacity
-      ) as room
-    from workshops w
-    join rooms r on r.id = w.room_id
-    order by w.start_time asc
-  `).then((result) => result.rows);
+const workshopSortColumns: Record<string, string> = {
+  startTime: 'w.start_time',
+  title: 'w.title',
+  speaker: 'w.speaker',
+  price: 'w.price',
+  capacity: 'w.capacity',
+  seatsRemaining: 'w.seats_remaining'
+};
+
+export const listWorkshops = async ({
+  q,
+  roomId,
+  minPrice,
+  maxPrice,
+  startsFrom,
+  startsTo,
+  hasSeats,
+  sortBy,
+  sortOrder,
+  pagination
+}: ListWorkshopsOptions) => {
+  validateWorkshopFilters(minPrice, maxPrice, startsFrom, startsTo);
+  const orderBy = resolveWorkshopSortColumn(sortBy);
+
+  return findWorkshops({
+    q,
+    roomId,
+    minPrice,
+    maxPrice,
+    startsFrom,
+    startsTo,
+    hasSeats,
+    sortBy: orderBy,
+    sortOrder,
+    pagination
+  });
+};
+
+const resolveWorkshopSortColumn = (sortBy?: string) => {
+  if (!sortBy) {
+    return workshopSortColumns.startTime;
+  }
+
+  const sortColumn = workshopSortColumns[sortBy];
+
+  if (!sortColumn) {
+    throw new Error('sortBy must be one of startTime, title, speaker, price, capacity, seatsRemaining');
+  }
+
+  return sortColumn;
+};
+
+const validateWorkshopFilters = (
+  minPrice?: number,
+  maxPrice?: number,
+  startsFrom?: Date,
+  startsTo?: Date
+) => {
+  if (minPrice !== undefined && minPrice < 0) {
+    throw new Error('minPrice must be greater than or equal to 0');
+  }
+
+  if (maxPrice !== undefined && maxPrice < 0) {
+    throw new Error('maxPrice must be greater than or equal to 0');
+  }
+
+  if (minPrice !== undefined && maxPrice !== undefined && minPrice > maxPrice) {
+    throw new Error('minPrice must be less than or equal to maxPrice');
+  }
+
+  if (startsFrom && startsTo && startsFrom > startsTo) {
+    throw new Error('startsFrom must be before or equal to startsTo');
+  }
 };
 
 export const createWorkshop = async ({
@@ -68,16 +116,14 @@ export const createWorkshop = async ({
 }: CreateWorkshopInput) => {
   const aiSummary = pdfBuffer ? await generateWorkshopSummary(pdfBuffer) : null;
 
-  return query<Workshop>(
-    `
-      insert into workshops (
-        title, speaker, room_id, capacity, seats_remaining, price, start_time, pdf_url, ai_summary
-      )
-      values ($1, $2, $3, $4, $4, $5, $6, $7, $8)
-      returning
-        id, title, speaker, room_id as "roomId", capacity, seats_remaining as "seatsRemaining",
-        price, start_time as "startTime", pdf_url as "pdfUrl", ai_summary as "aiSummary"
-    `,
-    [title, speaker, roomId, capacity, price ?? 0, new Date(startTime), pdfUrl, aiSummary]
-  ).then((result) => result.rows[0]);
+  return createWorkshopRecord({
+    title,
+    speaker,
+    roomId,
+    capacity,
+    price: price ?? 0,
+    startTime: new Date(startTime),
+    pdfUrl,
+    aiSummary
+  });
 };
