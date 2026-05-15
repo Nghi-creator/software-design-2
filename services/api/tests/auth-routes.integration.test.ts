@@ -11,6 +11,7 @@ const createdUserIds: string[] = [];
 let baseUrl = '';
 let server: ReturnType<typeof app.listen>;
 let studentAccessToken = '';
+let studentEmail = '';
 
 before(async () => {
   process.env.AUTH_ALLOW_ROLE_REGISTRATION = 'true';
@@ -28,6 +29,7 @@ before(async () => {
 
   createdUserIds.push(registration.user.id);
   studentAccessToken = registration.accessToken;
+  studentEmail = registration.user.email;
 });
 
 after(async () => {
@@ -112,6 +114,46 @@ test('GET /api/auth/me returns the current user for a valid bearer token', async
   assert.equal(body.user.email, `student.${suffix}@example.test`);
 });
 
+test('POST /api/auth/login returns a bearer token for valid credentials', async () => {
+  const response = await fetch(`${baseUrl}/api/auth/login`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      email: studentEmail,
+      password: 'Password123'
+    })
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(body.user.id, createdUserIds[0]);
+  assert.equal(body.user.email, studentEmail);
+  assert.equal(typeof body.accessToken, 'string');
+  assert.ok(body.accessToken.length > 0);
+});
+
+test('POST /api/auth/login rejects invalid credentials', async () => {
+  const response = await fetch(`${baseUrl}/api/auth/login`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      email: studentEmail,
+      password: 'WrongPassword123'
+    })
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 401);
+  assert.deepEqual(body, {
+    success: false,
+    error: 'Invalid email or password'
+  });
+});
+
 test('protected routes reject unauthenticated and wrong-role requests', async () => {
   const unauthenticatedResponse = await fetch(`${baseUrl}/api/checkin`, {
     method: 'POST',
@@ -149,6 +191,57 @@ test('protected routes reject unauthenticated and wrong-role requests', async ()
   });
 });
 
+test('bearer tokens stop working after the user is deleted', async () => {
+  const registration = await registerUser({
+    email: `deleted.${suffix}@example.test`,
+    password: 'Password123',
+    name: `Deleted ${suffix}`,
+    role: 'STUDENT'
+  });
+  createdUserIds.push(registration.user.id);
+
+  await query('delete from users where id = $1', [registration.user.id]);
+  removeCreatedUserId(registration.user.id);
+
+  const response = await fetch(`${baseUrl}/api/auth/me`, {
+    headers: {
+      authorization: `Bearer ${registration.accessToken}`
+    }
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 401);
+  assert.deepEqual(body, {
+    success: false,
+    error: 'Invalid or expired token'
+  });
+});
+
+test('bearer tokens stop working after the user role changes', async () => {
+  const registration = await registerUser({
+    email: `rolechange.${suffix}@example.test`,
+    password: 'Password123',
+    name: `Role Change ${suffix}`,
+    role: 'STUDENT'
+  });
+  createdUserIds.push(registration.user.id);
+
+  await query('update users set role = $2 where id = $1', [registration.user.id, 'ORGANIZER']);
+
+  const response = await fetch(`${baseUrl}/api/auth/me`, {
+    headers: {
+      authorization: `Bearer ${registration.accessToken}`
+    }
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 401);
+  assert.deepEqual(body, {
+    success: false,
+    error: 'Invalid or expired token'
+  });
+});
+
 async function registerUser(input: {
   email: string;
   password: string;
@@ -167,7 +260,7 @@ async function registerUser(input: {
   assert.equal(response.status, 201);
 
   return body as {
-    user: { id: string };
+    user: { id: string; email: string };
     accessToken: string;
   };
 }
@@ -191,4 +284,12 @@ function createExpiredAccessToken(userId: string, role: string) {
 
 function encodeJson(value: unknown) {
   return Buffer.from(JSON.stringify(value)).toString('base64url');
+}
+
+function removeCreatedUserId(userId: string) {
+  const index = createdUserIds.indexOf(userId);
+
+  if (index >= 0) {
+    createdUserIds.splice(index, 1);
+  }
 }
