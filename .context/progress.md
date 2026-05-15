@@ -12,6 +12,7 @@
 - **JWT Auth**: Added `/api/auth/register`, `/api/auth/login`, `/api/auth/me`, HS256 access tokens via `JWT_SECRET`, scrypt password hashes, bearer-token middleware, `users.password_hash`, and seed login hashes (`Password123`).
 - **Registration Consistency**: Seat reservation now reuses cancelled registration/payment rows for retries, cancellation releases a seat only once, confirmation requires `PENDING`, and idempotency completion is persisted before sending JSON responses.
 - **QR Token Retrieval**: Added `GET /api/checkin/qr/:registrationId` to return confirmed registration QR tokens with owner/staff/organizer authorization; clients render the QR image locally.
+- **Browse Query Support**: Added filtering, sorting, and paginated list responses for room and workshop browse endpoints.
 
 ## In Progress
 - API contract still partial; repository layer, request validation, admin stats, QR validation, async upload/summary status, and CSV import status endpoints remain undefined. Supabase SQL schema must be applied manually per environment.

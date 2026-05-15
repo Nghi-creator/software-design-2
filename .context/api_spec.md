@@ -44,7 +44,15 @@ Development header identity is still accepted for local compatibility when no be
 ```text
 GET /api/rooms
 Auth: public
-Response: Room[]
+Query:
+- q?: case-insensitive search across name/location
+- location?: case-insensitive exact location match
+- minCapacity?, maxCapacity?: numeric capacity range
+- sortBy?: name | location | capacity (default name)
+- sortOrder?: asc | desc (default asc)
+- page?: positive integer (default 1)
+- pageSize?: positive integer up to 100 (default 20)
+Response: { items: Room[], pagination: { page, pageSize, totalItems, totalPages } }
 ```
 
 ```text
@@ -75,8 +83,17 @@ Errors: 401, 403, 404
 ```text
 GET /api/workshops
 Auth: public
-Response: Workshop[] with room included, ordered by startTime asc
-Notes: pagination/search still not implemented.
+Query:
+- q?: case-insensitive search across title/speaker
+- roomId?: room id
+- minPrice?, maxPrice?: numeric price range
+- startsFrom?, startsTo?: ISO date/time range
+- hasSeats?: true | false
+- sortBy?: startTime | title | speaker | price | capacity | seatsRemaining (default startTime)
+- sortOrder?: asc | desc (default asc)
+- page?: positive integer (default 1)
+- pageSize?: positive integer up to 100 (default 20)
+Response: { items: Workshop[] with room included, pagination: { page, pageSize, totalItems, totalPages } }
 ```
 
 ```text
@@ -138,7 +155,6 @@ Notes: item statuses include checked_in, already_checked_in, invalid, failed.
 
 ## Still Undefined
 
-- Student workshop browsing/search pagination params.
 - QR validation endpoint separate from check-in.
 - Admin statistics.
 - PDF upload status and async AI summary status.

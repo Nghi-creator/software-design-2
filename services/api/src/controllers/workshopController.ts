@@ -2,10 +2,34 @@ import { Request, Response } from 'express';
 import { createWorkshop, listWorkshops } from '../services/workshop';
 import { registerForWorkshop } from '../services/registration';
 import { getRequestUser } from '../types/request';
+import {
+  getOptionalBooleanQuery,
+  getOptionalDateQuery,
+  getOptionalNumberQuery,
+  getPaginationQuery,
+  getSortOrderQuery,
+  getStringQuery
+} from '../lib/listQuery';
 
-export const getWorkshops = async (_req: Request, res: Response) => {
-  const workshops = await listWorkshops();
-  res.json(workshops);
+export const getWorkshops = async (req: Request, res: Response) => {
+  try {
+    const workshops = await listWorkshops({
+      q: getStringQuery(req.query, 'q'),
+      roomId: getStringQuery(req.query, 'roomId'),
+      minPrice: getOptionalNumberQuery(req.query, 'minPrice'),
+      maxPrice: getOptionalNumberQuery(req.query, 'maxPrice'),
+      startsFrom: getOptionalDateQuery(req.query, 'startsFrom'),
+      startsTo: getOptionalDateQuery(req.query, 'startsTo'),
+      hasSeats: getOptionalBooleanQuery(req.query, 'hasSeats'),
+      sortBy: getStringQuery(req.query, 'sortBy'),
+      sortOrder: getSortOrderQuery(req.query),
+      pagination: getPaginationQuery(req.query)
+    });
+
+    res.json(workshops);
+  } catch (error: any) {
+    res.status(400).json({ success: false, error: error.message });
+  }
 };
 
 export const postWorkshop = async (req: Request, res: Response) => {
