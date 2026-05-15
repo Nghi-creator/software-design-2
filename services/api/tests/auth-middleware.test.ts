@@ -3,34 +3,17 @@ import test from 'node:test';
 import { attachUser, requireAuth, requireRole } from '../src/middleware/auth';
 import { Roles } from '../src/types/domain';
 
-test('attachUser authenticates trusted header users and defaults unknown roles to student', async () => {
-  const trustedHeaderRequest = createRequest({
+test('attachUser ignores legacy identity headers when no bearer token is present', async () => {
+  const request = createRequest({
     'x-user-id': 'user-1',
     'x-user-role': Roles.ORGANIZER
   });
-  const trustedHeaderNext = createNext();
+  const next = createNext();
 
-  await attachUser(trustedHeaderRequest.req as any, createResponse() as any, trustedHeaderNext as any);
+  await attachUser(request.req as any, createResponse() as any, next as any);
 
-  assert.deepEqual((trustedHeaderRequest.req as any).user, {
-    id: 'user-1',
-    role: Roles.ORGANIZER
-  });
-  assert.equal(trustedHeaderNext.called, true);
-
-  const unknownRoleRequest = createRequest({
-    'x-user-id': 'user-2',
-    'x-user-role': 'SUPER_ADMIN'
-  });
-  const unknownRoleNext = createNext();
-
-  await attachUser(unknownRoleRequest.req as any, createResponse() as any, unknownRoleNext as any);
-
-  assert.deepEqual((unknownRoleRequest.req as any).user, {
-    id: 'user-2',
-    role: Roles.STUDENT
-  });
-  assert.equal(unknownRoleNext.called, true);
+  assert.equal((request.req as any).user, undefined);
+  assert.equal(next.called, true);
 });
 
 test('requireAuth rejects unauthenticated requests', () => {

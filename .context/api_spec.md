@@ -34,11 +34,6 @@ Response: { user: { id, email, name, role, studentId } }
 Errors: 401, 404, 500
 ```
 
-Development header identity is still accepted for local compatibility when no bearer token is present:
-
-- `x-user-id`: UUID/string user id.
-- `x-user-role`: one of `STUDENT`, `ORGANIZER`, `CHECKIN_STAFF`.
-
 ## Rooms
 
 ```text
