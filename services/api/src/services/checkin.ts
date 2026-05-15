@@ -1,4 +1,5 @@
-import { query, withTransaction } from '../lib/db';
+import { CheckinDependencies, checkinDependencies } from '../di';
+import { query } from '../lib/db';
 import { CheckinSource, Role, Roles } from '../types/domain';
 
 export type SyncItem = {
@@ -69,7 +70,11 @@ export const generateRegistrationQr = async ({
   };
 };
 
-export const syncOfflineCheckins = async (items: SyncItem[], staffId: string) => {
+export const syncOfflineCheckins = async (
+  items: SyncItem[],
+  staffId: string,
+  dependencies: CheckinDependencies = checkinDependencies
+) => {
   const results = [];
 
   for (const item of items) {
@@ -79,12 +84,15 @@ export const syncOfflineCheckins = async (items: SyncItem[], staffId: string) =>
     }
 
     try {
-      const result = await checkInOne({
-        qrCode: item.qrCode,
-        staffId,
-        source: 'OFFLINE_SYNC',
-        scannedAt: item.scannedAt
-      });
+      const result = await checkInOne(
+        {
+          qrCode: item.qrCode,
+          staffId,
+          source: 'OFFLINE_SYNC',
+          scannedAt: item.scannedAt
+        },
+        dependencies
+      );
 
       results.push({
         localId: item.localId,
@@ -100,23 +108,21 @@ export const syncOfflineCheckins = async (items: SyncItem[], staffId: string) =>
   return results;
 };
 
-const checkInOne = async ({
-  qrCode,
-  staffId,
-  source,
-  scannedAt
-}: {
-  qrCode: string;
-  staffId: string;
-  source: CheckinSource;
-  scannedAt?: string;
-}) => {
-  const registrationResult = await query<{
-    id: string;
-    status: string;
-    checkedInAt: Date | null;
-    checkinId: string | null;
-  }>(
+const checkInOne = async (
+  {
+    qrCode,
+    staffId,
+    source,
+    scannedAt
+  }: {
+    qrCode: string;
+    staffId: string;
+    source: CheckinSource;
+    scannedAt?: string;
+  },
+  dependencies: CheckinDependencies = checkinDependencies
+) => {
+  const registrationResult = await dependencies.query(
     `
       select
         r.id,
@@ -129,7 +135,14 @@ const checkInOne = async ({
     `,
     [qrCode]
   );
-  const registration = registrationResult.rows[0];
+  const registration = registrationResult.rows[0] as
+    | {
+        id: string;
+        status: string;
+        checkedInAt: Date | null;
+        checkinId: string | null;
+      }
+    | undefined;
 
   if (!registration || registration.status !== 'CONFIRMED') {
     return { status: 'invalid', registrationId: registration?.id };
@@ -141,7 +154,7 @@ const checkInOne = async ({
 
   const checkinTime = scannedAt ? new Date(scannedAt) : new Date();
 
-  await withTransaction(async (client) => {
+  await dependencies.withTransaction(async (client) => {
     const updated = await client.query(
       'update registrations set checked_in_at = $2 where id = $1 and checked_in_at is null returning id',
       [registration.id, checkinTime]

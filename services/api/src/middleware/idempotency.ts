@@ -1,8 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
-import { query } from '../lib/db';
-import { redis } from '../lib/redis';
+import { IdempotencyDependencies, idempotencyDependencies } from '../di';
 
-export const idempotency = async (req: Request, res: Response, next: NextFunction) => {
+export const createIdempotencyMiddleware = (dependencies: IdempotencyDependencies) => async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const key = req.headers['idempotency-key'] as string;
 
   if (!key) {
@@ -10,13 +13,13 @@ export const idempotency = async (req: Request, res: Response, next: NextFunctio
   }
 
   try {
-    const cachedResponse = await redis.get(`idempotency:${key}`);
+    const cachedResponse = await dependencies.redis.get(`idempotency:${key}`);
     if (cachedResponse) {
       const cached = JSON.parse(cachedResponse);
       return res.status(cached.statusCode).json(cached.body);
     }
 
-    await query(
+    await dependencies.query(
       'insert into idempotency_keys (key, status) values ($1, $2)',
       [key, 'IN_PROGRESS']
     );
@@ -25,18 +28,14 @@ export const idempotency = async (req: Request, res: Response, next: NextFunctio
       return next(error);
     }
 
-    const existingKey = await query<{
-      status: string;
-      response: string | null;
-      statusCode: number | null;
-    }>(
+    const existingKey = await dependencies.query(
       'select status, response, status_code as "statusCode" from idempotency_keys where key = $1',
       [key]
     ).then((result: { rows: Array<{ status: string; response: string | null; statusCode: number | null }> }) => result.rows[0]);
 
     if (existingKey?.status === 'COMPLETED' && existingKey.response && existingKey.statusCode !== null) {
       const body = JSON.parse(existingKey.response);
-      await redis.setex(
+      await dependencies.redis.setex(
         `idempotency:${key}`,
         86400,
         JSON.stringify({ statusCode: existingKey.statusCode, body })
@@ -57,7 +56,7 @@ export const idempotency = async (req: Request, res: Response, next: NextFunctio
       const cacheBody = JSON.stringify({ statusCode: res.statusCode, body });
 
       void (async () => {
-        await query(
+        await dependencies.query(
           `
             update idempotency_keys
             set status = $2, status_code = $3, response = $4, updated_at = now()
@@ -66,7 +65,7 @@ export const idempotency = async (req: Request, res: Response, next: NextFunctio
           [key, 'COMPLETED', res.statusCode, responseString]
         );
 
-        await redis.setex(`idempotency:${key}`, 86400, cacheBody).catch(console.error);
+        await dependencies.redis.setex(`idempotency:${key}`, 86400, cacheBody).catch(console.error);
         originalJson.call(this, body);
       })().catch(next);
 
@@ -78,3 +77,5 @@ export const idempotency = async (req: Request, res: Response, next: NextFunctio
 
   next();
 };
+
+export const idempotency = createIdempotencyMiddleware(idempotencyDependencies);

@@ -1,6 +1,4 @@
-import { withTransaction } from '../lib/db';
-import { paymentCircuitBreaker } from './payment';
-import { v4 as uuidv4 } from 'uuid';
+import { RegistrationDependencies, registrationDependencies } from '../di';
 
 type RegisterInput = {
   workshopId: string;
@@ -14,8 +12,8 @@ export const registerForWorkshop = async ({
   userId,
   paymentToken,
   idempotencyKey
-}: RegisterInput) => {
-  const reservation = await withTransaction(async (client) => {
+}: RegisterInput, dependencies: RegistrationDependencies = registrationDependencies) => {
+  const reservation = await dependencies.withTransaction(async (client) => {
     const lockedWorkshops = await client.query<{
       id: string;
       price: string;
@@ -60,7 +58,7 @@ export const registerForWorkshop = async ({
             where id = $1
             returning id, user_id as "userId", workshop_id as "workshopId", qr_code as "qrCode", status
           `,
-          [existingRegistration.id, uuidv4()]
+          [existingRegistration.id, dependencies.createQrCode()]
         )
       : await client.query(
           `
@@ -68,7 +66,7 @@ export const registerForWorkshop = async ({
             values ($1, $2, $3, 'PENDING')
             returning id, user_id as "userId", workshop_id as "workshopId", qr_code as "qrCode", status
           `,
-          [userId, workshopId, uuidv4()]
+          [userId, workshopId, dependencies.createQrCode()]
         );
 
     const payment = await client.query(
@@ -95,14 +93,19 @@ export const registerForWorkshop = async ({
 
   if (reservation.price > 0) {
     if (!paymentToken) {
-      await cancelReservation(reservation.registration.id, workshopId, 'Payment token required');
+      await cancelPendingReservation(
+        reservation.registration.id,
+        workshopId,
+        'Payment token required',
+        dependencies
+      );
       throw Object.assign(new Error('Payment token required'), { statusCode: 400 });
     }
 
     try {
-      const transactionId = await paymentCircuitBreaker.fire(userId, reservation.price, paymentToken);
+      const transactionId = await dependencies.processPayment(userId, reservation.price, paymentToken);
 
-      return withTransaction(async (client) => {
+      return dependencies.withTransaction(async (client) => {
         await client.query(
           'update payments set status = $2, transaction_id = $3, updated_at = now() where id = $1',
           [reservation.payment.id, 'SUCCESS', transactionId]
@@ -111,12 +114,12 @@ export const registerForWorkshop = async ({
         return confirmRegistration(client, reservation.registration.id);
       });
     } catch (error: any) {
-      await cancelReservation(reservation.registration.id, workshopId, error.message);
+      await cancelPendingReservation(reservation.registration.id, workshopId, error.message, dependencies);
       throw Object.assign(new Error(error.message), { statusCode: 503 });
     }
   }
 
-  return withTransaction(async (client) => {
+  return dependencies.withTransaction(async (client) => {
     await client.query(
       'update payments set status = $2, transaction_id = $3, updated_at = now() where id = $1',
       [reservation.payment.id, 'SUCCESS', 'free']
@@ -126,8 +129,13 @@ export const registerForWorkshop = async ({
   });
 };
 
-const cancelReservation = async (registrationId: string, workshopId: string, _reason: string) => {
-  await withTransaction(async (client) => {
+export const cancelPendingReservation = async (
+  registrationId: string,
+  workshopId: string,
+  _reason: string,
+  dependencies: RegistrationDependencies = registrationDependencies
+) => {
+  await dependencies.withTransaction(async (client) => {
     const cancelled = await client.query(
       `
         update registrations
