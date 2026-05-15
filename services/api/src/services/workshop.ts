@@ -1,6 +1,7 @@
 import { Pagination, SortOrder } from '../lib/listQuery';
 import {
   createWorkshop as createWorkshopRecord,
+  findWorkshopSummaryStatus,
   findWorkshops
 } from '../repositories/workshopRepository';
 import { findWorkshopStats } from '../repositories/workshopStatsRepository';
@@ -147,5 +148,19 @@ export const getWorkshopStats = async (workshopId: string) => {
     },
     checkedInCount: Number(stats.checkedInCount),
     successfulPaymentCount: Number(stats.successfulPaymentCount)
+  };
+};
+
+export const getWorkshopSummaryStatus = async (workshopId: string) => {
+  const workshop = await findWorkshopSummaryStatus(workshopId);
+
+  if (!workshop) {
+    throw Object.assign(new Error('Workshop not found'), { statusCode: 404 });
+  }
+
+  return {
+    workshopId: workshop.id,
+    status: workshop.pdfUrl && workshop.aiSummary ? 'ready' : 'not_uploaded',
+    pdfUrl: workshop.pdfUrl
   };
 };

@@ -18,12 +18,14 @@
 - **Auth Route Integration Tests**: Added live HTTP coverage for `/api/auth/me`, invalid and expired bearer tokens, ignored legacy headers, and protected-route 401/403 responses.
 - **Browse Query Support**: Added filtering, sorting, and paginated list responses for room and workshop browse endpoints, with automated coverage for defaults and invalid params.
 - **Admin Workshop Stats**: Added organizer-only `GET /api/workshops/:id/stats` with capacity, seats remaining, registration counts by status, checked-in count, successful payment count, and integration coverage for RBAC/counts.
+- **Workshop Summary Status**: Added organizer-only `GET /api/workshops/:id/summary-status` with truthful current-state reporting for PDF/AI summary availability and integration coverage for ready/not-uploaded cases.
+- **AI Summary Smoke Verification**: Generated a sample workshop PDF, exercised the live Gemini summary path, and updated the PDF parser integration for the installed `pdf-parse` v2 API.
 - **Repository Layer Pass**: Moved service-layer SQL for auth, room, workshop, registration, and check-in flows into dedicated repository modules.
 - **DI/Test Merge Resolution**: Preserved repository-layer registration/check-in logic while keeping centralized DI hooks in `services/api/src/di.ts` for idempotency and offline sync tests.
 
 ## In Progress
 - Backend deploy-first work remains focused on `services/`; `apps/` has not been touched yet.
-- API contract still partial; request validation, QR validation, async upload/summary status, and CSV import status endpoints remain undefined. Supabase SQL schema must be applied manually per environment.
+- API contract still partial; request validation, QR validation, and CSV import status endpoints remain undefined. Supabase SQL schema must be applied manually per environment.
 
 ## Next Steps
 - Add remaining API endpoints from `api_spec.md` Still Undefined section.

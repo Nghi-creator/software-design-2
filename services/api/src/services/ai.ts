@@ -1,11 +1,12 @@
 import { GoogleGenAI } from '@google/genai';
-const pdfParse = require('pdf-parse');
+import { PDFParse } from 'pdf-parse';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || 'dummy_key' });
 
 export const generateWorkshopSummary = async (pdfBuffer: Buffer): Promise<string> => {
   try {
-    const data = await pdfParse(pdfBuffer);
+    const parser = new PDFParse({ data: pdfBuffer });
+    const data = await parser.getText();
     const text = data.text;
 
     const response = await ai.models.generateContent({
