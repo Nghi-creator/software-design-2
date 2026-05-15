@@ -142,7 +142,8 @@ Errors: 401, 403, 404, 500
 Notes:
 - status is `not_uploaded` when no PDF is linked to the workshop.
 - status is `ready` when an AI summary already exists.
-- The current implementation summarizes uploaded PDFs synchronously, so `processing` and `failed` are reserved for a future async pipeline and are not emitted yet.
+- status is `processing` when a PDF is linked but no AI summary is stored yet.
+- `failed` is reserved for a future async pipeline and is not emitted yet.
 ```
 
 ## Registration And Payment
