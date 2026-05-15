@@ -109,3 +109,48 @@ test('offline sync is item-level and idempotent for duplicate QR scans', async (
   assert.equal(insertedCheckins.length, 1);
   assert.equal(insertedCheckins[0].source, 'OFFLINE_SYNC');
 });
+
+test('offline sync reports already checked in when concurrent update wins the race', async () => {
+  const dependencies = {
+    query: async <T = any>() => ({
+      rows: [
+        {
+          id: 'registration-1',
+          status: 'CONFIRMED',
+          checkedInAt: null,
+          checkinId: null
+        }
+      ] as T[]
+    }),
+    withTransaction: async <T>(callback: (client: { query: any }) => Promise<T>) => {
+      const client = {
+        query: async <R = any>(text: string) => {
+          const sql = text.replace(/\s+/g, ' ').trim();
+
+          if (sql.startsWith('update registrations set checked_in_at')) {
+            return { rows: [] as R[], rowCount: 0 };
+          }
+
+          throw new Error(`Unexpected query: ${sql}`);
+        }
+      };
+
+      return callback(client);
+    }
+  };
+
+  const results = await syncOfflineCheckins(
+    [{ localId: 'scan-1', qrCode: 'qr-confirmed' }],
+    'staff-1',
+    dependencies
+  );
+
+  assert.deepEqual(results, [
+    {
+      localId: 'scan-1',
+      qrCode: 'qr-confirmed',
+      status: 'already_checked_in',
+      registrationId: 'registration-1'
+    }
+  ]);
+});

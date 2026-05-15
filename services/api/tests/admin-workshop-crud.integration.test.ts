@@ -135,6 +135,51 @@ test('PUT /api/workshops/:id rejects non-organizers and impossible capacity redu
   assert.equal(conflictBody.error, 'capacity cannot be less than reserved seat count');
 });
 
+test('PUT /api/workshops/:id preserves existing PDF URL when omitted', async () => {
+  const pdfWorkshop = await createWorkshop('Pdf Preserve', 12, 12, `https://example.test/${suffix}.pdf`);
+  createdWorkshopIds.push(pdfWorkshop.id);
+
+  const response = await fetch(`${baseUrl}/api/workshops/${pdfWorkshop.id}`, {
+    method: 'PUT',
+    headers: {
+      authorization: `Bearer ${organizerAccessToken}`,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      title: `Pdf Updated ${suffix}`,
+      speaker: `Speaker ${suffix}`,
+      roomId,
+      capacity: 12,
+      startTime: '2026-07-01T09:00:00.000Z'
+    })
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(body.pdfUrl, `https://example.test/${suffix}.pdf`);
+});
+
+test('POST /api/workshops rejects invalid create input before DB insert', async () => {
+  const response = await fetch(`${baseUrl}/api/workshops`, {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${organizerAccessToken}`,
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      title: `Invalid ${suffix}`,
+      speaker: `Speaker ${suffix}`,
+      roomId,
+      capacity: -1,
+      startTime: 'not-a-date'
+    })
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 400);
+  assert.equal(body.error, 'capacity must be greater than 0');
+});
+
 test('DELETE /api/workshops/:id removes empty workshops and protects linked registrations', async () => {
   const deleteResponse = await fetch(`${baseUrl}/api/workshops/${disposableWorkshopId}`, {
     method: 'DELETE',
@@ -189,13 +234,18 @@ async function createRoom() {
   return result.rows[0];
 }
 
-async function createWorkshop(titlePrefix: string, capacity: number, seatsRemaining: number) {
+async function createWorkshop(
+  titlePrefix: string,
+  capacity: number,
+  seatsRemaining: number,
+  pdfUrl: string | null = null
+) {
   const result = await query<{ id: string }>(
     `
       insert into workshops (
-        title, speaker, room_id, capacity, seats_remaining, price, start_time
+        title, speaker, room_id, capacity, seats_remaining, price, start_time, pdf_url
       )
-      values ($1, $2, $3, $4, $5, $6, $7)
+      values ($1, $2, $3, $4, $5, $6, $7, $8)
       returning id
     `,
     [
@@ -205,7 +255,8 @@ async function createWorkshop(titlePrefix: string, capacity: number, seatsRemain
       capacity,
       seatsRemaining,
       25,
-      new Date('2026-06-01T09:00:00.000Z')
+      new Date('2026-06-01T09:00:00.000Z'),
+      pdfUrl
     ]
   );
 

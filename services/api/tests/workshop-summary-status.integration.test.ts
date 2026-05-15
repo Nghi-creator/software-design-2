@@ -15,6 +15,7 @@ let organizerAccessToken = '';
 let studentAccessToken = '';
 let readyWorkshopId = '';
 let notUploadedWorkshopId = '';
+let processingWorkshopId = '';
 
 before(async () => {
   process.env.AUTH_ALLOW_ROLE_REGISTRATION = 'true';
@@ -40,9 +41,14 @@ before(async () => {
     pdfUrl: null,
     aiSummary: null
   });
-  createdWorkshopIds.push(readyWorkshop.id, notUploadedWorkshop.id);
+  const processingWorkshop = await createWorkshop(room.id, {
+    pdfUrl: `https://example.test/${suffix}-processing.pdf`,
+    aiSummary: null
+  });
+  createdWorkshopIds.push(readyWorkshop.id, notUploadedWorkshop.id, processingWorkshop.id);
   readyWorkshopId = readyWorkshop.id;
   notUploadedWorkshopId = notUploadedWorkshop.id;
+  processingWorkshopId = processingWorkshop.id;
 });
 
 after(async () => {
@@ -93,6 +99,22 @@ test('GET /api/workshops/:id/summary-status returns not_uploaded without a PDF',
     workshopId: notUploadedWorkshopId,
     status: 'not_uploaded',
     pdfUrl: null
+  });
+});
+
+test('GET /api/workshops/:id/summary-status returns processing when PDF exists without summary', async () => {
+  const response = await fetch(`${baseUrl}/api/workshops/${processingWorkshopId}/summary-status`, {
+    headers: {
+      authorization: `Bearer ${organizerAccessToken}`
+    }
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(body, {
+    workshopId: processingWorkshopId,
+    status: 'processing',
+    pdfUrl: `https://example.test/${suffix}-processing.pdf`
   });
 });
 

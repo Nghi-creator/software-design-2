@@ -84,6 +84,7 @@ test('idempotency middleware persists final registration response after handler 
   assert.equal(next.called, true);
   res.status(201).json({ success: true, registration: { id: 'r3' } });
   await done;
+  await waitForAsyncPersistence();
 
   assert.equal(res.statusCode, 201);
   assert.deepEqual(res.body, { success: true, registration: { id: 'r3' } });
@@ -93,6 +94,41 @@ test('idempotency middleware persists final registration response after handler 
       body: JSON.stringify({ success: true, registration: { id: 'r3' } })
     }
   ]);
+});
+
+test('idempotency middleware does not suppress handler response when persistence fails', async () => {
+  const originalConsoleError = console.error;
+  const loggedErrors: unknown[] = [];
+  console.error = (error?: unknown) => {
+    loggedErrors.push(error);
+  };
+  const middleware = createIdempotencyMiddleware({
+    query: async (_text, params = []) => {
+      if (params[1] === 'IN_PROGRESS') {
+        return { rows: [] };
+      }
+
+      throw new Error('idempotency storage failed');
+    },
+    redis: {
+      get: async () => null,
+      setex: async () => undefined
+    }
+  });
+  const { req, res, next, done } = createMiddlewareHarness('idem-storage-fail');
+
+  try {
+    await middleware(req as any, res as any, next as any);
+    res.status(201).json({ success: true, registration: { id: 'r4' } });
+    await done;
+    await waitForAsyncPersistence();
+  } finally {
+    console.error = originalConsoleError;
+  }
+
+  assert.equal(res.statusCode, 201);
+  assert.deepEqual(res.body, { success: true, registration: { id: 'r4' } });
+  assert.equal(loggedErrors.length, 1);
 });
 
 test('idempotency middleware rejects duplicate in-progress requests', async () => {
@@ -151,3 +187,5 @@ const createMiddlewareHarness = (key?: string) => {
 
   return { req, res, next, done };
 };
+
+const waitForAsyncPersistence = () => new Promise((resolve) => setImmediate(resolve));
