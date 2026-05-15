@@ -34,11 +34,6 @@ Response: { user: { id, email, name, role, studentId } }
 Errors: 401, 404, 500
 ```
 
-Development header identity is still accepted for local compatibility when no bearer token is present:
-
-- `x-user-id`: UUID/string user id.
-- `x-user-role`: one of `STUDENT`, `ORGANIZER`, `CHECKIN_STAFF`.
-
 ## Rooms
 
 ```text
@@ -103,6 +98,32 @@ Request: multipart/form-data or JSON with { title, speaker, roomId, capacity, pr
 Response: Workshop
 Errors: 401, 403, 400
 Notes: uploaded PDF is summarized synchronously into aiSummary for now.
+```
+
+```text
+GET /api/workshops/:id/stats
+Auth: ORGANIZER
+Response: {
+  workshopId,
+  capacity,
+  seatsRemaining,
+  registrations: { pending, confirmed, cancelled },
+  checkedInCount,
+  successfulPaymentCount
+}
+Errors: 401, 403, 404, 500
+Notes: successfulPaymentCount is the count of SUCCESS payments linked to the workshop's registrations.
+```
+
+```text
+GET /api/workshops/:id/summary-status
+Auth: ORGANIZER
+Response: { workshopId, status, pdfUrl }
+Errors: 401, 403, 404, 500
+Notes:
+- status is `not_uploaded` when no PDF is linked to the workshop.
+- status is `ready` when an AI summary already exists.
+- The current implementation summarizes uploaded PDFs synchronously, so `processing` and `failed` are reserved for a future async pipeline and are not emitted yet.
 ```
 
 ## Registration And Payment
@@ -177,5 +198,3 @@ Notes: row-level errors include rowNumber, studentId, email, error, rawRow, and 
 ## Still Undefined
 
 - QR validation endpoint separate from check-in.
-- Admin statistics.
-- PDF upload status and async AI summary status.

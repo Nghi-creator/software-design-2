@@ -27,16 +27,19 @@ This is Person A's local Codex tracker. Use it to keep workshop/admin/PDF work f
 
 ## Active Task
 
-- [ ] Workshop browsing/search pagination
-  - Files expected: `routes/workshop.ts`, `controllers/workshopController.ts`, `services/workshop.ts`, workshop repository/test files
-  - Acceptance: documented query params, bounded pagination, invalid params return `400`, tests cover defaults and invalid params
+- None.
 
 ## Upcoming
 
-- [ ] Admin statistics endpoint
-- [ ] PDF/AI summary status endpoint
-- [ ] Workshop-side repository extraction
+- [x] PDF/AI summary status endpoint
 
 ## Done Locally
 
-- None yet.
+- [x] Workshop browsing/search pagination
+  - Added documented filters/sorts/pagination, bounded `pageSize`, `400` handling for invalid params, and automated coverage for defaults plus invalid input.
+- [x] Workshop-side repository extraction
+  - Moved workshop persistence into `services/api/src/repositories/workshopRepository.ts`.
+- [x] Admin statistics endpoint
+  - Added organizer-only workshop stats with capacity, seats remaining, registration counts by status, checked-in count, successful payment count, and integration coverage.
+- [x] PDF/AI summary status endpoint
+  - Added organizer-only workshop summary status with truthful `not_uploaded` / `ready` states based on current synchronous summary behavior and integration coverage.

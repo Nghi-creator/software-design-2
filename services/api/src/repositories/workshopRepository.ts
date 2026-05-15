@@ -33,6 +33,12 @@ export type ListWorkshopsQuery = {
   pagination: Pagination;
 };
 
+export type WorkshopSummaryStatusRow = {
+  id: string;
+  pdfUrl: string | null;
+  aiSummary: string | null;
+};
+
 export const findWorkshops = async ({
   q,
   roomId,
@@ -160,4 +166,17 @@ export const createWorkshop = ({
     `,
     [title, speaker, roomId, capacity, price, startTime, pdfUrl, aiSummary]
   ).then((result) => result.rows[0]);
+};
+
+export const findWorkshopSummaryStatus = async (workshopId: string) => {
+  const result = await query<WorkshopSummaryStatusRow>(
+    `
+      select id, pdf_url as "pdfUrl", ai_summary as "aiSummary"
+      from workshops
+      where id = $1
+    `,
+    [workshopId]
+  );
+
+  return result.rows[0] ?? null;
 };
