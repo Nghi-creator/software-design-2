@@ -28,14 +28,13 @@ This is Person B's local Codex tracker. Use it to keep check-in/import/integrati
 
 ## Active Task
 
-- [ ] Opt-in real Postgres/Redis integration test scaffolding
+- [ ] Check-in/import repository extraction
 
 ## Upcoming
 
 - [ ] QR validation endpoint separate from check-in
   - Files expected: `routes/checkin.ts`, `controllers/checkinController.ts`, `services/checkin.ts`, check-in repository/test files
   - Acceptance: validates without mutating check-in state; tests cover valid, already checked-in, cancelled/pending, and unknown QR behavior
-- [ ] Check-in/import repository extraction
 
 ## Done Locally
 
@@ -48,3 +47,7 @@ This is Person B's local Codex tracker. Use it to keep check-in/import/integrati
   - Added `middleware/requestValidation.ts` for UUID params, online check-in payloads, offline sync payloads, and CSV import error pagination.
   - Moved check-in/import route validation before controllers and kept controllers thin.
   - Added coverage in `services/api/tests/request-validation.test.ts`.
+- [x] Opt-in real Postgres/Redis integration test scaffolding
+  - Added `services/api/tests/real-services.integration.test.ts`.
+  - Normal `npm test` skips real-service checks unless `RUN_INTEGRATION_TESTS=true`, `DATABASE_URL`, and `REDIS_URL` are set.
+  - Covers registration/payment idempotency with real Postgres/Redis and offline check-in sync idempotency with real Postgres.
