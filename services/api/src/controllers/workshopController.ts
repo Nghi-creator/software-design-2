@@ -1,9 +1,11 @@
 import { Request, Response } from 'express';
 import {
   createWorkshop,
+  deleteWorkshop,
   getWorkshopStats,
   getWorkshopSummaryStatus,
-  listWorkshops
+  listWorkshops,
+  updateWorkshop
 } from '../services/workshop';
 import { registerForWorkshop } from '../services/registration';
 import { getRequestUser } from '../types/request';
@@ -37,6 +39,35 @@ export const postWorkshop = async (req: Request, res: Response) => {
     res.json(workshop);
   } catch (error: any) {
     res.status(400).json({ success: false, error: error.message });
+  }
+};
+
+export const putWorkshop = async (req: Request, res: Response) => {
+  const { title, speaker, roomId, capacity, price, startTime, pdfUrl } = req.body;
+
+  try {
+    const workshop = await updateWorkshop(req.params.id as string, {
+      title,
+      speaker,
+      roomId,
+      capacity: Number(capacity),
+      price: price === undefined ? undefined : Number(price),
+      startTime,
+      pdfUrl
+    });
+
+    res.json(workshop);
+  } catch (error: any) {
+    res.status(error.statusCode ?? 400).json({ success: false, error: error.message });
+  }
+};
+
+export const deleteWorkshopById = async (req: Request, res: Response) => {
+  try {
+    await deleteWorkshop(req.params.id as string);
+    res.status(204).send();
+  } catch (error: any) {
+    res.status(error.statusCode ?? 500).json({ success: false, error: error.message });
   }
 };
 

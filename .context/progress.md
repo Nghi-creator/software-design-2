@@ -15,10 +15,11 @@
 - **Backend Idempotency Tests**: Added `services/api` Node test runner coverage for registration/payment idempotency middleware replay, duplicate in-progress requests, cancelled-registration retry, idempotent seat release, and offline check-in sync duplicate handling. Run with `npm test` from `services/api`.
 - **Auth Middleware Tests**: Added `services/api` coverage for bearer-only identity handling, authentication gating, and RBAC allow/deny behavior in `auth-middleware.test.ts`.
 - **Bearer-Only Auth**: Removed legacy `x-user-id` / `x-user-role` identity injection so protected routes now require valid bearer-token authentication.
-- **Auth Route Integration Tests**: Added live HTTP coverage for `/api/auth/me`, invalid and expired bearer tokens, ignored legacy headers, and protected-route 401/403 responses.
+- **Auth Route Integration Tests**: Added live HTTP coverage for login success/failure, `/api/auth/me`, invalid and expired bearer tokens, ignored legacy headers, post-deletion/post-role-change token rejection, and protected-route 401/403 responses.
 - **Browse Query Support**: Added filtering, sorting, and paginated list responses for room and workshop browse endpoints, with automated coverage for defaults and invalid params.
 - **Admin Workshop Stats**: Added organizer-only `GET /api/workshops/:id/stats` with capacity, seats remaining, registration counts by status, checked-in count, successful payment count, and integration coverage for RBAC/counts.
 - **Workshop Summary Status**: Added organizer-only `GET /api/workshops/:id/summary-status` with truthful current-state reporting for PDF/AI summary availability and integration coverage for ready/not-uploaded cases.
+- **Workshop Admin CRUD**: Added organizer-only `PUT /api/workshops/:id` and `DELETE /api/workshops/:id`, preserved reserved-seat counts across capacity edits, rejected destructive capacity reductions, blocked deletion when registrations exist, and added integration coverage.
 - **AI Summary Smoke Verification**: Generated a sample workshop PDF, exercised the live Gemini summary path, and updated the PDF parser integration for the installed `pdf-parse` v2 API.
 - **Repository Layer Pass**: Moved service-layer SQL for auth, room, workshop, registration, and check-in flows into dedicated repository modules.
 - **DI/Test Merge Resolution**: Preserved repository-layer registration/check-in logic while keeping centralized DI hooks in `services/api/src/di.ts` for idempotency and offline sync tests.

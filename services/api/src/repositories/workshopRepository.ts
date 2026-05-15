@@ -39,6 +39,17 @@ export type WorkshopSummaryStatusRow = {
   aiSummary: string | null;
 };
 
+export type WorkshopUpdateInput = {
+  title: string;
+  speaker: string;
+  roomId: string;
+  capacity: number;
+  seatsRemaining: number;
+  price: number;
+  startTime: Date;
+  pdfUrl?: string;
+};
+
 export const findWorkshops = async ({
   q,
   roomId,
@@ -166,6 +177,68 @@ export const createWorkshop = ({
     `,
     [title, speaker, roomId, capacity, price, startTime, pdfUrl, aiSummary]
   ).then((result) => result.rows[0]);
+};
+
+export const findWorkshopById = async (workshopId: string) => {
+  const result = await query<Workshop>(
+    `
+      select
+        id,
+        title,
+        speaker,
+        room_id as "roomId",
+        capacity,
+        seats_remaining as "seatsRemaining",
+        price,
+        start_time as "startTime",
+        pdf_url as "pdfUrl",
+        ai_summary as "aiSummary"
+      from workshops
+      where id = $1
+    `,
+    [workshopId]
+  );
+
+  return result.rows[0] ?? null;
+};
+
+export const updateWorkshop = (
+  workshopId: string,
+  { title, speaker, roomId, capacity, seatsRemaining, price, startTime, pdfUrl }: WorkshopUpdateInput
+) => {
+  return query<Workshop>(
+    `
+      update workshops
+      set
+        title = $2,
+        speaker = $3,
+        room_id = $4,
+        capacity = $5,
+        seats_remaining = $6,
+        price = $7,
+        start_time = $8,
+        pdf_url = $9,
+        updated_at = now()
+      where id = $1
+      returning
+        id, title, speaker, room_id as "roomId", capacity, seats_remaining as "seatsRemaining",
+        price, start_time as "startTime", pdf_url as "pdfUrl", ai_summary as "aiSummary"
+    `,
+    [workshopId, title, speaker, roomId, capacity, seatsRemaining, price, startTime, pdfUrl]
+  ).then((result) => result.rows[0] ?? null);
+};
+
+export const deleteWorkshop = async (workshopId: string) => {
+  try {
+    const result = await query<{ id: string }>('delete from workshops where id = $1 returning id', [workshopId]);
+    return Boolean(result.rows[0]);
+  } catch (error: any) {
+    if (error.code === '23503') {
+      throw Object.assign(new Error('Workshop has existing registrations'), { statusCode: 409 });
+    }
+
+    throw error;
+  }
 };
 
 export const findWorkshopSummaryStatus = async (workshopId: string) => {

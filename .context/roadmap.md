@@ -3,7 +3,7 @@
 ## Phase 1: Foundation (Current)
 - [x] Technical Design & Architecture defined.
 - [x] Database Schema & Project Skeleton.
-- [ ] Admin CRUD for Workshops & Rooms.
+- [x] Admin CRUD for Workshops & Rooms.
 
 ## Phase 2: Registration & Core Flow
 - [x] Student Browsing & Search.

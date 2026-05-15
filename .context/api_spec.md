@@ -101,6 +101,25 @@ Notes: uploaded PDF is summarized synchronously into aiSummary for now.
 ```
 
 ```text
+PUT /api/workshops/:id
+Auth: ORGANIZER
+Request: { title, speaker, roomId, capacity, price?, startTime, pdfUrl? }
+Response: Workshop
+Errors: 401, 403, 400, 404, 409
+Notes:
+- Capacity edits preserve the number of already-reserved seats by recalculating seatsRemaining.
+- Reducing capacity below the current reserved-seat count returns 409.
+```
+
+```text
+DELETE /api/workshops/:id
+Auth: ORGANIZER
+Response: 204
+Errors: 401, 403, 404, 409
+Notes: workshops with existing registrations cannot be deleted.
+```
+
+```text
 GET /api/workshops/:id/stats
 Auth: ORGANIZER
 Response: {
