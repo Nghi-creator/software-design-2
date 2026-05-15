@@ -1,3 +1,5 @@
+import fs from 'fs';
+import csv from 'csv-parser';
 import { v4 as uuidv4 } from 'uuid';
 import { query, withTransaction } from './lib/db';
 import { redis } from './lib/redis';
@@ -37,6 +39,13 @@ export type IdempotencyDependencies = {
   redis: IdempotencyRedis;
 };
 
+export type CsvImportDependencies = {
+  query: QueryFunction;
+  fileExists: (filePath: string) => boolean;
+  createReadStream: typeof fs.createReadStream;
+  createCsvParser: () => NodeJS.ReadWriteStream;
+};
+
 const defaultQuery: QueryFunction = (text, params) => query<any>(text, params);
 
 const withQueryTransaction = <T>(callback: (client: { query: QueryFunction }) => Promise<T>) => {
@@ -64,4 +73,11 @@ export const checkinDependencies: CheckinDependencies = {
 export const idempotencyDependencies: IdempotencyDependencies = {
   query: defaultQuery,
   redis
+};
+
+export const csvImportDependencies: CsvImportDependencies = {
+  query: defaultQuery,
+  fileExists: fs.existsSync,
+  createReadStream: fs.createReadStream,
+  createCsvParser: () => csv()
 };

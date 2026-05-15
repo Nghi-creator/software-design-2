@@ -174,7 +174,27 @@ Errors: 400, 401, 403, 500
 Notes: item statuses include checked_in, already_checked_in, invalid, failed.
 ```
 
+## CSV Imports
+
+```text
+GET /api/imports/csv/latest
+Auth: ORGANIZER
+Response: { success: true, job: CsvImportJob | null }
+Errors: 401, 403, 500
+Notes: returns the most recent legacy student CSV import job, including source, status, startedAt, finishedAt, totalRows, successCount, errorCount, and message.
+```
+
+```text
+GET /api/imports/csv/:id/errors
+Auth: ORGANIZER
+Query:
+- limit?: positive integer up to 500 (default 50)
+- offset?: non-negative integer (default 0)
+Response: { success: true, errors: CsvImportError[], pagination: { limit, offset } }
+Errors: 400, 401, 403, 500
+Notes: row-level errors include rowNumber, studentId, email, error, rawRow, and createdAt. Malformed rows are recorded without stopping later rows in the import.
+```
+
 ## Still Undefined
 
 - QR validation endpoint separate from check-in.
-- Legacy CSV import status endpoint.

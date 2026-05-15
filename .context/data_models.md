@@ -59,6 +59,24 @@ PostgreSQL is the source of truth. Use transactions for multi-step writes and ro
 - `type` enum: `EMAIL`, `APP_PUSH`
 - `sent_at` timestamp, nullable
 
+### CsvImportJob
+- `id` UUID primary key
+- `source` text path/source label for the imported CSV
+- `status` enum: `RUNNING`, `COMPLETED`, `FAILED`
+- `started_at` timestamp
+- `finished_at` timestamp, nullable
+- `total_rows`, `success_count`, `error_count` integer counters
+- `message` text, nullable
+
+### CsvImportError
+- `id` UUID primary key
+- `job_id` foreign key to `CsvImportJob`
+- `row_number` integer from the CSV file
+- `student_id`, `email` nullable row identifiers
+- `error` text
+- `raw_row` JSONB snapshot
+- `created_at` timestamp
+
 ## Relationships
 
 - One `Room` has many `Workshop`.
@@ -67,6 +85,7 @@ PostgreSQL is the source of truth. Use transactions for multi-step writes and ro
 - One `Registration` can have zero or one `Payment`.
 - One `Registration` can have zero or one `Checkin`.
 - One `User` can receive many `Notification`.
+- One `CsvImportJob` can have many `CsvImportError`.
 
 ## Constraints And Indexes
 
@@ -77,3 +96,5 @@ PostgreSQL is the source of truth. Use transactions for multi-step writes and ro
 - Index `Registration.workshop_id` for admin stats.
 - Index `Payment.idempotency_key` for duplicate-payment protection.
 - Index `Checkin.registration_id` for QR validation and sync.
+- Index `CsvImportJob.started_at` desc for latest status.
+- Index `CsvImportError.job_id` for per-import error reporting.
