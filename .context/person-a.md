@@ -32,6 +32,7 @@ This is Person A's local Codex tracker. Use it to keep workshop/admin/PDF work f
 ## Upcoming
 
 - [x] PDF/AI summary status endpoint
+- [x] Workshop admin CRUD
 
 ## Done Locally
 
@@ -43,3 +44,5 @@ This is Person A's local Codex tracker. Use it to keep workshop/admin/PDF work f
   - Added organizer-only workshop stats with capacity, seats remaining, registration counts by status, checked-in count, successful payment count, and integration coverage.
 - [x] PDF/AI summary status endpoint
   - Added organizer-only workshop summary status with truthful `not_uploaded` / `ready` states based on current synchronous summary behavior and integration coverage.
+- [x] Workshop admin CRUD
+  - Added organizer-only workshop update/delete endpoints, reserved-seat-safe capacity edits, protected deletion when registrations exist, and integration coverage.

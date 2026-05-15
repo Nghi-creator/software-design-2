@@ -1,8 +1,11 @@
 import { Pagination, SortOrder } from '../lib/listQuery';
 import {
   createWorkshop as createWorkshopRecord,
+  deleteWorkshop as deleteWorkshopRecord,
+  findWorkshopById,
   findWorkshopSummaryStatus,
-  findWorkshops
+  findWorkshops,
+  updateWorkshop as updateWorkshopRecord
 } from '../repositories/workshopRepository';
 import { findWorkshopStats } from '../repositories/workshopStatsRepository';
 import { generateWorkshopSummary } from './ai';
@@ -17,6 +20,8 @@ type CreateWorkshopInput = {
   pdfUrl?: string;
   pdfBuffer?: Buffer;
 };
+
+type UpdateWorkshopInput = Omit<CreateWorkshopInput, 'pdfBuffer'>;
 
 type ListWorkshopsOptions = {
   q?: string;
@@ -130,6 +135,44 @@ export const createWorkshop = async ({
   });
 };
 
+export const updateWorkshop = async (
+  workshopId: string,
+  { title, speaker, roomId, capacity, price, startTime, pdfUrl }: UpdateWorkshopInput
+) => {
+  const currentWorkshop = await findWorkshopById(workshopId);
+
+  if (!currentWorkshop) {
+    throw Object.assign(new Error('Workshop not found'), { statusCode: 404 });
+  }
+
+  validateWorkshopInput({ title, speaker, roomId, capacity, price, startTime });
+
+  const reservedSeatCount = currentWorkshop.capacity - currentWorkshop.seatsRemaining;
+
+  if (capacity < reservedSeatCount) {
+    throw Object.assign(new Error('capacity cannot be less than reserved seat count'), { statusCode: 409 });
+  }
+
+  return updateWorkshopRecord(workshopId, {
+    title,
+    speaker,
+    roomId,
+    capacity,
+    seatsRemaining: capacity - reservedSeatCount,
+    price: price ?? 0,
+    startTime: new Date(startTime),
+    pdfUrl
+  });
+};
+
+export const deleteWorkshop = async (workshopId: string) => {
+  const wasDeleted = await deleteWorkshopRecord(workshopId);
+
+  if (!wasDeleted) {
+    throw Object.assign(new Error('Workshop not found'), { statusCode: 404 });
+  }
+};
+
 export const getWorkshopStats = async (workshopId: string) => {
   const stats = await findWorkshopStats(workshopId);
 
@@ -163,4 +206,29 @@ export const getWorkshopSummaryStatus = async (workshopId: string) => {
     status: workshop.pdfUrl && workshop.aiSummary ? 'ready' : 'not_uploaded',
     pdfUrl: workshop.pdfUrl
   };
+};
+
+const validateWorkshopInput = ({
+  title,
+  speaker,
+  roomId,
+  capacity,
+  price,
+  startTime
+}: Omit<UpdateWorkshopInput, 'pdfUrl'>) => {
+  if (!title || !speaker || !roomId || !startTime) {
+    throw Object.assign(new Error('title, speaker, roomId, and startTime are required'), { statusCode: 400 });
+  }
+
+  if (!Number.isFinite(capacity) || capacity <= 0) {
+    throw Object.assign(new Error('capacity must be greater than 0'), { statusCode: 400 });
+  }
+
+  if (price !== undefined && (!Number.isFinite(price) || price < 0)) {
+    throw Object.assign(new Error('price must be greater than or equal to 0'), { statusCode: 400 });
+  }
+
+  if (Number.isNaN(new Date(startTime).getTime())) {
+    throw Object.assign(new Error('startTime must be a valid date'), { statusCode: 400 });
+  }
 };
