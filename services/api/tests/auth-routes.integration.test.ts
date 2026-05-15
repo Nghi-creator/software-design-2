@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import { after, before, test } from 'node:test';
 import { AddressInfo } from 'node:net';
 import app from '../src/app';
@@ -55,6 +56,21 @@ test('GET /api/auth/me rejects invalid bearer tokens before reaching the control
   const response = await fetch(`${baseUrl}/api/auth/me`, {
     headers: {
       authorization: 'Bearer definitely-not-a-jwt'
+    }
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 401);
+  assert.deepEqual(body, {
+    success: false,
+    error: 'Invalid or expired token'
+  });
+});
+
+test('GET /api/auth/me rejects expired bearer tokens', async () => {
+  const response = await fetch(`${baseUrl}/api/auth/me`, {
+    headers: {
+      authorization: `Bearer ${createExpiredAccessToken(createdUserIds[0], 'STUDENT')}`
     }
   });
   const body = await response.json();
@@ -154,4 +170,25 @@ async function registerUser(input: {
     user: { id: string };
     accessToken: string;
   };
+}
+
+function createExpiredAccessToken(userId: string, role: string) {
+  const secret = process.env.JWT_SECRET;
+  assert.ok(secret);
+
+  const header = encodeJson({ alg: 'HS256', typ: 'JWT' });
+  const payload = encodeJson({
+    sub: userId,
+    role,
+    iat: 1,
+    exp: 2
+  });
+  const unsignedToken = `${header}.${payload}`;
+  const signature = crypto.createHmac('sha256', secret).update(unsignedToken).digest('base64url');
+
+  return `${unsignedToken}.${signature}`;
+}
+
+function encodeJson(value: unknown) {
+  return Buffer.from(JSON.stringify(value)).toString('base64url');
 }
