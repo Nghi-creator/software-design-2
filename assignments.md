@@ -4,6 +4,7 @@ Goal: finish the remaining `services/` backend work from `.context/progress.md` 
 
 ## Ground Rules
 
+- Codex should read this file before starting backend task work. If the local developer identity is set to Person A or Person B and the user asks Codex to do work assigned to the other person, Codex must stop and ask for confirmation before proceeding.
 - Before starting, pull/rebase the shared branch and run `npm test` inside `services/api`.
 - Keep each PR/merge small and domain-scoped. Prefer adding new route/controller/service/repository files over expanding shared files.
 - Update `.context/api_spec.md` before changing endpoint behavior. Update `.context/progress.md` only after a task is actually done.
