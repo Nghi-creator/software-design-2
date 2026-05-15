@@ -12,12 +12,16 @@
 - **JWT Auth**: Added `/api/auth/register`, `/api/auth/login`, `/api/auth/me`, HS256 access tokens via `JWT_SECRET`, scrypt password hashes, bearer-token middleware, `users.password_hash`, and seed login hashes (`Password123`).
 - **Registration Consistency**: Seat reservation now reuses cancelled registration/payment rows for retries, cancellation releases a seat only once, confirmation requires `PENDING`, and idempotency completion is persisted before sending JSON responses.
 - **QR Token Retrieval**: Added `GET /api/checkin/qr/:registrationId` to return confirmed registration QR tokens with owner/staff/organizer authorization; clients render the QR image locally.
+- **Backend Idempotency Tests**: Added `services/api` Node test runner coverage for registration/payment idempotency middleware replay, duplicate in-progress requests, cancelled-registration retry, idempotent seat release, and offline check-in sync duplicate handling. Run with `npm test` from `services/api`.
 - **Browse Query Support**: Added filtering, sorting, and paginated list responses for room and workshop browse endpoints.
 - **Repository Layer Pass**: Moved service-layer SQL for auth, room, workshop, registration, and check-in flows into dedicated repository modules.
+- **DI/Test Merge Resolution**: Preserved repository-layer registration/check-in logic while keeping centralized DI hooks in `services/api/src/di.ts` for idempotency and offline sync tests.
 
 ## In Progress
-- API contract still partial; repository layer, request validation, admin stats, QR validation, async upload/summary status, and CSV import status endpoints remain undefined. Supabase SQL schema must be applied manually per environment.
+- Backend deploy-first work remains focused on `services/`; `apps/` has not been touched yet.
+- API contract still partial; request validation, admin stats, QR validation, async upload/summary status, and CSV import status endpoints remain undefined. Supabase SQL schema must be applied manually per environment.
 
 ## Next Steps
-- Add tests for registration/payment idempotency, cancelled-registration retry, idempotent seat release, and offline check-in sync.
 - Add remaining API endpoints from `api_spec.md` Still Undefined section.
+- Add integration tests that exercise real Postgres/Redis once backend deployment configuration is settled.
+- Continue repository extraction for any remaining service-layer direct DB calls to match `coding_rules.md`.

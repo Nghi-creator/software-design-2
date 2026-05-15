@@ -1,4 +1,5 @@
-import { query, withTransaction } from '../lib/db';
+import { CheckinDependencies, checkinDependencies } from '../di';
+import { query } from '../lib/db';
 import { CheckinSource } from '../types/domain';
 
 export const findRegistrationQrById = async (registrationId: string) => {
@@ -28,13 +29,11 @@ export const findRegistrationQrById = async (registrationId: string) => {
   return result.rows[0] ?? null;
 };
 
-export const findRegistrationForCheckin = async (qrCode: string) => {
-  const result = await query<{
-    id: string;
-    status: string;
-    checkedInAt: Date | null;
-    checkinId: string | null;
-  }>(
+export const findRegistrationForCheckin = async (
+  qrCode: string,
+  dependencies: CheckinDependencies = checkinDependencies
+) => {
+  const result = await dependencies.query(
     `
       select
         r.id,
@@ -48,7 +47,12 @@ export const findRegistrationForCheckin = async (qrCode: string) => {
     [qrCode]
   );
 
-  return result.rows[0] ?? null;
+  return (result.rows[0] as {
+    id: string;
+    status: string;
+    checkedInAt: Date | null;
+    checkinId: string | null;
+  } | undefined) ?? null;
 };
 
 export const createCheckinIfPending = async ({
@@ -61,8 +65,8 @@ export const createCheckinIfPending = async ({
   staffId: string;
   checkinTime: Date;
   source: CheckinSource;
-}) => {
-  return withTransaction(async (client) => {
+}, dependencies: CheckinDependencies = checkinDependencies) => {
+  return dependencies.withTransaction(async (client) => {
     const updated = await client.query(
       'update registrations set checked_in_at = $2 where id = $1 and checked_in_at is null returning id',
       [registrationId, checkinTime]

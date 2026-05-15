@@ -1,3 +1,4 @@
+import { CheckinDependencies, checkinDependencies } from '../di';
 import { CheckinSource, Role, Roles } from '../types/domain';
 import {
   createCheckinIfPending,
@@ -51,7 +52,11 @@ export const generateRegistrationQr = async ({
   };
 };
 
-export const syncOfflineCheckins = async (items: SyncItem[], staffId: string) => {
+export const syncOfflineCheckins = async (
+  items: SyncItem[],
+  staffId: string,
+  dependencies: CheckinDependencies = checkinDependencies
+) => {
   const results = [];
 
   for (const item of items) {
@@ -61,12 +66,15 @@ export const syncOfflineCheckins = async (items: SyncItem[], staffId: string) =>
     }
 
     try {
-      const result = await checkInOne({
-        qrCode: item.qrCode,
-        staffId,
-        source: 'OFFLINE_SYNC',
-        scannedAt: item.scannedAt
-      });
+      const result = await checkInOne(
+        {
+          qrCode: item.qrCode,
+          staffId,
+          source: 'OFFLINE_SYNC',
+          scannedAt: item.scannedAt
+        },
+        dependencies
+      );
 
       results.push({
         localId: item.localId,
@@ -82,18 +90,21 @@ export const syncOfflineCheckins = async (items: SyncItem[], staffId: string) =>
   return results;
 };
 
-const checkInOne = async ({
-  qrCode,
-  staffId,
-  source,
-  scannedAt
-}: {
-  qrCode: string;
-  staffId: string;
-  source: CheckinSource;
-  scannedAt?: string;
-}) => {
-  const registration = await findRegistrationForCheckin(qrCode);
+const checkInOne = async (
+  {
+    qrCode,
+    staffId,
+    source,
+    scannedAt
+  }: {
+    qrCode: string;
+    staffId: string;
+    source: CheckinSource;
+    scannedAt?: string;
+  },
+  dependencies: CheckinDependencies = checkinDependencies
+) => {
+  const registration = await findRegistrationForCheckin(qrCode, dependencies);
 
   if (!registration || registration.status !== 'CONFIRMED') {
     return { status: 'invalid', registrationId: registration?.id };
@@ -105,12 +116,15 @@ const checkInOne = async ({
 
   const checkinTime = scannedAt ? new Date(scannedAt) : new Date();
 
-  await createCheckinIfPending({
-    registrationId: registration.id,
-    staffId,
-    checkinTime,
-    source
-  });
+  await createCheckinIfPending(
+    {
+      registrationId: registration.id,
+      staffId,
+      checkinTime,
+      source
+    },
+    dependencies
+  );
 
   return { status: 'checked_in', registrationId: registration.id };
 };

@@ -2,21 +2,27 @@ import { Pool, PoolClient, QueryResultRow } from 'pg';
 
 const connectionString = process.env.DATABASE_URL;
 
-if (!connectionString) {
-  throw new Error('DATABASE_URL is required');
-}
+export const db = connectionString
+  ? new Pool({
+      connectionString,
+      ssl: process.env.DATABASE_SSL === 'false' ? false : { rejectUnauthorized: false }
+    })
+  : undefined;
 
-export const db = new Pool({
-  connectionString,
-  ssl: process.env.DATABASE_SSL === 'false' ? false : { rejectUnauthorized: false }
-});
+const getDb = () => {
+  if (!db) {
+    throw new Error('DATABASE_URL is required');
+  }
+
+  return db;
+};
 
 export const query = <T extends QueryResultRow = QueryResultRow>(text: string, params?: unknown[]) => {
-  return db.query<T>(text, params);
+  return getDb().query<T>(text, params);
 };
 
 export const withTransaction = async <T>(callback: (client: PoolClient) => Promise<T>) => {
-  const client = await db.connect();
+  const client = await getDb().connect();
 
   try {
     await client.query('BEGIN');
