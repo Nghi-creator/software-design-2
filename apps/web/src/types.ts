@@ -1,5 +1,35 @@
 export type Role = 'STUDENT' | 'ORGANIZER' | 'CHECKIN_STAFF'
 
+export type AuthStatus = 'checking' | 'guest' | 'authenticated'
+
+export type LoginCredentials = {
+  email: string
+  password: string
+}
+
+export type RouteKey =
+  | 'home'
+  | 'workshops'
+  | 'workshopDetail'
+  | 'registrations'
+  | 'login'
+  | 'admin'
+  | 'adminWorkshops'
+  | 'adminImports'
+  | 'notFound'
+
+export type Route = {
+  key: RouteKey
+  path: string
+  params: Record<string, string>
+}
+
+export type NavItem = {
+  label: string
+  path: string
+  roles?: Role[]
+}
+
 export type SessionUser = {
   id: string
   email: string
