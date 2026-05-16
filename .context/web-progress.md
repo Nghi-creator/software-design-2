@@ -37,23 +37,13 @@ Purpose: track React web work separately from Flutter mobile work. Move finished
 - **Registration Verification**: `npm run lint`, `npm run build`, and a Vite dev-server HTTP smoke pass after registration/payment UI implementation.
 - **Notifications Flow**: Successful registrations now create in-app confirmation notifications, show a dismissible recent-notification banner, and render student notification history with channel/status badges shaped for future email or Telegram delivery.
 - **Notifications Verification**: `npm run lint`, `npm run build`, and a Vite dev-server HTTP smoke pass after notification UI implementation.
+- **Organizer Admin Flow**: Organizer dashboard now loads workshop metrics, and workshop management supports live/seed workshop listing, room selection, create/edit forms, PDF upload on create, PDF URL metadata edits, delete confirmation, capacity-conflict messaging, stats display, room layout references, and AI summary status.
+- **Organizer Verification**: `npm run lint`, `npm run build`, and a Vite dev-server HTTP smoke pass after organizer admin implementation.
 
 ## In Progress
 - No active web implementation task yet.
 
 ## Backlog
-
-### Organizer Admin
-- [ ] Build organizer dashboard landing page.
-- [ ] List workshops with registration counts, capacity, schedule, room, and status.
-- [ ] Create workshop form.
-- [ ] Edit workshop form for title, speaker, room, capacity, time, fee, and PDF metadata where supported.
-- [ ] Cancel/delete workshop flow with confirmation and backend error handling.
-- [ ] Prevent or explain failed capacity reductions when reserved seats make the edit invalid.
-- [ ] Show workshop stats: capacity, seats remaining, registrations by status, checked-in count, and successful payment count.
-- [ ] Add room selection/display including room layout reference.
-- [ ] Add admin-only PDF upload or PDF metadata management if backend endpoint exists.
-- [ ] Show AI summary processing status for organizer users.
 
 ### CSV Import Admin Visibility
 - [ ] Add organizer view for latest student CSV import job status if backend endpoint exists.
@@ -83,8 +73,8 @@ Purpose: track React web work separately from Flutter mobile work. Move finished
 - [x] No duplicate client-side registration/payment submission.
 - [x] Payment instability graceful degradation.
 - [x] In-app registration confirmation notification.
-- [ ] Organizer workshop create, update, cancel/delete.
-- [ ] Organizer statistics.
+- [x] Organizer workshop create, update, cancel/delete.
+- [x] Organizer statistics.
 - [x] Strict web page access control.
 - [x] AI PDF summary display/status.
 - [ ] CSV import status/error visibility where backend endpoints exist.

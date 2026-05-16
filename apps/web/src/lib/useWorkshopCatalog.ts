@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import type { Workshop } from '../types'
-import { getFallbackWorkshops } from './workshopCatalog'
 import type { WorkshopCatalogSource } from './workshopCatalog'
 import { listWorkshops } from './workshopApi'
 
@@ -13,7 +12,7 @@ export type WorkshopCatalogState = {
 
 export function useWorkshopCatalog(): WorkshopCatalogState {
   const [state, setState] = useState<WorkshopCatalogState>({
-    workshops: getFallbackWorkshops(),
+    workshops: [],
     source: 'fallback',
     isLoading: true,
     error: null,
@@ -35,10 +34,10 @@ export function useWorkshopCatalog(): WorkshopCatalogState {
       } catch {
         if (!isMounted) return
         setState({
-          workshops: getFallbackWorkshops(),
+          workshops: [],
           source: 'fallback',
           isLoading: false,
-          error: 'Live workshop data is unavailable, so this schedule is using seed data.',
+          error: 'Live workshop data is unavailable. Please try again later.',
         })
       }
     }
