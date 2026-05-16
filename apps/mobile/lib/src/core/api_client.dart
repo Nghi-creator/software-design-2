@@ -14,11 +14,12 @@ class ApiException implements Exception {
 class ApiClient {
   ApiClient({
     http.Client? client,
-    this.baseUrl = const String.fromEnvironment(
+    String baseUrl = const String.fromEnvironment(
       'API_BASE_URL',
       defaultValue: 'http://10.0.2.2:3000',
     ),
-  }) : _client = client ?? http.Client();
+  }) : _client = client ?? http.Client(),
+       baseUrl = _normalizeBaseUrl(baseUrl);
 
   final http.Client _client;
   final String baseUrl;
@@ -52,5 +53,16 @@ class ApiClient {
       );
     }
     return decoded;
+  }
+
+  static String _normalizeBaseUrl(String value) {
+    final trimmedValue = value.trim();
+    final withScheme = trimmedValue.contains('://')
+        ? trimmedValue
+        : 'http://$trimmedValue';
+
+    return withScheme.endsWith('/')
+        ? withScheme.substring(0, withScheme.length - 1)
+        : withScheme;
   }
 }

@@ -28,6 +28,10 @@
 - **Opt-In Real-Service Integration Scaffolding**: Added skipped-by-default Postgres/Redis integration tests for registration/payment idempotency and offline check-in sync. Run with `RUN_INTEGRATION_TESTS=true DATABASE_URL=... REDIS_URL=... npm test`.
 - **Check-In/Import Repository Extraction**: Check-in QR retrieval, online/offline check-in, and CSV import status/error flows now keep DB access in repository modules with dependencies supplied through `di.ts`.
 - **Mobile Check-In App**: Replaced the Flutter visual scaffold with a working staff app: bearer-token login, secure session persistence, camera QR scanning, online check-in calls, durable SQLite offline queue, connectivity-aware automatic retry, item-level sync result handling, and queue/profile UI.
+- **Mobile Login Feedback**: The check-in login screen now surfaces transport failures instead of appearing inert when the API cannot be reached.
+- **Mobile LAN API Hardening**: The app now accepts `API_BASE_URL` values with or without a URL scheme and enables Android cleartext HTTP for local-network testing against development servers.
+- **API Request Logging**: Added lightweight Express request logging so mobile/backend debugging can confirm whether requests reach the server, including method, path, status, latency, IP, and user agent without logging sensitive bodies.
+- **API Response Logging**: Added redacted JSON response logging for backend debugging, masking secrets such as passwords, access tokens, auth tokens, and QR codes.
 - **Web Progress Tracker**: Added `.context/web-progress.md` for React web tasks and requirement coverage.
 - **Web Schedule Filter Polish**: Replaced the student schedule day dropdown with native start/end date inputs, added All/Registered/Unregistered schedule filtering, suppressing the empty-state panel for date ranges with no workshops, and restyled confirmed registration/QR actions as compact purple pills.
 
