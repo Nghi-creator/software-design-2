@@ -270,3 +270,131 @@ test('seat release is idempotent when a registration is already cancelled', asyn
   assert.equal(state.seatReleases, 0);
   assert.equal(state.payment.status, 'FAILED');
 });
+
+test('free registration confirms immediately and consumes exactly one seat', async () => {
+  const state = createRegistrationState();
+  state.workshop.price = '0.00';
+
+  const registration = await registerForWorkshop(
+    {
+      workshopId: 'workshop-1',
+      userId: 'student-1',
+      idempotencyKey: 'idem-free'
+    },
+    createRegistrationDependencies(state, async () => {
+      throw new Error('payment gateway should not run for free workshops');
+    })
+  );
+
+  assert.equal(registration.status, 'CONFIRMED');
+  assert.equal(registration.payment.status, 'SUCCESS');
+  assert.equal(registration.payment.transactionId, 'free');
+  assert.equal(state.workshop.seatsRemaining, 0);
+  assert.equal(state.insertedRegistrations, 1);
+  assert.equal(state.seatReleases, 0);
+});
+
+test('missing payment token releases the temporary reservation', async () => {
+  const state = createRegistrationState();
+
+  await assert.rejects(
+    registerForWorkshop(
+      {
+        workshopId: 'workshop-1',
+        userId: 'student-1',
+        idempotencyKey: 'idem-missing-token'
+      },
+      createRegistrationDependencies(state, async () => 'unused')
+    ),
+    /Payment token required/
+  );
+
+  assert.equal(state.workshop.seatsRemaining, 1);
+  assert.equal(state.registration?.status, 'CANCELLED');
+  assert.equal(state.payment?.status, 'FAILED');
+  assert.equal(state.seatReleases, 1);
+});
+
+test('full workshop rejects a new registration without creating rows', async () => {
+  const state = createRegistrationState();
+  state.workshop.seatsRemaining = 0;
+
+  await assert.rejects(
+    registerForWorkshop(
+      {
+        workshopId: 'workshop-1',
+        userId: 'student-1',
+        paymentToken: 'tok-unused',
+        idempotencyKey: 'idem-full'
+      },
+      createRegistrationDependencies(state, async () => 'unused')
+    ),
+    /Workshop is full/
+  );
+
+  assert.equal(state.workshop.seatsRemaining, 0);
+  assert.equal(state.registration, undefined);
+  assert.equal(state.payment, undefined);
+  assert.equal(state.insertedRegistrations, 0);
+});
+
+test('duplicate non-cancelled registration is rejected before another seat is consumed', async () => {
+  const state = createRegistrationState();
+  state.workshop.seatsRemaining = 0;
+  state.registration = {
+    id: 'registration-1',
+    userId: 'student-1',
+    workshopId: 'workshop-1',
+    qrCode: 'qr-existing',
+    status: 'CONFIRMED',
+    checkedInAt: null
+  };
+
+  await assert.rejects(
+    registerForWorkshop(
+      {
+        workshopId: 'workshop-1',
+        userId: 'student-1',
+        paymentToken: 'tok-unused',
+        idempotencyKey: 'idem-duplicate'
+      },
+      createRegistrationDependencies(state, async () => 'unused')
+    ),
+    /Already registered/
+  );
+
+  assert.equal(state.workshop.seatsRemaining, 0);
+  assert.equal(state.registration.status, 'CONFIRMED');
+  assert.equal(state.insertedRegistrations, 0);
+});
+
+test('seat cancellation never raises seats remaining above workshop capacity', async () => {
+  const state = createRegistrationState();
+  state.registration = {
+    id: 'registration-1',
+    userId: 'student-1',
+    workshopId: 'workshop-1',
+    qrCode: 'qr-old',
+    status: 'PENDING',
+    checkedInAt: null
+  };
+  state.payment = {
+    id: 'payment-1',
+    registrationId: 'registration-1',
+    amount: '50.00',
+    status: 'PENDING',
+    transactionId: null,
+    idempotencyKey: 'idem-old'
+  };
+
+  await cancelPendingReservation(
+    'registration-1',
+    'workshop-1',
+    'manual cancellation',
+    createRegistrationDependencies(state, async () => 'unused')
+  );
+
+  assert.equal(state.workshop.seatsRemaining, 1);
+  assert.equal(state.registration.status, 'CANCELLED');
+  assert.equal(state.payment.status, 'FAILED');
+});
