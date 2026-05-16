@@ -45,8 +45,8 @@ export const createFixture = async ({ capacity = 20 }: { capacity?: number } = {
     [`staff.${suffix}@example.test`, `Staff ${suffix}`]
   );
   const room = await query<{ id: string }>(
-    'insert into rooms (name, location, capacity) values ($1, $2, $3) returning id',
-    [`Room ${suffix}`, `Building ${suffix}`, capacity]
+    'insert into rooms (name, location, capacity, layout_url) values ($1, $2, $3, $4) returning id',
+    [`Room ${suffix}`, `Building ${suffix}`, capacity, `https://example.test/maps/${suffix}`]
   );
   const workshop = await query<{ id: string }>(
     `

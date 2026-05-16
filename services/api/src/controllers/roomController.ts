@@ -13,10 +13,10 @@ export const getRooms = async (req: Request, res: Response) => {
 };
 
 export const postRoom = async (req: Request, res: Response) => {
-  const { name, location, capacity } = req.body;
+  const { name, location, capacity, layoutUrl } = req.body;
 
   try {
-    const room = await createRoom({ name, location, capacity: Number(capacity) });
+    const room = await createRoom({ name, location, capacity: Number(capacity), layoutUrl });
     res.status(201).json(room);
   } catch (error: any) {
     res.status(400).json({ success: false, error: error.message });
@@ -24,13 +24,14 @@ export const postRoom = async (req: Request, res: Response) => {
 };
 
 export const putRoom = async (req: Request, res: Response) => {
-  const { name, location, capacity } = req.body;
+  const { name, location, capacity, layoutUrl } = req.body;
 
   try {
     const room = await updateRoom(req.params.id as string, {
       name,
       location,
-      capacity: Number(capacity)
+      capacity: Number(capacity),
+      layoutUrl
     });
 
     res.json(room);

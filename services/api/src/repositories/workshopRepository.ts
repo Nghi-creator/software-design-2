@@ -17,6 +17,7 @@ export type Workshop = {
     name: string;
     location: string;
     capacity: number;
+    layoutUrl: string | null;
   };
 };
 
@@ -122,7 +123,8 @@ export const findWorkshops = async ({
             'id', r.id,
             'name', r.name,
             'location', r.location,
-            'capacity', r.capacity
+            'capacity', r.capacity,
+            'layoutUrl', r.layout_url
           ) as room
         from workshops w
         join rooms r on r.id = w.room_id

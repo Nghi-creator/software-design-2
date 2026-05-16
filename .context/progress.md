@@ -55,6 +55,7 @@
 - **Full-Workshop Fast Reject**: Added a cheap seat-availability precheck before the atomic decrement so requests arriving after sell-out can return `Workshop is full` without needlessly contending on the already-empty workshop row.
 - **Sold-Out Redis Shield**: Added a pre-auth sold-out cache for registration attempts; once a workshop is proven full, later requests can return before DB-backed auth/idempotency work, and cancellation clears the marker if a seat reopens.
 - **Seat-Race Report**: Added `docs/seat-race-report.md` documenting the full request pipeline, last-seat race behavior, atomic decrement algorithm, retry/idempotency handling, cancellation recovery, sold-out fast paths, and supporting tests.
+- **Requirement Journey Coverage**: Added a full live-HTTP real-service test for weekly workshop browse, room-layout metadata, free registration, paid registration, QR retrieval, and staff check-in; added room `layout_url` support so the API now carries the room-map data already rendered by the web UI.
 
 ## In Progress
 - API contract still partial for future features outside the current check-in flow. QR validation is intentionally merged into check-in requests. Supabase SQL schema must be applied manually per environment.

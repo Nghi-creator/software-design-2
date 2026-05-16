@@ -66,12 +66,12 @@ const validateCapacityRange = (minCapacity?: number, maxCapacity?: number) => {
   }
 };
 
-export const createRoom = ({ name, location, capacity }: RoomInput) => {
-  return createRoomRecord({ name, location, capacity });
+export const createRoom = ({ name, location, capacity, layoutUrl }: RoomInput) => {
+  return createRoomRecord({ name, location, capacity, layoutUrl });
 };
 
-export const updateRoom = async (id: string, { name, location, capacity }: RoomInput) => {
-  const room = await updateRoomRecord(id, { name, location, capacity });
+export const updateRoom = async (id: string, { name, location, capacity, layoutUrl }: RoomInput) => {
+  const room = await updateRoomRecord(id, { name, location, capacity, layoutUrl });
 
   if (!room) {
     throw new Error('Room not found');

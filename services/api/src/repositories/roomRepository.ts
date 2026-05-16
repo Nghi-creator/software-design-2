@@ -5,6 +5,7 @@ export type RoomInput = {
   name: string;
   location: string;
   capacity: number;
+  layoutUrl?: string | null;
 };
 
 export type Room = {
@@ -12,6 +13,7 @@ export type Room = {
   name: string;
   location: string;
   capacity: number;
+  layoutUrl: string | null;
 };
 
 export type ListRoomsQuery = {
@@ -64,7 +66,7 @@ export const findRooms = async ({
   const [itemsResult, countResult] = await Promise.all([
     query<Room>(
       `
-        select id, name, location, capacity
+        select id, name, location, capacity, layout_url as "layoutUrl"
         from rooms
         ${whereClause}
         order by ${sortBy} ${sortOrder}
@@ -86,17 +88,17 @@ export const findRooms = async ({
   return toPaginatedResult(itemsResult.rows, Number(countResult.rows[0].totalItems), pagination);
 };
 
-export const createRoom = ({ name, location, capacity }: RoomInput) => {
+export const createRoom = ({ name, location, capacity, layoutUrl }: RoomInput) => {
   return query<Room>(
-    'insert into rooms (name, location, capacity) values ($1, $2, $3) returning id, name, location, capacity',
-    [name, location, capacity]
+    'insert into rooms (name, location, capacity, layout_url) values ($1, $2, $3, $4) returning id, name, location, capacity, layout_url as "layoutUrl"',
+    [name, location, capacity, layoutUrl ?? null]
   ).then((result) => result.rows[0]);
 };
 
-export const updateRoom = (id: string, { name, location, capacity }: RoomInput) => {
+export const updateRoom = (id: string, { name, location, capacity, layoutUrl }: RoomInput) => {
   return query<Room>(
-    'update rooms set name = $2, location = $3, capacity = $4 where id = $1 returning id, name, location, capacity',
-    [id, name, location, capacity]
+    'update rooms set name = $2, location = $3, capacity = $4, layout_url = $5 where id = $1 returning id, name, location, capacity, layout_url as "layoutUrl"',
+    [id, name, location, capacity, layoutUrl ?? null]
   ).then((result) => result.rows[0] ?? null);
 };
 

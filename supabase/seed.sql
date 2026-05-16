@@ -17,17 +17,18 @@ set
   student_id = excluded.student_id,
   password_hash = excluded.password_hash;
 
-insert into rooms (id, name, location, capacity)
+insert into rooms (id, name, location, capacity, layout_url)
 values
-  ('22222222-2222-2222-2222-222222222221', 'Innovation Hall', 'Building A, Floor 2', 120),
-  ('22222222-2222-2222-2222-222222222222', 'AI Lab', 'Building B, Floor 5', 60),
-  ('22222222-2222-2222-2222-222222222223', 'Startup Studio', 'Building C, Floor 1', 80),
-  ('22222222-2222-2222-2222-222222222224', 'Data Theater', 'Building D, Floor 3', 160)
+  ('22222222-2222-2222-2222-222222222221', 'Innovation Hall', 'Building A, Floor 2', 120, 'https://example.test/maps/innovation-hall'),
+  ('22222222-2222-2222-2222-222222222222', 'AI Lab', 'Building B, Floor 5', 60, 'https://example.test/maps/ai-lab'),
+  ('22222222-2222-2222-2222-222222222223', 'Startup Studio', 'Building C, Floor 1', 80, 'https://example.test/maps/startup-studio'),
+  ('22222222-2222-2222-2222-222222222224', 'Data Theater', 'Building D, Floor 3', 160, 'https://example.test/maps/data-theater')
 on conflict (id) do update
 set
   name = excluded.name,
   location = excluded.location,
-  capacity = excluded.capacity;
+  capacity = excluded.capacity,
+  layout_url = excluded.layout_url;
 
 insert into workshops (
   id,
