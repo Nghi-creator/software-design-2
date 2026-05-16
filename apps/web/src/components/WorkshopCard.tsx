@@ -1,4 +1,5 @@
 import { formatCurrency, formatDateTime } from '../lib/format'
+import { getWorkshopSummaryStatus } from '../lib/workshopCatalog'
 import type { SessionUser, Workshop } from '../types'
 import { RegistrationAction } from './RegistrationAction'
 import { buttonClass, cardClass } from './styles'
@@ -7,6 +8,7 @@ export function WorkshopCard({ user, workshop }: { user: SessionUser | null; wor
   const seatsUsed = workshop.capacity - workshop.seatsRemaining
   const fillPercent = Math.round((seatsUsed / workshop.capacity) * 100)
   const seatStatus = getSeatStatus(workshop)
+  const summaryStatus = getWorkshopSummaryStatus(workshop)
 
   return (
     <article className={`${cardClass} p-theme-lg transition hover:border-border-strong hover:bg-surface-cardHover`}>
@@ -21,7 +23,7 @@ export function WorkshopCard({ user, workshop }: { user: SessionUser | null; wor
       </div>
       <h2 className="mb-theme-sm text-xl font-bold text-text-primary">{workshop.title}</h2>
       <p className="text-text-secondary">{workshop.speaker}</p>
-      <dl className="my-theme-lg grid gap-theme-sm md:grid-cols-3">
+      <dl className="my-theme-lg grid gap-theme-sm md:grid-cols-2">
         <div>
           <dt className="text-sm text-text-muted">Room</dt>
           <dd className="font-bold text-text-primary">{workshop.room?.name ?? workshop.roomId}</dd>
@@ -34,10 +36,29 @@ export function WorkshopCard({ user, workshop }: { user: SessionUser | null; wor
           <dt className="text-sm text-text-muted">Fee</dt>
           <dd className="font-bold text-text-primary">{formatCurrency(workshop.price)}</dd>
         </div>
+        <div>
+          <dt className="text-sm text-text-muted">Room layout</dt>
+          <dd className="font-bold text-text-primary">
+            {workshop.room?.layoutUrl ? (
+              <a className="text-brand-secondary hover:underline" href={workshop.room.layoutUrl}>
+                Map reference
+              </a>
+            ) : (
+              'Layout pending'
+            )}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-sm text-text-muted">AI summary</dt>
+          <dd className="font-bold text-text-primary">{formatSummaryStatus(summaryStatus)}</dd>
+        </div>
       </dl>
       <div className="my-theme-lg h-2.5 overflow-hidden rounded-full bg-background-overlay" aria-label={`${fillPercent}% seats reserved`}>
         <span className="block h-full rounded-full bg-brand-primary" style={{ width: `${fillPercent}%` }} />
       </div>
+      <p className="mb-theme-md text-sm font-bold text-text-secondary">
+        {workshop.seatsRemaining} of {workshop.capacity} seats available.
+      </p>
       <div className="flex flex-wrap gap-theme-sm">
         <a className={buttonClass} href={`#/workshops/${workshop.id}`}>
           View details
@@ -66,5 +87,18 @@ function getSeatStatus(workshop: Workshop) {
   return {
     label: `${workshop.seatsRemaining} seats left`,
     dotClass: 'bg-status-success',
+  }
+}
+
+function formatSummaryStatus(status: ReturnType<typeof getWorkshopSummaryStatus>) {
+  switch (status) {
+    case 'ready':
+      return 'Ready'
+    case 'processing':
+      return 'Processing'
+    case 'failed':
+      return 'Needs review'
+    case 'not_uploaded':
+      return 'No PDF yet'
   }
 }
