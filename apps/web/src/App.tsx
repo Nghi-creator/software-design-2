@@ -9,6 +9,7 @@ import { AdminWorkshopsPage } from './pages/admin/AdminWorkshopsPage'
 import { HomePage } from './pages/user/HomePage'
 import { LoginPage } from './pages/user/LoginPage'
 import { NotFoundPage } from './pages/user/NotFoundPage'
+import { NotificationsPage } from './pages/user/NotificationsPage'
 import { RegistrationsPage } from './pages/user/RegistrationsPage'
 import { WorkshopDetailPage } from './pages/user/WorkshopDetailPage'
 import { WorkshopsPage } from './pages/user/WorkshopsPage'
@@ -18,6 +19,7 @@ const publicNav: NavItem[] = [
   { label: 'Home', path: '/' },
   { label: 'Schedule', path: '/workshops' },
   { label: 'My QR', path: '/registrations', roles: ['STUDENT'] },
+  { label: 'Notifications', path: '/notifications', roles: ['STUDENT'] },
   { label: 'Admin', path: '/admin', roles: ['ORGANIZER'] },
 ]
 
@@ -69,6 +71,12 @@ function RouteRenderer({
       return (
         <ProtectedRoute authStatus={authStatus} user={user} allowedRoles={['STUDENT']}>
           {user ? <RegistrationsPage user={user} /> : null}
+        </ProtectedRoute>
+      )
+    case 'notifications':
+      return (
+        <ProtectedRoute authStatus={authStatus} user={user} allowedRoles={['STUDENT']}>
+          {user ? <NotificationsPage user={user} /> : null}
         </ProtectedRoute>
       )
     case 'login':

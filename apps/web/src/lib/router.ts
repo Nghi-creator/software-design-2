@@ -3,7 +3,8 @@ import type { Route } from '../types'
 
 export function getRouteFromHash(): Route {
   const hashPath = window.location.hash.replace(/^#/, '') || '/'
-  const path = hashPath.startsWith('/') ? hashPath : `/${hashPath}`
+  const rawPath = hashPath.startsWith('/') ? hashPath : `/${hashPath}`
+  const path = normalizePath(rawPath)
   const parts = path.split('/').filter(Boolean)
 
   if (path === '/') return { key: 'home', path, params: {} }
@@ -12,12 +13,18 @@ export function getRouteFromHash(): Route {
     return { key: 'workshopDetail', path, params: { id: parts[1] } }
   }
   if (path === '/registrations') return { key: 'registrations', path, params: {} }
+  if (path === '/notifications') return { key: 'notifications', path, params: {} }
   if (path === '/login') return { key: 'login', path, params: {} }
   if (path === '/admin') return { key: 'admin', path, params: {} }
   if (path === '/admin/workshops') return { key: 'adminWorkshops', path, params: {} }
   if (path === '/admin/imports') return { key: 'adminImports', path, params: {} }
 
   return { key: 'notFound', path, params: {} }
+}
+
+function normalizePath(path: string) {
+  if (path === '/') return path
+  return path.replace(/\/+$/, '')
 }
 
 export function useHashRoute() {

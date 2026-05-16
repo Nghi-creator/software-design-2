@@ -35,16 +35,13 @@ Purpose: track React web work separately from Flutter mobile work. Move finished
 - **Workshop Detail UX Pass**: Detail headers include a back-to-schedule control and show a centered fetching state while live workshop data is still loading instead of a premature not-found message.
 - **Registration And Payment Flow**: Student registration buttons now handle free and paid workshops, collect payment tokens for paid workshops, send `Idempotency-Key`, disable duplicate submissions, surface full/rate-limit/payment-unavailable/API-offline failures, store local registration outcomes, retrieve confirmed QR tickets, and render "My registrations" with pending/confirmed/cancelled/payment-failed states.
 - **Registration Verification**: `npm run lint`, `npm run build`, and a Vite dev-server HTTP smoke pass after registration/payment UI implementation.
+- **Notifications Flow**: Successful registrations now create in-app confirmation notifications, show a dismissible recent-notification banner, and render student notification history with channel/status badges shaped for future email or Telegram delivery.
+- **Notifications Verification**: `npm run lint`, `npm run build`, and a Vite dev-server HTTP smoke pass after notification UI implementation.
 
 ## In Progress
 - No active web implementation task yet.
 
 ## Backlog
-
-### Notifications
-- [ ] Display in-app confirmation notification after successful registration.
-- [ ] Show notification history or recent confirmation state if backend data supports it.
-- [ ] Keep notification UI channel-agnostic so future channels such as Telegram can be represented without redesigning the flow.
 
 ### Organizer Admin
 - [ ] Build organizer dashboard landing page.
@@ -85,7 +82,7 @@ Purpose: track React web work separately from Flutter mobile work. Move finished
 - [x] QR ticket display after successful registration.
 - [x] No duplicate client-side registration/payment submission.
 - [x] Payment instability graceful degradation.
-- [ ] In-app registration confirmation notification.
+- [x] In-app registration confirmation notification.
 - [ ] Organizer workshop create, update, cancel/delete.
 - [ ] Organizer statistics.
 - [x] Strict web page access control.

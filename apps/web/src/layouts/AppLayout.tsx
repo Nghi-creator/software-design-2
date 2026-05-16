@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import type { NavItem, SessionUser } from '../types'
 import { frameClass, shellClass } from '../components/styles'
+import { NotificationBanner } from '../components/NotificationBanner'
 import { TopNav } from './TopNav'
 
 type AppLayoutProps = {
@@ -23,6 +24,7 @@ export function AppLayout({ activePath, navItems, user, notice, onLogout, childr
             {notice}
           </div>
         ) : null}
+        <NotificationBanner user={user} />
         {children}
       </main>
     </div>
