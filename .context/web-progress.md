@@ -11,28 +11,29 @@ Purpose: track React web work separately from Flutter mobile work. Move finished
 ## Done
 - **React Skeleton**: Vite React TypeScript project exists in `apps/web/`.
 - **Web Tracker**: Dedicated web progress checklist created.
+- **Application Shell**: Replaced the starter/showcase screen with a UniHub app shell and top navigation.
+- **Routing Foundation**: Added hash-based routes for public/student pages, auth, and organizer/admin pages.
+- **Shared UI States**: Added page header, loading, empty, error/protected-state, and protected-route wrapper patterns.
+- **API Client Foundation**: Added shared API request helper with base URL config, bearer-token support, idempotency-key support, JSON parsing, and typed errors.
+- **Frontend Domain Types**: Added shared TypeScript types for roles, users, rooms, workshops, registrations, payments, QR tickets, AI summaries, admin stats, and CSV imports.
+- **Web Environment Docs**: Documented `VITE_API_BASE_URL`, local dev commands, and lint/build verification in `apps/web/README.md`; added `apps/web/.env.example`.
+- **Foundation Verification**: `npm run lint` and `npm run build` pass in `apps/web`.
+- **Authentication Flow**: Login form now posts to `/api/auth/login`, stores JWT sessions, validates saved sessions with `/api/auth/me`, and clears invalid sessions.
+- **Web RBAC Gates**: Student registration pages/actions require `STUDENT`; organizer admin pages require `ORGANIZER`; check-in staff accounts are kept out of web-only student/admin surfaces.
+- **Auth State UX**: Added login-required, access-denied, saved-session verification, logout, and backend-unreachable login error states.
+- **Auth Verification**: `npm run lint` and `npm run build` pass after auth/access-control implementation.
+- **Auth Browser Smoke**: Verified logged-out admin gate, student registration login prompt, and seed-account login UI in the local web app.
+- **Shared Theme Tokens**: Added `design/tokens.json`, `design/README.md`, and `.context/theme.md` for a dark purple web/mobile theme contract.
+- **Tailwind Web Refactor**: Added Tailwind v4 to `apps/web`, mapped shared tokens in `tailwind.config.mjs`, removed `App.css`, and refactored the React UI to token-backed Tailwind utilities.
+- **Theme Verification**: `npm run lint` and `npm run build` pass; browser smoke verified Tailwind token colors render on the local app.
+- **Web Source Restructure**: Split the React app into `components/`, `pages/`, `layouts/`, `data/`, and focused `lib/` modules; `App.tsx` now acts as the route switch and app composition layer.
+- **Restructure Verification**: `npm run lint`, `npm run build`, and browser smoke for home/workshops/detail/login/admin gate pass after the split.
+- **Page Surface Split**: `apps/web/src/pages/` now separates organizer pages under `admin/` and public/student pages under `user/`; shared `components/`, `layouts/`, `lib/`, `data/`, and `types` remain unsplit until surface-specific code appears.
 
 ## In Progress
 - No active web implementation task yet.
 
 ## Backlog
-
-### Foundation
-- [ ] Replace the Vite starter screen with the UniHub Workshop application shell.
-- [ ] Define routing structure for public/student pages, auth pages, and organizer/admin pages.
-- [ ] Add shared layout components: top navigation, page frame, loading state, empty state, error state, and protected-route wrapper.
-- [ ] Add shared API client with base URL configuration, JSON parsing, bearer-token support, and consistent error handling.
-- [ ] Define frontend domain types for users, roles, rooms, workshops, registrations, payments, QR tickets, AI summaries, and admin stats.
-- [ ] Add environment documentation for web API URL and local run commands.
-
-### Authentication And Access Control
-- [ ] Build login flow using backend auth endpoints.
-- [ ] Persist and restore authenticated session safely.
-- [ ] Add logout behavior.
-- [ ] Gate organizer/admin pages to organizer users only.
-- [ ] Gate student-only actions to authenticated students.
-- [ ] Show clear unauthorized and unauthenticated states.
-- [ ] Ensure role checks match requirements: students browse/register, organizers manage workshops/stats, check-in staff use mobile check-in only.
 
 ### Student Workshop Browsing
 - [ ] Show list of all workshops during the event week.
@@ -88,9 +89,6 @@ Purpose: track React web work separately from Flutter mobile work. Move finished
 - [ ] Verify responsive layouts for desktop, tablet, and mobile web widths.
 
 ### Testing And Delivery
-- [ ] Add frontend lint/build verification to README or root run instructions.
-- [ ] Run `npm run lint` in `apps/web`.
-- [ ] Run `npm run build` in `apps/web`.
 - [ ] Manually verify student browse/detail/register flow against seed data.
 - [ ] Manually verify organizer CRUD/stats flow against seed data.
 - [ ] Manually verify auth redirects and role-based page protection.
@@ -105,7 +103,7 @@ Purpose: track React web work separately from Flutter mobile work. Move finished
 - [ ] In-app registration confirmation notification.
 - [ ] Organizer workshop create, update, cancel/delete.
 - [ ] Organizer statistics.
-- [ ] Strict web page access control.
+- [x] Strict web page access control.
 - [ ] AI PDF summary display/status.
 - [ ] CSV import status/error visibility where backend endpoints exist.
 - [ ] README/setup instructions for running the web app.
