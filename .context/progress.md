@@ -29,6 +29,7 @@
 - **Check-In/Import Repository Extraction**: Check-in QR retrieval, online/offline check-in, and CSV import status/error flows now keep DB access in repository modules with dependencies supplied through `di.ts`.
 - **Mobile Check-In App**: Replaced the Flutter visual scaffold with a working staff app: bearer-token login, secure session persistence, camera QR scanning, online check-in calls, durable SQLite offline queue, connectivity-aware automatic retry, item-level sync result handling, and queue/profile UI.
 - **Web Progress Tracker**: Added `.context/web-progress.md` for React web tasks and requirement coverage.
+- **Web Schedule Filter Polish**: Replaced the student schedule day dropdown with native start/end date inputs, added All/Registered/Unregistered schedule filtering, suppressing the empty-state panel for date ranges with no workshops, and restyled confirmed registration/QR actions as compact purple pills.
 
 ## In Progress
 - API contract still partial; QR validation remains undefined. Supabase SQL schema must be applied manually per environment.
