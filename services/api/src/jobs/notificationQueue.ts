@@ -5,16 +5,24 @@ import { RegistrationConfirmedEvent } from '../types/notification';
 export const notificationQueueName = 'notification-delivery';
 export const registrationConfirmedJobName = 'registration.confirmed';
 
-const queue = new Queue<RegistrationConfirmedEvent>(notificationQueueName, {
-  connection: redis
-});
+let queue: Queue<RegistrationConfirmedEvent> | undefined;
+
+const getQueue = () => {
+  if (!queue) {
+    queue = new Queue<RegistrationConfirmedEvent>(notificationQueueName, {
+      connection: redis
+    });
+  }
+
+  return queue;
+};
 
 export const publishRegistrationConfirmed = async (registrationId: string) => {
-  await queue.add(
+  await getQueue().add(
     registrationConfirmedJobName,
     { registrationId },
     {
-      jobId: `${registrationConfirmedJobName}:${registrationId}`,
+      jobId: `${registrationConfirmedJobName}-${registrationId}`,
       attempts: 5,
       backoff: {
         type: 'exponential',
@@ -22,4 +30,13 @@ export const publishRegistrationConfirmed = async (registrationId: string) => {
       }
     }
   );
+};
+
+export const closeNotificationQueue = async () => {
+  if (!queue) {
+    return;
+  }
+
+  await queue.close();
+  queue = undefined;
 };

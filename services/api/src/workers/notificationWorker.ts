@@ -10,22 +10,30 @@ import {
 import { deliverRegistrationConfirmedNotification } from '../services/notifications';
 import { RegistrationConfirmedEvent } from '../types/notification';
 
-const worker = new Worker<RegistrationConfirmedEvent>(
-  notificationQueueName,
-  async (job) => {
-    if (job.name !== registrationConfirmedJobName) {
-      throw new Error(`Unsupported notification job: ${job.name}`);
-    }
+export const createNotificationWorker = () => {
+  const worker = new Worker<RegistrationConfirmedEvent>(
+    notificationQueueName,
+    async (job) => {
+      if (job.name !== registrationConfirmedJobName) {
+        throw new Error(`Unsupported notification job: ${job.name}`);
+      }
 
-    await deliverRegistrationConfirmedNotification(job.data);
-  },
-  { connection: redis }
-);
+      await deliverRegistrationConfirmedNotification(job.data);
+    },
+    { connection: redis }
+  );
 
-worker.on('completed', (job) => {
-  console.log(`Notification job completed: ${job.id}`);
-});
+  worker.on('completed', (job) => {
+    console.log(`Notification job completed: ${job.id}`);
+  });
 
-worker.on('failed', (job, error) => {
-  console.error(`Notification job failed: ${job?.id}`, error);
-});
+  worker.on('failed', (job, error) => {
+    console.error(`Notification job failed: ${job?.id}`, error);
+  });
+
+  return worker;
+};
+
+if (require.main === module) {
+  createNotificationWorker();
+}
