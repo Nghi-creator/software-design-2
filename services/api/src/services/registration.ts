@@ -1,6 +1,7 @@
 import { RegistrationDependencies, registrationDependencies } from '../di';
 import {
   cancelReservation,
+  getWorkshopPrice,
   markPaymentSuccessAndConfirmRegistration,
   reserveSeat
 } from '../repositories/registrationRepository';
@@ -18,16 +19,27 @@ export const registerForWorkshop = async ({
   paymentToken,
   idempotencyKey
 }: RegisterInput, dependencies: RegistrationDependencies = registrationDependencies) => {
-  const reservation = await reserveSeat({ workshopId, userId, idempotencyKey }, dependencies);
+  const workshopPrice = await getWorkshopPrice(workshopId, dependencies);
 
-  if (reservation.price > 0) {
-    if (!paymentToken) {
-      await cancelPendingReservation(reservation.registration.id, workshopId, 'Payment token required', dependencies);
-      throw Object.assign(new Error('Payment token required'), { statusCode: 400 });
+  if (workshopPrice > 0 && !paymentToken) {
+    throw Object.assign(new Error('Payment token required'), { statusCode: 400 });
+  }
+
+  let reservation;
+
+  try {
+    reservation = await reserveSeat({ workshopId, userId, idempotencyKey }, dependencies);
+  } catch (error: any) {
+    if (error.message === 'Workshop is full') {
+      await dependencies.markWorkshopSoldOut(workshopId);
     }
 
+    throw error;
+  }
+
+  if (reservation.price > 0) {
     try {
-      const transactionId = await dependencies.processPayment(userId, reservation.price, paymentToken);
+      const transactionId = await dependencies.processPayment(userId, reservation.price, paymentToken!);
 
       const registration = await markPaymentSuccessAndConfirmRegistration(
         {
@@ -64,4 +76,5 @@ export const cancelPendingReservation = async (
   dependencies: RegistrationDependencies = registrationDependencies
 ) => {
   await cancelReservation(registrationId, workshopId, dependencies);
+  await dependencies.clearWorkshopSoldOut(workshopId);
 };

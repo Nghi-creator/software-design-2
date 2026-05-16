@@ -23,6 +23,8 @@ export type RegistrationDependencies = {
   processPayment: (userId: string, amount: number, token: string) => Promise<string>;
   createQrCode: () => string;
   publishRegistrationConfirmed: (registrationId: string) => Promise<void>;
+  markWorkshopSoldOut: (workshopId: string) => Promise<void>;
+  clearWorkshopSoldOut: (workshopId: string) => Promise<void>;
 };
 
 export type CheckinDependencies = {
@@ -67,6 +69,12 @@ export const registrationDependencies: RegistrationDependencies = {
   publishRegistrationConfirmed: async (registrationId) => {
     const { publishRegistrationConfirmed } = await import('./jobs/notificationQueue');
     await publishRegistrationConfirmed(registrationId);
+  },
+  markWorkshopSoldOut: async (workshopId) => {
+    await redis.setex(`registration:soldout:${workshopId}`, 60 * 60, '1');
+  },
+  clearWorkshopSoldOut: async (workshopId) => {
+    await redis.del(`registration:soldout:${workshopId}`);
   }
 };
 

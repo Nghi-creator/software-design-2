@@ -44,7 +44,7 @@ npm run worker:notifications
 
 - **Supabase Postgres:** Backend kết nối trực tiếp tới Supabase Postgres bằng `pg` và `DATABASE_URL`; không còn dùng Prisma Client.
 - **Concurrency (Tranh chấp chỗ ngồi):** Sử dụng `SELECT ... FOR UPDATE` trong transaction ngắn để giữ chỗ. Không gọi Payment Gateway khi đang giữ DB lock.
-- **Spike Load (Chịu tải đột biến):** Sử dụng Redis + Lua Script triển khai thuật toán Token Bucket ở middleware. Cho phép tối đa 5 requests mỗi 10 giây cho mỗi IP ở API đăng ký.
+- **Spike Load (Chịu tải đột biến):** Sử dụng Redis + Lua Script triển khai token bucket kép ở API đăng ký: một bucket toàn cục để bảo vệ backend, một bucket theo sinh viên để giữ công bằng giữa các client.
 - **Thanh toán lỗi (Circuit Breaker):** Sử dụng thư viện `opossum`. Nếu cổng thanh toán mock fail ngẫu nhiên quá 50%, Circuit Breaker sẽ chuyển sang trạng thái Open và ngắt sớm các request tiếp theo, giúp hệ thống không bị treo.
 - **Trừ tiền 2 lần (Idempotency):** Header `Idempotency-Key` là bắt buộc với API đăng ký. Redis cache response 24h, PostgreSQL lưu trạng thái `IN_PROGRESS`/`COMPLETED` để chặn request trùng đang chạy.
 - **Check-in Offline:** API `/api/checkin/sync` nhận batch item `{ localId?, qrCode, scannedAt? }` và trả kết quả theo từng item để mobile app biết item nào xoá, retry, hoặc đối soát.
@@ -54,3 +54,34 @@ npm run worker:notifications
 
 ## Seed data
 Bạn có thể tự insert dữ liệu workshop qua API tạo Workshop hoặc dùng script seed (nếu có). Sinh viên được load tự động từ file CSV qua cron job.
+
+## Load test đăng ký bằng k6
+
+Chỉ chạy trên môi trường test/disposable vì bài test sẽ tạo nhiều user và registration thật trong database.
+
+1. Chạy API với Postgres + Redis thật:
+```bash
+npm run dev
+```
+
+2. Chuẩn bị token cho 12.000 sinh viên mô phỏng:
+```bash
+npm run load:prepare:registration
+```
+Lệnh này idempotent theo cohort mặc định `registration_surge`: lần chạy sau sẽ reuse sinh viên cũ, reuse workshop/room load-test, và chỉ ghi lại file token.
+Mặc định script upsert theo batch 500 user/lần; có thể chỉnh bằng `LOAD_STUDENT_BATCH_SIZE=...`.
+Workshop load-test mặc định có 60 chỗ để mô phỏng bài toán tranh chấp ghế; có thể chỉnh bằng `LOAD_WORKSHOP_CAPACITY=...`.
+
+3. Chạy mô phỏng đúng profile yêu cầu: 7.200 request trong 3 phút đầu, 4.800 request trong 7 phút tiếp theo:
+```bash
+BASE_URL=http://127.0.0.1:3000 npm run load:registration
+```
+
+Mặc định script đọc token từ `load-tests/registration-surge.tokens.json` và workshop metadata từ `load-tests/registration-surge.metadata.json`. Có thể đổi bằng `TOKENS_FILE=...` và `LOAD_TEST_METADATA_FILE=...`.
+
+5. Dọn cohort load test khi cần:
+```bash
+npm run load:cleanup:registration
+```
+
+Có thể đặt `LOAD_TEST_COHORT=<name>` nếu muốn nhiều cohort độc lập.

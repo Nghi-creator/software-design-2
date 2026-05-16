@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { rateLimiter } from '../middleware/rateLimiter';
+import { registrationRateLimiter } from '../middleware/rateLimiter';
 import { idempotency } from '../middleware/idempotency';
 import { requireRole } from '../middleware/auth';
 import multer from 'multer';
@@ -23,6 +23,6 @@ router.get('/:id/summary-status', requireRole(Roles.ORGANIZER), getWorkshopSumma
 router.post('/', requireRole(Roles.ORGANIZER), upload.single('pdf'), postWorkshop);
 router.put('/:id', requireRole(Roles.ORGANIZER), putWorkshop);
 router.delete('/:id', requireRole(Roles.ORGANIZER), deleteWorkshopById);
-router.post('/:id/register', requireRole(Roles.STUDENT), rateLimiter(5, 0.5), idempotency, postWorkshopRegistration);
+router.post('/:id/register', requireRole(Roles.STUDENT), registrationRateLimiter, idempotency, postWorkshopRegistration);
 
 export default router;

@@ -1,5 +1,25 @@
 import { RegistrationDependencies, registrationDependencies } from '../di';
 
+export const getWorkshopPrice = async (
+  workshopId: string,
+  dependencies: RegistrationDependencies = registrationDependencies
+) => {
+  const result = await dependencies.withTransaction(async (client) => {
+    const workshop = await client.query<{ price: string }>(
+      'select price from workshops where id = $1',
+      [workshopId]
+    );
+
+    return workshop.rows[0] ?? null;
+  });
+
+  if (!result) {
+    throw Object.assign(new Error('Workshop not found'), { statusCode: 404 });
+  }
+
+  return Number(result.price);
+};
+
 export const reserveSeat = async ({
   workshopId,
   userId,
@@ -10,20 +30,6 @@ export const reserveSeat = async ({
   idempotencyKey: string;
 }, dependencies: RegistrationDependencies = registrationDependencies) => {
   return dependencies.withTransaction(async (client) => {
-    const lockedWorkshops = await client.query<{
-      id: string;
-      price: string;
-      seatsRemaining: number;
-    }>(
-      'select id, price, seats_remaining as "seatsRemaining" from workshops where id = $1 for update',
-      [workshopId]
-    );
-
-    const workshop = lockedWorkshops.rows[0];
-    if (!workshop) {
-      throw Object.assign(new Error('Workshop not found'), { statusCode: 404 });
-    }
-
     const existing = await client.query<{ id: string; status: string }>(
       'select id, status from registrations where user_id = $1 and workshop_id = $2 for update',
       [userId, workshopId]
@@ -34,14 +40,40 @@ export const reserveSeat = async ({
       throw Object.assign(new Error('Already registered'), { statusCode: 400 });
     }
 
-    if (workshop.seatsRemaining <= 0) {
+    const currentWorkshop = await client.query<{ id: string; seatsRemaining: number }>(
+      'select id, seats_remaining as "seatsRemaining" from workshops where id = $1',
+      [workshopId]
+    );
+    const currentWorkshopRow = currentWorkshop.rows[0];
+
+    if (!currentWorkshopRow) {
+      throw Object.assign(new Error('Workshop not found'), { statusCode: 404 });
+    }
+
+    if (currentWorkshopRow.seatsRemaining <= 0) {
       throw Object.assign(new Error('Workshop is full'), { statusCode: 400 });
     }
 
-    await client.query(
-      'update workshops set seats_remaining = seats_remaining - 1, updated_at = now() where id = $1',
+    const reservedWorkshops = await client.query<{
+      id: string;
+      price: string;
+      seatsRemaining: number;
+    }>(
+      `
+        update workshops
+        set seats_remaining = seats_remaining - 1,
+          updated_at = now()
+        where id = $1
+          and seats_remaining > 0
+        returning id, price, seats_remaining as "seatsRemaining"
+      `,
       [workshopId]
     );
+    const workshop = reservedWorkshops.rows[0];
+
+    if (!workshop) {
+      throw Object.assign(new Error('Workshop is full'), { statusCode: 400 });
+    }
 
     const registration = existingRegistration
       ? await client.query(

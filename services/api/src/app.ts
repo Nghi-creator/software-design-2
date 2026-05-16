@@ -8,6 +8,10 @@ import importRoutes from './routes/import';
 import { attachUser } from './middleware/auth';
 import { logApiRequest } from './middleware/requestLogger';
 import { logApiResponse } from './middleware/responseLogger';
+import {
+  preAuthRegistrationRateLimiter,
+  rejectSoldOutRegistrations
+} from './middleware/rateLimiter';
 
 const app = express();
 
@@ -15,6 +19,8 @@ app.use(cors());
 app.use(logApiRequest);
 app.use(logApiResponse);
 app.use(express.json());
+app.post('/api/workshops/:id/register', preAuthRegistrationRateLimiter);
+app.post('/api/workshops/:id/register', rejectSoldOutRegistrations);
 app.use(attachUser);
 
 app.use('/api/auth', authRoutes);
