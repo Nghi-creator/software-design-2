@@ -27,22 +27,11 @@
 - **Check-In/Import Request Validation**: Added lightweight route middleware for UUID params, online check-in QR payloads, offline sync item payloads, and CSV import error pagination, with focused middleware tests.
 - **Opt-In Real-Service Integration Scaffolding**: Added skipped-by-default Postgres/Redis integration tests for registration/payment idempotency and offline check-in sync. Run with `RUN_INTEGRATION_TESTS=true DATABASE_URL=... REDIS_URL=... npm test`.
 - **Check-In/Import Repository Extraction**: Check-in QR retrieval, online/offline check-in, and CSV import status/error flows now keep DB access in repository modules with dependencies supplied through `di.ts`.
+- **Mobile Check-In App**: Replaced the Flutter visual scaffold with a working staff app: bearer-token login, secure session persistence, camera QR scanning, online check-in calls, durable SQLite offline queue, connectivity-aware automatic retry, item-level sync result handling, and queue/profile UI.
 - **Web Progress Tracker**: Added `.context/web-progress.md` for React web tasks and requirement coverage.
 
 ## In Progress
-- Backend deploy-first work remains focused on `services/`; `apps/mobile` currently has a visual Flutter scaffold only, with no real scanner, auth flow, API client, durable offline queue, or sync engine implemented yet.
 - API contract still partial; QR validation remains undefined. Supabase SQL schema must be applied manually per environment.
 
 ## Next Steps
-<<<<<<< Updated upstream
-- Add remaining API endpoints from `api_spec.md` Still Undefined section.
-- Person B has no active backend task left except QR validation, which remains upcoming pending team decision.
-=======
-- Start the mobile check-in implementation against the existing `/api/auth/*`, `/api/checkin`, and `/api/checkin/sync` contracts:
-  - staff login/session handling
-  - QR scanner integration
-  - durable local queue with retry/sync states
-  - connectivity-aware online/offline flow
-  - per-item sync result handling
 - Add remaining API endpoints from `api_spec.md` Still Undefined section, especially a separate QR validation contract if the team wants pre-check validation before committing check-in.
->>>>>>> Stashed changes
