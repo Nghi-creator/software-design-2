@@ -6,6 +6,7 @@ const { Pool } = require('pg');
 const studentCount = Number(process.env.LOAD_STUDENT_COUNT || 12000);
 const cohort = process.env.LOAD_TEST_COHORT || 'registration_surge';
 const outputFile = process.env.TOKENS_FILE || './load-tests/registration-surge.tokens.json';
+const batchSize = Number(process.env.LOAD_STUDENT_BATCH_SIZE || 500);
 const jwtSecret = process.env.JWT_SECRET;
 const expiresInSeconds = Number(process.env.JWT_EXPIRES_IN_SECONDS || 60 * 60 * 24);
 
@@ -39,30 +40,57 @@ const createToken = (id) => {
 };
 
 const main = async () => {
-  const tokens = [];
+  const tokens = new Array(studentCount);
   let createdCount = 0;
 
-  for (let index = 0; index < studentCount; index += 1) {
-    const email = `${cohort}.${index}@load.test`;
-    const studentId = `${cohort}_${index}`;
+  for (let start = 0; start < studentCount; start += batchSize) {
+    const rows = Array.from(
+      { length: Math.min(batchSize, studentCount - start) },
+      (_, offset) => {
+        const index = start + offset;
+
+        return {
+          index,
+          email: `${cohort}.${index}@load.test`,
+          name: `Load Student ${index}`,
+          studentId: `${cohort}_${index}`
+        };
+      }
+    );
+    const values = [];
+    const placeholders = rows.map((row, rowIndex) => {
+      const base = rowIndex * 3;
+      values.push(row.email, row.name, row.studentId);
+
+      return `($${base + 1}, $${base + 2}, 'STUDENT', $${base + 3})`;
+    });
     const result = await pool.query(
       `
         insert into users (email, name, role, student_id)
-        values ($1, $2, 'STUDENT', $3)
+        values ${placeholders.join(', ')}
         on conflict (email) do update
           set name = excluded.name,
               role = excluded.role,
               student_id = excluded.student_id
-        returning id, xmax = 0 as "wasInserted"
+        returning id, email, xmax = 0 as "wasInserted"
       `,
-      [email, `Load Student ${index}`, studentId]
+      values
     );
+    const indexesByEmail = new Map(rows.map((row) => [row.email, row.index]));
 
-    if (result.rows[0].wasInserted) {
-      createdCount += 1;
+    for (const row of result.rows) {
+      const index = indexesByEmail.get(row.email);
+
+      if (index === undefined) {
+        throw new Error(`Unexpected email returned from upsert: ${row.email}`);
+      }
+
+      if (row.wasInserted) {
+        createdCount += 1;
+      }
+
+      tokens[index] = createToken(row.id);
     }
-
-    tokens.push(createToken(result.rows[0].id));
   }
 
   writeFileSync(outputFile, JSON.stringify(tokens, null, 2));

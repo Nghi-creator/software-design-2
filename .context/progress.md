@@ -42,6 +42,8 @@
 - **Registration Load-Spike Protection Coverage**: Reworked registration throttling into layered Redis token buckets (global API protection plus per-student fairness, with IP fallback before auth), added unit coverage for global rejection, shared-IP fairness, abusive-client isolation, forwarded-IP fallback, and Redis fail-open behavior, and expanded opt-in real-service coverage with a live HTTP fairness test proving one spammy student is throttled without blocking another student on the same IP.
 - **Registration k6 Surge Harness**: Added an opt-in k6 profile for the assignment traffic shape (7,200 requests in the first 3 minutes, 4,800 in the next 7 minutes), plus a fixture-prep script that creates bearer tokens for simulated students without distorting the registration path with auth hashing cost.
 - **Pre-Auth Registration Shield**: Added an early Redis IP limiter on `POST /api/workshops/:id/register` before bearer-token verification, so abusive traffic can be shed before the database-backed auth lookup while keeping post-auth global/per-student fairness controls in place.
+- **Batched Load Fixture Prep**: Optimized the k6 student-prep script from 12,000 sequential inserts to batched upserts (default 500 rows/query) so repeated load-test setup is fast enough to use in practice.
+- **Paid Registration Prevalidation**: Missing `paymentToken` on paid workshops is now rejected before seat reservation, preventing invalid requests from entering the hot seat-lock/cancel path under load.
 
 ## In Progress
 - API contract still partial for future features outside the current check-in flow. QR validation is intentionally merged into check-in requests. Supabase SQL schema must be applied manually per environment.

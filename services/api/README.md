@@ -69,6 +69,7 @@ npm run dev
 npm run load:prepare:registration
 ```
 Lệnh này idempotent theo cohort mặc định `registration_surge`: lần chạy sau sẽ reuse sinh viên cũ và chỉ ghi lại file token.
+Mặc định script upsert theo batch 500 user/lần; có thể chỉnh bằng `LOAD_STUDENT_BATCH_SIZE=...`.
 
 3. Tạo hoặc chọn một workshop miễn phí còn đủ chỗ, lấy `WORKSHOP_ID`.
 

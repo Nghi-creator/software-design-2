@@ -50,6 +50,10 @@ const createRegistrationDependencies = (
     const query = async <R = any>(text: string, params: unknown[] = []) => {
       const sql = text.replace(/\s+/g, ' ').trim();
 
+      if (sql.startsWith('select price from workshops')) {
+        return { rows: [{ price: state.workshop.price }] as R[] };
+      }
+
       if (sql.startsWith('select id, price, seats_remaining')) {
         return { rows: [state.workshop] as R[] };
       }
@@ -294,7 +298,7 @@ test('free registration confirms immediately and consumes exactly one seat', asy
   assert.equal(state.seatReleases, 0);
 });
 
-test('missing payment token releases the temporary reservation', async () => {
+test('missing payment token is rejected before reserving a seat', async () => {
   const state = createRegistrationState();
 
   await assert.rejects(
@@ -310,9 +314,9 @@ test('missing payment token releases the temporary reservation', async () => {
   );
 
   assert.equal(state.workshop.seatsRemaining, 1);
-  assert.equal(state.registration?.status, 'CANCELLED');
-  assert.equal(state.payment?.status, 'FAILED');
-  assert.equal(state.seatReleases, 1);
+  assert.equal(state.registration, undefined);
+  assert.equal(state.payment, undefined);
+  assert.equal(state.seatReleases, 0);
 });
 
 test('full workshop rejects a new registration without creating rows', async () => {

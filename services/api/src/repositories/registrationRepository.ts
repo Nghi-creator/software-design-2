@@ -1,5 +1,25 @@
 import { RegistrationDependencies, registrationDependencies } from '../di';
 
+export const getWorkshopPrice = async (
+  workshopId: string,
+  dependencies: RegistrationDependencies = registrationDependencies
+) => {
+  const result = await dependencies.withTransaction(async (client) => {
+    const workshop = await client.query<{ price: string }>(
+      'select price from workshops where id = $1',
+      [workshopId]
+    );
+
+    return workshop.rows[0] ?? null;
+  });
+
+  if (!result) {
+    throw Object.assign(new Error('Workshop not found'), { statusCode: 404 });
+  }
+
+  return Number(result.price);
+};
+
 export const reserveSeat = async ({
   workshopId,
   userId,
