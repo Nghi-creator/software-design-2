@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { PageHeader } from '../../components/PageHeader'
-import { EmptyState, LoadingState } from '../../components/State'
+import { CenteredLoadingState, EmptyState } from '../../components/State'
 import { WorkshopCard } from '../../components/WorkshopCard'
 import { cardClass, linkButtonClass } from '../../components/styles'
 import {
@@ -33,7 +33,7 @@ export function WorkshopsPage({ user }: { user: SessionUser | null }) {
       />
       {error ? (
         <p className="rounded-theme-md border border-status-warning/40 bg-status-warningBg px-theme-md py-theme-sm text-sm font-bold text-status-warning">
-          {error} Browsing and details remain available while registration/payment services recover.
+          {error}
         </p>
       ) : null}
       <section className={`${cardClass} grid gap-theme-md p-theme-md md:grid-cols-[2fr_1fr_1fr_1fr]`} aria-label="Workshop filters">
@@ -101,18 +101,23 @@ export function WorkshopsPage({ user }: { user: SessionUser | null }) {
           Reset filters
         </button>
       </div>
-      {isLoading ? <LoadingState label="Refreshing live workshop seats..." /> : null}
-      {filteredWorkshops.length === 0 ? (
-        <EmptyState
-          title="No workshops match these filters"
-          message="Try a broader search, another day, or a different fee and availability filter."
-        />
-      ) : null}
-      <section className="grid gap-theme-md md:grid-cols-3">
-        {filteredWorkshops.map((workshop) => (
-          <WorkshopCard key={workshop.id} user={user} workshop={workshop} />
-        ))}
-      </section>
+      {isLoading ? (
+        <CenteredLoadingState label="Refreshing live workshop seats..." />
+      ) : (
+        <>
+          {filteredWorkshops.length === 0 ? (
+            <EmptyState
+              title="No workshops match these filters"
+              message="Try a broader search, another day, or a different fee and availability filter."
+            />
+          ) : null}
+          <section className="grid gap-theme-md md:grid-cols-3">
+            {filteredWorkshops.map((workshop) => (
+              <WorkshopCard key={workshop.id} user={user} workshop={workshop} />
+            ))}
+          </section>
+        </>
+      )}
     </>
   )
 }

@@ -20,7 +20,7 @@ export function AppLayout({ activePath, navItems, user, notice, onLogout, childr
 
       <main className={frameClass}>
         {notice ? (
-          <div className="rounded-theme-md border border-status-success/40 bg-status-successBg px-theme-md py-theme-sm text-sm font-bold text-status-success">
+          <div className="fixed bottom-theme-lg right-theme-lg z-50 rounded-theme-md border border-status-success/40 bg-status-successBg px-theme-md py-theme-sm text-sm font-bold text-status-success shadow-theme-glow animate-fade-in">
             {notice}
           </div>
         ) : null}

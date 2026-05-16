@@ -1,4 +1,4 @@
-import { sampleWorkshops } from '../data/workshops'
+
 import type {
   AiSummaryStatus,
   Workshop,
@@ -16,9 +16,6 @@ export const defaultWorkshopFilters: WorkshopFilters = {
   sortBy: 'startTime',
 }
 
-export function getFallbackWorkshops() {
-  return sampleWorkshops
-}
 
 export function getWorkshopDayOptions(workshops: Workshop[]) {
   const days = new Map<string, string>()
