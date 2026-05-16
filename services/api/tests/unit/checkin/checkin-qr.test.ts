@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { generateRegistrationQr } from '../src/services/checkin';
-import { Roles } from '../src/types/domain';
+import { generateRegistrationQr } from '../../../src/services/checkin';
+import { Roles } from '../../../src/types/domain';
 
 test('registration QR retrieval uses injected repository access and enforces authorization', async () => {
   const queries: Array<{ text: string; params?: unknown[] }> = [];

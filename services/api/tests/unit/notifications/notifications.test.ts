@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { deliverRegistrationConfirmedNotification } from '../src/services/notifications';
-import { NotificationChannels, NotificationStatuses } from '../src/types/notification';
+import { deliverRegistrationConfirmedNotification } from '../../../src/services/notifications';
+import { NotificationChannels, NotificationStatuses } from '../../../src/types/notification';
 
 const context = {
   registrationId: 'registration-1',

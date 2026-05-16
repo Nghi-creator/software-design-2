@@ -6,7 +6,7 @@ import path from 'node:path';
 import { Readable, PassThrough } from 'node:stream';
 import test from 'node:test';
 import csv from 'csv-parser';
-import { runCsvImportFromFile } from '../src/services/importStatus';
+import { runCsvImportFromFile } from '../../../src/services/importStatus';
 
 test('CSV import reports row errors without stopping the whole import', async () => {
   const filePath = path.join(os.tmpdir(), `students-${Date.now()}.csv`);

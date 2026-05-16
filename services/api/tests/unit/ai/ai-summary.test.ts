@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { cleanPdfText, generateWorkshopSummary } from '../src/services/ai';
+import { cleanPdfText, generateWorkshopSummary } from '../../../src/services/ai';
 
 test('cleanPdfText removes null bytes and normalizes PDF extraction whitespace', () => {
   assert.equal(

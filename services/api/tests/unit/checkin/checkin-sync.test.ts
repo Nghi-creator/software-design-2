@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { checkInOnline, syncOfflineCheckins } from '../src/services/checkin';
+import { checkInOnline, syncOfflineCheckins } from '../../../src/services/checkin';
 
 test('offline sync is item-level and idempotent for duplicate QR scans', async () => {
   const registrations = new Map([
