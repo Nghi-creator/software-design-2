@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { NavItem, SessionUser } from '../types'
 import { linkButtonClass, secondaryButtonClass } from '../components/styles'
+import logoUrl from '../assets/logo.jpg'
 
 type TopNavProps = {
   activePath: string
@@ -39,12 +40,9 @@ export function TopNav({ activePath, items, user, onLogout }: TopNavProps) {
     <header className="sticky top-0 z-30 border-b border-border-subtle bg-background-raised shadow-theme-sm">
       <div className="grid min-h-20 w-full items-center gap-theme-md px-theme-md md:grid-cols-[auto_minmax(0,1fr)_auto] md:px-theme-xl">
         <div className="inline-flex items-center gap-theme-sm text-text-primary" aria-label="UniHub Workshop logo">
-          <span className="grid size-11 shrink-0 place-items-center rounded-theme-md bg-brand-primary text-sm font-extrabold shadow-theme-glow">
-            UH
-          </span>
+          <img src={logoUrl} alt="UH Logo" className="size-11 shrink-0 rounded-theme-md object-cover shadow-theme-glow" />
           <div className="hidden sm:block">
             <strong className="block">UniHub Workshop</strong>
-            <small className="block text-text-muted">Skill Week operations</small>
           </div>
         </div>
 
@@ -52,9 +50,8 @@ export function TopNav({ activePath, items, user, onLogout }: TopNavProps) {
           {items.map((item) => (
             <a
               key={item.path}
-              className={`inline-flex min-h-10 items-center rounded-theme-md px-theme-sm text-sm font-bold text-text-secondary no-underline transition hover:bg-background-overlay hover:text-text-primary ${
-                isActivePath(activePath, item.path) ? 'bg-background-overlay text-text-primary' : ''
-              }`}
+              className={`inline-flex min-h-10 items-center rounded-theme-md px-theme-sm text-sm font-bold text-text-secondary no-underline transition hover:bg-background-overlay hover:text-text-primary ${isActivePath(activePath, item.path) ? 'bg-background-overlay text-text-primary' : ''
+                }`}
               href={`#${item.path}`}
             >
               {item.label}
