@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "node tests/run-tests.cjs",
-    "dev": "ts-node-dev --transpile-only src/index.ts"
+    "dev": "ts-node-dev --transpile-only src/index.ts",
+    "worker:notifications": "ts-node-dev --transpile-only src/workers/notificationWorker.ts"
   },
   "keywords": [],
   "author": "",

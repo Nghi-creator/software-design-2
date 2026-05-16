@@ -3,9 +3,15 @@ import crypto from 'node:crypto';
 import { after, test } from 'node:test';
 import Redis from 'ioredis';
 import { query, withTransaction, db } from '../src/lib/db';
+import { redis as sharedRedis } from '../src/lib/redis';
 import { createIdempotencyMiddleware } from '../src/middleware/idempotency';
 import { registerForWorkshop } from '../src/services/registration';
 import { syncOfflineCheckins } from '../src/services/checkin';
+import {
+  closeNotificationQueue,
+  publishRegistrationConfirmed
+} from '../src/jobs/notificationQueue';
+import { createNotificationWorker } from '../src/workers/notificationWorker';
 
 // Run with:
 // RUN_INTEGRATION_TESTS=true DATABASE_URL=postgres://... REDIS_URL=redis://... npm test
@@ -13,6 +19,8 @@ const skipReason = getRealServicesSkipReason();
 
 after(async () => {
   if (!skipReason) {
+    await closeNotificationQueue();
+    sharedRedis.disconnect();
     await db?.end();
   }
 });
@@ -46,7 +54,8 @@ test('real Postgres/Redis registration idempotency persists and replays payment 
       {
         withTransaction,
         processPayment: async () => 'unused-for-free-workshop',
-        createQrCode: () => `qr-${fixture.suffix}`
+        createQrCode: () => `qr-${fixture.suffix}`,
+        publishRegistrationConfirmed: async () => undefined
       }
     );
 
@@ -131,6 +140,29 @@ test('real Postgres offline check-in sync is idempotent for repeated QR scans', 
   }
 });
 
+test('real BullMQ worker delivers registration notification and persists sent status', {
+  skip: skipReason
+}, async () => {
+  const fixture = await createFixture();
+  const registration = await createConfirmedRegistration(fixture, `qr-notify-${fixture.suffix}`);
+  const worker = createNotificationWorker();
+
+  try {
+    await publishRegistrationConfirmed(registration.id);
+
+    const notification = await waitForNotification(registration.id);
+
+    assert.equal(notification.status, 'SENT');
+    assert.equal(notification.channel, 'EMAIL');
+    assert.equal(notification.attemptCount, 1);
+    assert.match(notification.subject, /Registration confirmed/);
+  } finally {
+    await worker.close();
+    await query('delete from notifications where registration_id = $1', [registration.id]);
+    await cleanupFixture(fixture);
+  }
+});
+
 type Fixture = {
   suffix: string;
   studentId: string;
@@ -195,6 +227,13 @@ const createConfirmedRegistration = async (fixture: Fixture, qrCode: string) => 
 const cleanupFixture = async (fixture: Fixture) => {
   await query(
     `
+      delete from notifications
+      where registration_id in (select id from registrations where workshop_id = $1)
+    `,
+    [fixture.workshopId]
+  );
+  await query(
+    `
       delete from checkins
       where registration_id in (select id from registrations where workshop_id = $1)
     `,
@@ -211,6 +250,32 @@ const cleanupFixture = async (fixture: Fixture) => {
   await query('delete from workshops where id = $1', [fixture.workshopId]);
   await query('delete from rooms where id = $1', [fixture.roomId]);
   await query('delete from users where id = any($1::uuid[])', [[fixture.studentId, fixture.staffId]]);
+};
+
+const waitForNotification = async (registrationId: string) => {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const result = await query<{
+      status: string;
+      channel: string;
+      attemptCount: number;
+      subject: string;
+    }>(
+      `
+        select status, channel, attempt_count as "attemptCount", subject
+        from notifications
+        where registration_id = $1
+      `,
+      [registrationId]
+    );
+
+    if (result.rows[0]?.status === 'SENT') {
+      return result.rows[0];
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+
+  throw new Error('Timed out waiting for notification delivery');
 };
 
 const createMiddlewareHarness = (key: string) => {

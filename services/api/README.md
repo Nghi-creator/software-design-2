@@ -35,6 +35,11 @@ PORT=3000
 npm run dev
 \`\`\`
 
+6. Khởi chạy worker gửi thông báo ở terminal khác:
+\`\`\`bash
+npm run worker:notifications
+\`\`\`
+
 ## Các tính năng kỹ thuật chính
 
 - **Supabase Postgres:** Backend kết nối trực tiếp tới Supabase Postgres bằng `pg` và `DATABASE_URL`; không còn dùng Prisma Client.
@@ -44,6 +49,7 @@ npm run dev
 - **Trừ tiền 2 lần (Idempotency):** Header `Idempotency-Key` là bắt buộc với API đăng ký. Redis cache response 24h, PostgreSQL lưu trạng thái `IN_PROGRESS`/`COMPLETED` để chặn request trùng đang chạy.
 - **Check-in Offline:** API `/api/checkin/sync` nhận batch item `{ localId?, qrCode, scannedAt? }` và trả kết quả theo từng item để mobile app biết item nào xoá, retry, hoặc đối soát.
 - **AI Summary:** Khi tạo Workshop, upload file PDF. Middleware sẽ dùng `pdf-parse` để đọc text và truyền qua Google Gemini API để tạo tóm tắt, sau đó lưu vào DB.
+- **Event-driven notifications:** Khi registration được xác nhận, API publish job BullMQ `registration.confirmed`; worker riêng xử lý gửi thông báo và cập nhật trạng thái delivery trong bảng `notifications`.
 - **CSV Sync:** Job `node-cron` chạy lúc 2 AM mỗi ngày, đọc file CSV tại `data/students.csv` bằng `csv-parser` và dùng cơ chế UPSERT để thêm mới hoặc cập nhật thông tin sinh viên mà không gây crash nếu có 1 dòng lỗi.
 
 ## Seed data
