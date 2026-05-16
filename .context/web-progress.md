@@ -29,20 +29,13 @@ Purpose: track React web work separately from Flutter mobile work. Move finished
 - **Web Source Restructure**: Split the React app into `components/`, `pages/`, `layouts/`, `data/`, and focused `lib/` modules; `App.tsx` now acts as the route switch and app composition layer.
 - **Restructure Verification**: `npm run lint`, `npm run build`, and browser smoke for home/workshops/detail/login/admin gate pass after the split.
 - **Page Surface Split**: `apps/web/src/pages/` now separates organizer pages under `admin/` and public/student pages under `user/`; shared `components/`, `layouts/`, `lib/`, `data/`, and `types` remain unsplit until surface-specific code appears.
+- **Student Workshop Browsing**: Schedule page now loads public workshops from `GET /api/workshops` with seed fallback, filters by search/day/availability, sorts by time/title/speaker/fee/seats, displays room/map/time/fee/live seats, and links to detail pages with AI summary states.
+- **Browsing Verification**: `npm run lint`, `npm run build`, and a Vite dev-server HTTP smoke pass after the student browsing implementation.
 
 ## In Progress
 - No active web implementation task yet.
 
 ## Backlog
-
-### Student Workshop Browsing
-- [ ] Show list of all workshops during the event week.
-- [ ] Add search/filter/sort controls for schedule browsing.
-- [ ] Display speaker, room, room layout/map reference, time, fee/free status, and real-time seats remaining.
-- [ ] Add workshop detail page.
-- [ ] Display AI-generated summary on the workshop detail page when available.
-- [ ] Handle unavailable summary states: not uploaded, processing, failed, and ready.
-- [ ] Keep browsing usable when payment features are degraded or unavailable.
 
 ### Registration And Payment
 - [ ] Add free-workshop registration flow.
@@ -95,7 +88,7 @@ Purpose: track React web work separately from Flutter mobile work. Move finished
 - [ ] Update this progress file after each completed web milestone.
 
 ## Requirement Coverage Checklist
-- [ ] Workshop browsing and real-time remaining seats.
+- [x] Workshop browsing and real-time remaining seats.
 - [ ] Free and paid registration.
 - [ ] QR ticket display after successful registration.
 - [ ] No duplicate client-side registration/payment submission.
@@ -104,7 +97,7 @@ Purpose: track React web work separately from Flutter mobile work. Move finished
 - [ ] Organizer workshop create, update, cancel/delete.
 - [ ] Organizer statistics.
 - [x] Strict web page access control.
-- [ ] AI PDF summary display/status.
+- [x] AI PDF summary display/status.
 - [ ] CSV import status/error visibility where backend endpoints exist.
 - [ ] README/setup instructions for running the web app.
-- [ ] Seed-data-friendly demo flow.
+- [x] Seed-data-friendly demo flow.

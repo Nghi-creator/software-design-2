@@ -58,6 +58,18 @@ export type Workshop = {
   price: number
   pdfUrl?: string | null
   aiSummary?: string | null
+  aiSummaryStatus?: AiSummaryStatus
+}
+
+export type WorkshopSortBy = 'startTime' | 'title' | 'speaker' | 'price' | 'seatsRemaining'
+
+export type WorkshopAvailabilityFilter = 'all' | 'hasSeats' | 'free' | 'paid'
+
+export type WorkshopFilters = {
+  query: string
+  day: string
+  availability: WorkshopAvailabilityFilter
+  sortBy: WorkshopSortBy
 }
 
 export type RegistrationStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED'
