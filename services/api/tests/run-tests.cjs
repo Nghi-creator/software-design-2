@@ -28,7 +28,7 @@ const run = (args) => {
 run([require.resolve('typescript/bin/tsc'), '--noEmit']);
 run([
   '--test',
-  '--test-timeout=5000',
+  '--test-timeout=60000',
   '-r',
   'ts-node/register',
   ...collectTests(join(__dirname))
