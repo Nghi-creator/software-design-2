@@ -12,6 +12,7 @@ export type RouteKey =
   | 'workshops'
   | 'workshopDetail'
   | 'registrations'
+  | 'notifications'
   | 'login'
   | 'admin'
   | 'adminWorkshops'
@@ -110,6 +111,23 @@ export type StoredRegistration = Registration & {
   message?: string | null
   createdAt: string
   updatedAt: string
+}
+
+export type NotificationChannel = 'in_app' | 'email' | 'telegram'
+
+export type NotificationDeliveryStatus = 'queued' | 'sent' | 'failed'
+
+export type StoredNotification = {
+  id: string
+  userId: string
+  title: string
+  message: string
+  channel: NotificationChannel
+  status: NotificationDeliveryStatus
+  createdAt: string
+  readAt?: string | null
+  registrationId?: string
+  workshopId?: string
 }
 
 export type AiSummaryStatus = 'not_uploaded' | 'processing' | 'ready' | 'failed'
