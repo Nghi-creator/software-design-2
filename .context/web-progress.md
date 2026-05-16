@@ -45,6 +45,8 @@ Purpose: track React web work separately from Flutter mobile work. Move finished
 - **Resilience Verification**: `npm run lint`, `npm run build`, local Vite HTTP smoke, and static responsive class audit pass. Browser screenshot capture was blocked by local macOS ScreenCaptureKit.
 - **Web QA Cleanup Pass**: Fixed schedule registration filter state so lint passes without synchronous effect updates, preserved organizer create/update success messages after form reset, corrected shared mobile frame sizing to remove horizontal overflow, and hardened shared headings/auth notice wrapping on narrow screens.
 - **Manual Web Verification**: Completed student browse/detail/register, organizer CRUD/stats, and auth/RBAC verification against the implemented web flow.
+- **Final Web Verification**: Re-ran the final seed-backed web checks on 2026-05-17: Chrome confirmed the schedule surface loads live seed workshops and exposes detail/register actions; live API probes verified student login, registration, QR retrieval, duplicate-registration blocking, organizer CRUD/stats, and logged-out/student/organizer RBAC boundaries; `npm run lint` and `npm run build` pass in `apps/web`.
+- **Web README Setup**: Expanded `apps/web/README.md` with API assumptions, seed-account credentials, and end-to-end local smoke-test steps.
 
 ## In Progress
 - No active web implementation task yet.
@@ -52,7 +54,7 @@ Purpose: track React web work separately from Flutter mobile work. Move finished
 ## Backlog
 
 ### Testing And Delivery
-- [ ] Update this progress file after each completed web milestone.
+- [x] Update this progress file after each completed web milestone.
 
 ## Requirement Coverage Checklist
 - [x] Workshop browsing and real-time remaining seats.
@@ -66,5 +68,5 @@ Purpose: track React web work separately from Flutter mobile work. Move finished
 - [x] Strict web page access control.
 - [x] AI PDF summary display/status.
 - [x] CSV import status/error visibility where backend endpoints exist.
-- [ ] README/setup instructions for running the web app.
+- [x] README/setup instructions for running the web app.
 - [x] Seed-data-friendly demo flow.

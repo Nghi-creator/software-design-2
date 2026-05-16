@@ -26,6 +26,9 @@ cp .env.example .env.local
 VITE_API_BASE_URL=http://localhost:3000/api
 ```
 
+The default assumes the API service is running from `services/api` on port `3000`.
+Apply the Supabase migration and seed SQL for a seed-backed demo, then start the API before logging in from the web app.
+
 ## Local Development
 
 ```bash
@@ -35,6 +38,16 @@ npm run dev
 
 Vite will print the local URL, usually `http://localhost:5173/`.
 
+## Seed Accounts
+
+Use these seeded users with password `Password123` after the API is running:
+
+- Student: `mai.nguyen@student.unihub.edu`
+- Organizer: `admin@unihub.edu`
+- Check-in staff: `checkin@unihub.edu`
+
+Student routes support browsing workshop details, registering, and viewing QR tickets. Organizer routes support workshop CRUD, dashboard statistics, summary status, and CSV import visibility. Check-in staff accounts are intentionally blocked from the student and organizer web surfaces.
+
 ## Verification
 
 ```bash
@@ -42,7 +55,7 @@ npm run lint
 npm run build
 ```
 
-Use the demo role buttons on `#/login` to check protected routes before the full login flow is wired to the backend.
+For an end-to-end local smoke test, run the API, start Vite, open the printed URL, browse `#/workshops`, log in with the student seed account for registration/QR checks, and log in with the organizer seed account for admin CRUD/stat checks.
 
 ## Theme
 
