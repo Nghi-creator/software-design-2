@@ -6,7 +6,8 @@ const createTestRedis = () => ({
   del: async () => 0,
   defineCommand: () => undefined,
   tokenBucket: async () => 1,
-  on: () => undefined
+  on: () => undefined,
+  disconnect: () => undefined
 });
 
 export const redis: any =

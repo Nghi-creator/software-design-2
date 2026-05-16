@@ -210,7 +210,7 @@ export const getWorkshopSummaryStatus = async (workshopId: string) => {
   };
 };
 
-const validateWorkshopInput = ({
+export const validateWorkshopInput = ({
   title,
   speaker,
   roomId,

@@ -56,6 +56,7 @@
 - **Sold-Out Redis Shield**: Added a pre-auth sold-out cache for registration attempts; once a workshop is proven full, later requests can return before DB-backed auth/idempotency work, and cancellation clears the marker if a seat reopens.
 - **Seat-Race Report**: Added `docs/seat-race-report.md` documenting the full request pipeline, last-seat race behavior, atomic decrement algorithm, retry/idempotency handling, cancellation recovery, sold-out fast paths, and supporting tests.
 - **Requirement Journey Coverage**: Added a full live-HTTP real-service test for weekly workshop browse, room-layout metadata, free registration, paid registration, QR retrieval, and staff check-in; added room `layout_url` support so the API now carries the room-map data already rendered by the web UI.
+- **Admin/RBAC Requirement Coverage**: Added backend workshop-validation unit tests, web protected-route tests, live-HTTP admin RBAC matrix coverage, and an opt-in real-service organizer lifecycle test covering create, room/time update, stats, and workshop cancellation. Also aligned the stub test Redis client with suite cleanup by adding a no-op `disconnect`.
 
 ## In Progress
 - API contract still partial for future features outside the current check-in flow. QR validation is intentionally merged into check-in requests. Supabase SQL schema must be applied manually per environment.
