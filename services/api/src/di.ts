@@ -2,7 +2,6 @@ import fs from 'fs';
 import csv from 'csv-parser';
 import { v4 as uuidv4 } from 'uuid';
 import { query, withTransaction } from './lib/db';
-import { redis } from './lib/redis';
 
 export type QueryFunction = (
   text: string,
@@ -71,9 +70,11 @@ export const registrationDependencies: RegistrationDependencies = {
     await publishRegistrationConfirmed(registrationId);
   },
   markWorkshopSoldOut: async (workshopId) => {
+    const { redis } = await import('./lib/redis');
     await redis.setex(`registration:soldout:${workshopId}`, 60 * 60, '1');
   },
   clearWorkshopSoldOut: async (workshopId) => {
+    const { redis } = await import('./lib/redis');
     await redis.del(`registration:soldout:${workshopId}`);
   }
 };
@@ -85,7 +86,16 @@ export const checkinDependencies: CheckinDependencies = {
 
 export const idempotencyDependencies: IdempotencyDependencies = {
   query: defaultQuery,
-  redis
+  redis: {
+    get: async (key) => {
+      const { redis } = await import('./lib/redis');
+      return redis.get(key);
+    },
+    setex: async (key, seconds, value) => {
+      const { redis } = await import('./lib/redis');
+      return redis.setex(key, seconds, value);
+    }
+  }
 };
 
 export const csvImportDependencies: CsvImportDependencies = {

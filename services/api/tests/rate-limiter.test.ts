@@ -1,10 +1,15 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import { after, test } from 'node:test';
+import { redis } from '../src/lib/redis';
 import {
   createPreAuthRegistrationRateLimiter,
   createRegistrationRateLimiter,
   rejectSoldOutRegistrations
 } from '../src/middleware/rateLimiter';
+
+after(() => {
+  redis.disconnect();
+});
 
 test('registration limiter checks the global bucket before the per-student bucket', async () => {
   const calls: string[] = [];

@@ -23,6 +23,8 @@ DATABASE_URL="postgresql://postgres.<project-ref>:<password>@<region>.pooler.sup
 DATABASE_SSL="true"
 REDIS_URL="redis://localhost:6379"
 GEMINI_API_KEY="your_api_key_here"
+MAIL_USER="your_gmail_address@gmail.com"
+MAIL_PASS="your_gmail_app_password"
 PORT=3000
 \`\`\`
 
@@ -50,6 +52,7 @@ npm run worker:notifications
 - **Check-in Offline:** API `/api/checkin/sync` nhận batch item `{ localId?, qrCode, scannedAt? }` và trả kết quả theo từng item để mobile app biết item nào xoá, retry, hoặc đối soát.
 - **AI Summary:** Khi tạo Workshop, upload file PDF. Middleware sẽ dùng `pdf-parse` để đọc text và truyền qua Google Gemini API để tạo tóm tắt, sau đó lưu vào DB.
 - **Event-driven notifications:** Khi registration được xác nhận, API publish job BullMQ `registration.confirmed`; worker riêng xử lý gửi thông báo và cập nhật trạng thái delivery trong bảng `notifications`.
+- **Gmail notifications:** Worker gửi email thật qua Gmail SMTP bằng `MAIL_USER` và `MAIL_PASS` trong `.env`. Với Gmail, `MAIL_PASS` nên là App Password thay vì mật khẩu đăng nhập thường.
 - **CSV Sync:** Job `node-cron` chạy lúc 2 AM mỗi ngày, đọc file CSV tại `data/students.csv` bằng `csv-parser` và dùng cơ chế UPSERT để thêm mới hoặc cập nhật thông tin sinh viên mà không gây crash nếu có 1 dòng lỗi.
 
 ## Seed data
@@ -85,3 +88,9 @@ npm run load:cleanup:registration
 ```
 
 Có thể đặt `LOAD_TEST_COHORT=<name>` nếu muốn nhiều cohort độc lập.
+
+## Kiểm thử thông báo
+
+- `npm test`: chạy unit tests và các integration tests mặc định/skip-by-default.
+- `RUN_INTEGRATION_TESTS=true DATABASE_URL=... REDIS_URL=... npm test`: chạy kiểm thử thật với Postgres + Redis cho hàng đợi BullMQ và trạng thái delivery.
+- `RUN_GMAIL_TESTS=true MAIL_USER=... MAIL_PASS=... MAIL_TEST_TO=... npm test`: gửi một email thật qua Gmail SMTP. Bài test này cần tài khoản Gmail thật, App Password, và một inbox đích có thể nhận mail.

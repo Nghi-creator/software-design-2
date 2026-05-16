@@ -10,7 +10,9 @@ import {
 import { deliverRegistrationConfirmedNotification } from '../services/notifications';
 import { RegistrationConfirmedEvent } from '../types/notification';
 
-export const createNotificationWorker = () => {
+export const createNotificationWorker = (
+  deliverNotification = deliverRegistrationConfirmedNotification
+) => {
   const worker = new Worker<RegistrationConfirmedEvent>(
     notificationQueueName,
     async (job) => {
@@ -18,7 +20,7 @@ export const createNotificationWorker = () => {
         throw new Error(`Unsupported notification job: ${job.name}`);
       }
 
-      await deliverRegistrationConfirmedNotification(job.data);
+      await deliverNotification(job.data);
     },
     { connection: redis }
   );

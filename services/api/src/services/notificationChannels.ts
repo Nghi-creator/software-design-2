@@ -4,6 +4,7 @@ import {
   NotificationContent,
   NotificationContext
 } from '../types/notification';
+import nodemailer from 'nodemailer';
 
 export type NotificationChannelAdapter = {
   channel: NotificationChannel;
@@ -17,6 +18,13 @@ export type EmailTransport = {
     text: string;
   }) => Promise<void>;
 };
+
+type GmailTransportConfig = {
+  user: string;
+  pass: string;
+};
+
+type NodemailerTransport = Pick<ReturnType<typeof nodemailer.createTransport>, 'sendMail'>;
 
 export class EmailNotificationChannel implements NotificationChannelAdapter {
   readonly channel = NotificationChannels.EMAIL;
@@ -37,6 +45,34 @@ export class ConsoleEmailTransport implements EmailTransport {
     console.log('Email notification sent', {
       to: message.to,
       subject: message.subject
+    });
+  }
+}
+
+export class GmailEmailTransport implements EmailTransport {
+  private readonly transporter: NodemailerTransport;
+  private readonly sender: string;
+
+  constructor(
+    config: GmailTransportConfig,
+    createTransport: typeof nodemailer.createTransport = nodemailer.createTransport
+  ) {
+    this.sender = config.user;
+    this.transporter = createTransport({
+      service: 'gmail',
+      auth: {
+        user: config.user,
+        pass: config.pass
+      }
+    });
+  }
+
+  async send(message: { to: string; subject: string; text: string }) {
+    await this.transporter.sendMail({
+      from: this.sender,
+      to: message.to,
+      subject: message.subject,
+      text: message.text
     });
   }
 }

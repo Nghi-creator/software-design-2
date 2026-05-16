@@ -12,8 +12,8 @@ import {
   RegistrationConfirmedEvent
 } from '../types/notification';
 import {
-  ConsoleEmailTransport,
   EmailNotificationChannel,
+  GmailEmailTransport,
   NotificationChannelAdapter
 } from './notificationChannels';
 
@@ -39,17 +39,26 @@ const composeRegistrationConfirmed = (
   ].join('\n')
 });
 
-const defaultDependencies: NotificationServiceDependencies = {
-  findContext: findRegistrationNotificationContext,
-  findOrCreate: findOrCreateNotification,
-  markSent: markNotificationSent,
-  markFailed: markNotificationFailed,
-  channels: [new EmailNotificationChannel(new ConsoleEmailTransport())]
+const createDefaultDependencies = (): NotificationServiceDependencies => {
+  const mailUser = process.env.MAIL_USER;
+  const mailPass = process.env.MAIL_PASS;
+
+  if (!mailUser || !mailPass) {
+    throw new Error('MAIL_USER and MAIL_PASS must be configured for email notifications');
+  }
+
+  return {
+    findContext: findRegistrationNotificationContext,
+    findOrCreate: findOrCreateNotification,
+    markSent: markNotificationSent,
+    markFailed: markNotificationFailed,
+    channels: [new EmailNotificationChannel(new GmailEmailTransport({ user: mailUser, pass: mailPass }))]
+  };
 };
 
 export const deliverRegistrationConfirmedNotification = async (
   event: RegistrationConfirmedEvent,
-  dependencies: NotificationServiceDependencies = defaultDependencies
+  dependencies: NotificationServiceDependencies = createDefaultDependencies()
 ) => {
   const context = await dependencies.findContext(event.registrationId);
   if (!context) {

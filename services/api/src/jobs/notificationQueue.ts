@@ -32,6 +32,10 @@ export const publishRegistrationConfirmed = async (registrationId: string) => {
   );
 };
 
+export const drainNotificationQueue = async () => {
+  await getQueue().drain(true);
+};
+
 export const closeNotificationQueue = async () => {
   if (!queue) {
     return;

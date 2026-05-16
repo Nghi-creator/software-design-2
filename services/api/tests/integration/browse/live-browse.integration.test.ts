@@ -4,6 +4,7 @@ import { after, before, test } from 'node:test';
 import { AddressInfo } from 'node:net';
 import app from '../../../src/app';
 import { db, query } from '../../../src/lib/db';
+import { redis } from '../../../src/lib/redis';
 
 const suffix = `browse_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 const roomIds: string[] = [];
@@ -45,6 +46,7 @@ after(async () => {
   await new Promise<void>((resolve, reject) => {
     server.close((error) => error ? reject(error) : resolve());
   });
+  redis.disconnect();
   await db?.end();
 });
 

@@ -37,6 +37,9 @@
 - **Web Schedule Filter Polish**: Replaced the student schedule day dropdown with native start/end date inputs, added All/Registered/Unregistered schedule filtering, suppressing the empty-state panel for date ranges with no workshops, and restyled confirmed registration/QR actions as compact purple pills.
 - **Web Manual Verification**: Completed student browse/detail/register, organizer CRUD/stats, and auth/RBAC verification for the React web app.
 - **Event-Driven Notifications**: Added BullMQ registration-confirmed publishing, a separate notification worker, extensible channel dispatching, delivery-status persistence, and unit coverage for send/idempotency/failure paths.
+- **Gmail Email Transport**: Replaced the console-only email transport with Gmail SMTP delivery configured through `MAIL_USER` and `MAIL_PASS`.
+- **Notification Coverage Expansion**: Added backend edge-case coverage, real-service worker coverage with injectable delivery, opt-in live Gmail verification, and React notification tests for in-app creation, history, banner behavior, channel formatting, malformed storage, and user isolation.
+- **Real-Service Test Split**: Split the previous monolithic real-service integration file into focused registration, check-in, notification, Gmail, and shared-support modules so external failures are easier to isolate.
 - **Notification Real-Service Verification**: Added opt-in BullMQ/Postgres integration coverage that publishes a real registration-confirmed job, runs the real worker, and asserts persisted `SENT` delivery status.
 - **Requirement Flow Test Pass**: Added backend coverage for AI PDF text cleaning/model handoff/fallback, online check-in source behavior, offline sync retry-safe failed items, and CSV import file-level failure reporting. Full `services/api` test suite passes.
 - **Registration Seat-Contention Coverage**: Added registration unit coverage for free workshops, missing payment tokens, full workshops, duplicate registrations, and bounded seat release; expanded opt-in real-service coverage with a two-student last-seat race plus a live HTTP burst test proving 100 simultaneous requests against 60 seats yield exactly 60 confirmations and no overbooking.
@@ -58,4 +61,4 @@
 
 ## Next Steps
 - Add remaining APIs only when new product scope requires them; keep QR validation merged into check-in unless requirements change.
-- Apply the new notifications migration per environment and replace the console email transport with a real provider when product scope needs outbound email.
+- Apply the new notifications migration per environment and configure Gmail App Password credentials wherever outbound email should be enabled.
