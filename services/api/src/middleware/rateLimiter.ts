@@ -114,6 +114,36 @@ export const createRegistrationRateLimiter = (
 
 export const registrationRateLimiter = createRegistrationRateLimiter();
 
+export const createPreAuthRegistrationRateLimiter = (
+  config: BucketConfig = DEFAULT_REGISTRATION_LIMITS.global,
+  dependencies: RateLimitDependencies = { redis }
+) => {
+  const now = dependencies.now ?? (() => Math.floor(Date.now() / 1000));
+
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const timestamp = now();
+      const allowed = await dependencies.redis.tokenBucket(
+        `ratelimit:registration:preauth:${getRequestIp(req)}`,
+        config.capacity,
+        config.refillRate,
+        timestamp
+      );
+
+      if (allowed !== 1) {
+        return reject(res);
+      }
+
+      next();
+    } catch (error) {
+      console.error('Rate Limiter Error:', error);
+      next();
+    }
+  };
+};
+
+export const preAuthRegistrationRateLimiter = createPreAuthRegistrationRateLimiter();
+
 const reject = (res: Response) => res.status(429).json({
   success: false,
   error: 'Too Many Requests'

@@ -6,7 +6,10 @@
   "scripts": {
     "test": "node tests/run-tests.cjs",
     "dev": "ts-node-dev --transpile-only src/index.ts",
-    "worker:notifications": "ts-node-dev --transpile-only src/workers/notificationWorker.ts"
+    "worker:notifications": "ts-node-dev --transpile-only src/workers/notificationWorker.ts",
+    "load:prepare:registration": "node load-tests/prepare-registration-surge.cjs",
+    "load:registration": "k6 run load-tests/registration-surge.js",
+    "load:cleanup:registration": "node load-tests/cleanup-registration-surge.cjs"
   },
   "keywords": [],
   "author": "",

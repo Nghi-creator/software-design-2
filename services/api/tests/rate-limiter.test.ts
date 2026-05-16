@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createRegistrationRateLimiter } from '../src/middleware/rateLimiter';
+import {
+  createPreAuthRegistrationRateLimiter,
+  createRegistrationRateLimiter
+} from '../src/middleware/rateLimiter';
 
 test('registration limiter checks the global bucket before the per-student bucket', async () => {
   const calls: string[] = [];
@@ -135,6 +138,52 @@ test('registration limiter fails open when Redis is unavailable', async () => {
   assert.equal(next.called, true);
   assert.equal(res.statusCode, 200);
   assert.equal(errors.length, 1);
+});
+
+test('pre-auth registration limiter rejects abusive IPs before authentication work is needed', async () => {
+  const seenKeys: string[] = [];
+  const middleware = createPreAuthRegistrationRateLimiter(
+    { capacity: 1, refillRate: 1 },
+    {
+      redis: {
+        tokenBucket: async (key) => {
+          seenKeys.push(key);
+          return 0;
+        }
+      },
+      now: () => 100
+    }
+  );
+  const { req, res, next, done } = createHarness({ ip: '198.51.100.4' });
+
+  await middleware(req as any, res as any, next as any);
+  await done;
+
+  assert.deepEqual(seenKeys, ['ratelimit:registration:preauth:198.51.100.4']);
+  assert.equal(res.statusCode, 429);
+  assert.equal(next.called, false);
+});
+
+test('pre-auth registration limiter uses forwarded IP so rejection can happen before auth on proxied traffic', async () => {
+  const seenKeys: string[] = [];
+  const middleware = createPreAuthRegistrationRateLimiter(undefined, {
+    redis: {
+      tokenBucket: async (key) => {
+        seenKeys.push(key);
+        return 1;
+      }
+    },
+    now: () => 100
+  });
+  const { req, res, next } = createHarness({
+    forwardedFor: '203.0.113.7, 10.0.0.5'
+  });
+
+  await middleware(req as any, res as any, next as any);
+
+  assert.equal(next.called, true);
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(seenKeys, ['ratelimit:registration:preauth:203.0.113.7']);
 });
 
 const createHarness = ({
