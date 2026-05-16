@@ -31,6 +31,8 @@ Purpose: track React web work separately from Flutter mobile work. Move finished
 - **Page Surface Split**: `apps/web/src/pages/` now separates organizer pages under `admin/` and public/student pages under `user/`; shared `components/`, `layouts/`, `lib/`, `data/`, and `types` remain unsplit until surface-specific code appears.
 - **Student Workshop Browsing**: Schedule page now loads public workshops from `GET /api/workshops` with seed fallback, filters by search/day/availability, sorts by time/title/speaker/fee/seats, displays room/map/time/fee/live seats, and links to detail pages with AI summary states.
 - **Browsing Verification**: `npm run lint`, `npm run build`, and a Vite dev-server HTTP smoke pass after the student browsing implementation.
+- **Web Shell UI Pass**: Navbar is a full-width sticky top bar with its own raised background, explicit Home link, left-aligned primary navigation, non-clickable logo, and avatar-style authenticated account control.
+- **Workshop Detail UX Pass**: Detail headers include a back-to-schedule control and show a centered fetching state while live workshop data is still loading instead of a premature not-found message.
 
 ## In Progress
 - No active web implementation task yet.

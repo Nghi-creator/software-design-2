@@ -15,18 +15,16 @@ type AppLayoutProps = {
 export function AppLayout({ activePath, navItems, user, notice, onLogout, children }: AppLayoutProps) {
   return (
     <div className={shellClass}>
-      <div className={frameClass}>
-        <TopNav activePath={activePath} items={navItems} user={user} onLogout={onLogout} />
+      <TopNav activePath={activePath} items={navItems} user={user} onLogout={onLogout} />
 
-        <main className="grid gap-theme-lg">
-          {notice ? (
-            <div className="rounded-theme-md border border-status-success/40 bg-status-successBg px-theme-md py-theme-sm text-sm font-bold text-status-success">
-              {notice}
-            </div>
-          ) : null}
-          {children}
-        </main>
-      </div>
+      <main className={frameClass}>
+        {notice ? (
+          <div className="rounded-theme-md border border-status-success/40 bg-status-successBg px-theme-md py-theme-sm text-sm font-bold text-status-success">
+            {notice}
+          </div>
+        ) : null}
+        {children}
+      </main>
     </div>
   )
 }

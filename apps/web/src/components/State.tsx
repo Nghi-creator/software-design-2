@@ -13,6 +13,20 @@ export function LoadingState({ label = 'Loading UniHub data...' }: { label?: str
   )
 }
 
+export function CenteredLoadingState({ label = 'Loading UniHub data...' }: { label?: string }) {
+  return (
+    <div className="grid min-h-[calc(100vh-160px)] place-items-center" role="status">
+      <div className="grid justify-items-center gap-theme-md">
+        <span
+          className="size-16 animate-spin rounded-full border-[6px] border-border-strong border-t-brand-primary shadow-theme-glow"
+          aria-hidden="true"
+        />
+        <span className="text-sm font-bold text-text-secondary">{label}</span>
+      </div>
+    </div>
+  )
+}
+
 export function EmptyState({ title, message }: { title: string; message: string }) {
   return (
     <div className="rounded-theme-lg border border-dashed border-border-strong bg-background-subtle p-theme-lg">

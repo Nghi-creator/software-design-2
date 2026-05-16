@@ -15,6 +15,7 @@ import { WorkshopsPage } from './pages/user/WorkshopsPage'
 import type { AuthStatus, LoginCredentials, NavItem, Route, SessionUser } from './types'
 
 const publicNav: NavItem[] = [
+  { label: 'Home', path: '/' },
   { label: 'Schedule', path: '/workshops' },
   { label: 'My QR', path: '/registrations', roles: ['STUDENT'] },
   { label: 'Admin', path: '/admin', roles: ['ORGANIZER'] },
