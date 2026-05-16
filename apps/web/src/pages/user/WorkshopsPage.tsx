@@ -6,7 +6,6 @@ import { cardClass, linkButtonClass } from '../../components/styles'
 import {
   defaultWorkshopFilters,
   filterAndSortWorkshops,
-  getEventWeekRange,
   getWorkshopDayOptions,
 } from '../../lib/workshopCatalog'
 import { useWorkshopCatalog } from '../../lib/useWorkshopCatalog'
@@ -20,7 +19,6 @@ export function WorkshopsPage({ user }: { user: SessionUser | null }) {
     [filters, workshops],
   )
   const dayOptions = useMemo(() => getWorkshopDayOptions(workshops), [workshops])
-  const eventWeekRange = getEventWeekRange(workshops)
 
   function updateFilter<Value extends keyof WorkshopFilters>(key: Value, value: WorkshopFilters[Value]) {
     setFilters((currentFilters) => ({ ...currentFilters, [key]: value }))
@@ -30,7 +28,7 @@ export function WorkshopsPage({ user }: { user: SessionUser | null }) {
     <>
       <PageHeader
         eyebrow="Student schedule"
-        title={eventWeekRange ? `Browse workshops for ${eventWeekRange}` : 'Browse workshops'}
+        title="Browse workshops"
         description="Search the event-week schedule by topic, speaker, room, day, availability and fee. Seat counts refresh from the live workshop API when it is reachable."
       />
       {error ? (

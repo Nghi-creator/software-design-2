@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { PageHeader } from '../../components/PageHeader'
 import { EmptyState } from '../../components/State'
 import { cardClass, secondaryButtonClass } from '../../components/styles'
 import { formatCurrency, formatDateTime } from '../../lib/format'
@@ -27,11 +26,7 @@ export function RegistrationsPage({ user }: { user: SessionUser }) {
 
   return (
     <>
-      <PageHeader
-        eyebrow="Student"
-        title="My registrations"
-        description="Track pending, confirmed, cancelled and failed payment cases. Confirmed registrations can display their QR ticket here."
-      />
+      <PageTitle title="My registrations" />
       {registrations.length === 0 ? (
         <EmptyState
           title="No registrations yet"
@@ -50,6 +45,10 @@ export function RegistrationsPage({ user }: { user: SessionUser }) {
       )}
     </>
   )
+}
+
+function PageTitle({ title }: { title: string }) {
+  return <h1 className="text-3xl font-extrabold leading-tight text-text-primary md:text-4xl">{title}</h1>
 }
 
 function RegistrationCard({

@@ -20,16 +20,6 @@ export function getFallbackWorkshops() {
   return sampleWorkshops
 }
 
-export function getEventWeekRange(workshops: Workshop[]) {
-  if (workshops.length === 0) return null
-
-  const timestamps = workshops.map((workshop) => new Date(workshop.startTime).getTime())
-  const startsAt = new Date(Math.min(...timestamps))
-  const endsAt = new Date(Math.max(...timestamps))
-
-  return `${formatShortDate(startsAt)} - ${formatShortDate(endsAt)}`
-}
-
 export function getWorkshopDayOptions(workshops: Workshop[]) {
   const days = new Map<string, string>()
 
@@ -105,13 +95,6 @@ function compareWorkshops(first: Workshop, second: Workshop, sortBy: WorkshopSor
     case 'startTime':
       return new Date(first.startTime).getTime() - new Date(second.startTime).getTime()
   }
-}
-
-function formatShortDate(date: Date) {
-  return new Intl.DateTimeFormat('en-GB', {
-    day: '2-digit',
-    month: 'short',
-  }).format(date)
 }
 
 function formatDayOption(date: Date) {

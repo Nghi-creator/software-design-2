@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import type { NavItem, SessionUser } from '../types'
 import { linkButtonClass, secondaryButtonClass } from '../components/styles'
 
@@ -9,6 +10,31 @@ type TopNavProps = {
 }
 
 export function TopNav({ activePath, items, user, onLogout }: TopNavProps) {
+  const [isAccountOpen, setIsAccountOpen] = useState(false)
+  const accountMenuRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (!isAccountOpen) return undefined
+
+    function handlePointerDown(event: PointerEvent) {
+      if (!accountMenuRef.current?.contains(event.target as Node)) {
+        setIsAccountOpen(false)
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') setIsAccountOpen(false)
+    }
+
+    window.addEventListener('pointerdown', handlePointerDown)
+    window.addEventListener('keydown', handleEscape)
+
+    return () => {
+      window.removeEventListener('pointerdown', handlePointerDown)
+      window.removeEventListener('keydown', handleEscape)
+    }
+  }, [isAccountOpen])
+
   return (
     <header className="sticky top-0 z-30 border-b border-border-subtle bg-background-raised shadow-theme-sm">
       <div className="grid min-h-20 w-full items-center gap-theme-md px-theme-md md:grid-cols-[auto_minmax(0,1fr)_auto] md:px-theme-xl">
@@ -38,18 +64,43 @@ export function TopNav({ activePath, items, user, onLogout }: TopNavProps) {
 
         <div className="flex items-center justify-start gap-theme-sm md:justify-end">
           {user ? (
-            <>
-              <div
-                className="inline-flex size-11 items-center justify-center rounded-full border border-border-strong bg-background-overlay text-brand-secondary"
-                title={`${user.name} (${user.role.replace('_', ' ')})`}
-                aria-label={`${user.name} account`}
+            <div className="relative" ref={accountMenuRef}>
+              <button
+                className="inline-flex size-11 items-center justify-center rounded-full border border-border-strong bg-background-overlay text-brand-secondary transition hover:border-brand-primary hover:bg-surface-cardHover"
+                type="button"
+                aria-expanded={isAccountOpen}
+                aria-haspopup="menu"
+                aria-label={`${user.name} account menu`}
+                onClick={() => setIsAccountOpen((currentValue) => !currentValue)}
               >
                 <UserIcon />
-              </div>
-              <button className={linkButtonClass} type="button" onClick={onLogout}>
-                Log out
               </button>
-            </>
+              {isAccountOpen ? (
+                <div
+                  className="absolute right-0 top-[calc(100%+8px)] z-40 grid min-w-64 gap-theme-sm rounded-theme-lg border border-border-subtle bg-surface-card p-theme-md shadow-theme-md"
+                  role="menu"
+                >
+                  <div>
+                    <strong className="block text-text-primary">{user.name}</strong>
+                    <span className="block text-sm text-text-muted">{user.email}</span>
+                    <span className="mt-theme-xs inline-flex rounded-full bg-brand-primary/15 px-theme-sm py-1 text-xs font-extrabold uppercase text-brand-secondary">
+                      {user.role.replace('_', ' ')}
+                    </span>
+                  </div>
+                  <button
+                    className={`${linkButtonClass} justify-start`}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setIsAccountOpen(false)
+                      onLogout()
+                    }}
+                  >
+                    Log out
+                  </button>
+                </div>
+              ) : null}
+            </div>
           ) : (
             <a className={secondaryButtonClass} href="#/login">
               Log in

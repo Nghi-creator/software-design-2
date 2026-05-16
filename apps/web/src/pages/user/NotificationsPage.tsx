@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { NotificationChannelBadge } from '../../components/NotificationChannelBadge'
-import { PageHeader } from '../../components/PageHeader'
 import { EmptyState } from '../../components/State'
 import { cardClass, linkButtonClass } from '../../components/styles'
 import {
@@ -26,11 +25,7 @@ export function NotificationsPage({ user }: { user: SessionUser }) {
 
   return (
     <>
-      <PageHeader
-        eyebrow="Student"
-        title="Notifications"
-        description="Recent registration confirmations appear here using a channel-agnostic shape, so future channels such as email or Telegram can reuse the same history."
-      />
+      <h1 className="text-3xl font-extrabold leading-tight text-text-primary md:text-4xl">Notifications</h1>
       {notifications.length === 0 ? (
         <EmptyState
           title="No notifications yet"

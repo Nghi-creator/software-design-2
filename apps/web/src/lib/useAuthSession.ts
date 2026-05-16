@@ -10,6 +10,13 @@ export function useAuthSession() {
   const [authNotice, setAuthNotice] = useState<string | null>(null)
 
   useEffect(() => {
+    if (!authNotice) return undefined
+
+    const timeoutId = window.setTimeout(() => setAuthNotice(null), 5000)
+    return () => window.clearTimeout(timeoutId)
+  }, [authNotice])
+
+  useEffect(() => {
     let isMounted = true
 
     if (!initialSession) return undefined
