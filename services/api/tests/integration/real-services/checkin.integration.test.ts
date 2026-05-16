@@ -7,6 +7,7 @@ import {
   cleanupFixture,
   createConfirmedRegistration,
   createFixture,
+  createStudent,
   registerRealServiceCleanup,
   skipReason
 } from './support';
@@ -62,13 +63,14 @@ test('real Postgres QR retrieval exposes confirmed tickets and rejects pending t
   const fixture = await createFixture();
   const confirmedQrCode = `qr-confirmed-${fixture.suffix}`;
   const confirmedRegistration = await createConfirmedRegistration(fixture, confirmedQrCode);
+  const pendingStudentId = await createStudent(fixture.suffix, 'pending');
   const pendingRegistration = await query<{ id: string }>(
     `
       insert into registrations (user_id, workshop_id, qr_code, status)
       values ($1, $2, $3, 'PENDING')
       returning id
     `,
-    [fixture.studentId, fixture.workshopId, `qr-pending-${fixture.suffix}`]
+    [pendingStudentId, fixture.workshopId, `qr-pending-${fixture.suffix}`]
   );
 
   try {
@@ -89,12 +91,12 @@ test('real Postgres QR retrieval exposes confirmed tickets and rejects pending t
     await assert.rejects(
       generateRegistrationQr({
         registrationId: pendingRegistration.rows[0].id,
-        requesterId: fixture.studentId,
+        requesterId: pendingStudentId,
         requesterRole: 'STUDENT'
       }),
       /Registration is not confirmed/
     );
   } finally {
-    await cleanupFixture(fixture);
+    await cleanupFixture(fixture, [pendingStudentId]);
   }
 });

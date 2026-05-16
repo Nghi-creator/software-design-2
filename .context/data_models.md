@@ -17,6 +17,7 @@ PostgreSQL is the source of truth. Use transactions for multi-step writes and ro
 - `name` string
 - `location` string
 - `capacity` integer
+- `layout_url` string, nullable
 
 ### Workshop
 - `id` primary key

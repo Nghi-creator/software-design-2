@@ -53,7 +53,7 @@ Response: { items: Room[], pagination: { page, pageSize, totalItems, totalPages 
 ```text
 POST /api/rooms
 Auth: ORGANIZER
-Request: { name, location, capacity }
+Request: { name, location, capacity, layoutUrl? }
 Response: Room
 Errors: 401, 403, 400
 ```
@@ -61,7 +61,7 @@ Errors: 401, 403, 400
 ```text
 PUT /api/rooms/:id
 Auth: ORGANIZER
-Request: { name, location, capacity }
+Request: { name, location, capacity, layoutUrl? }
 Response: Room
 Errors: 401, 403, 404
 ```
