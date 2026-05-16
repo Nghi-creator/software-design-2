@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { listRooms } from '../src/services/room';
-import { listWorkshops } from '../src/services/workshop';
+import { listRooms } from '../../../src/services/room';
+import { listWorkshops } from '../../../src/services/workshop';
 
 test('room browse validation rejects invalid sort and capacity range before repository access', async () => {
   await assert.rejects(

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createIdempotencyMiddleware } from '../src/middleware/idempotency';
+import { createIdempotencyMiddleware } from '../../../src/middleware/idempotency';
 
 test('idempotency middleware replays cached completed responses without calling the handler', async () => {
   const middleware = createIdempotencyMiddleware({

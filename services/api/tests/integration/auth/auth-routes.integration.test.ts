@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import { after, before, test } from 'node:test';
 import { AddressInfo } from 'node:net';
-import app from '../src/app';
-import { db, query } from '../src/lib/db';
+import app from '../../../src/app';
+import { db, query } from '../../../src/lib/db';
 
 const suffix = `auth_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 const createdUserIds: string[] = [];

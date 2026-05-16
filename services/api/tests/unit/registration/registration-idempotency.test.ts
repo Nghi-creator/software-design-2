@@ -3,7 +3,7 @@ import test from 'node:test';
 import {
   cancelPendingReservation,
   registerForWorkshop
-} from '../src/services/registration';
+} from '../../../src/services/registration';
 
 type RegistrationState = ReturnType<typeof createRegistrationState>;
 

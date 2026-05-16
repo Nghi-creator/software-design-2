@@ -3,17 +3,17 @@ import crypto from 'node:crypto';
 import { after, test } from 'node:test';
 import { AddressInfo } from 'node:net';
 import Redis from 'ioredis';
-import app from '../src/app';
-import { query, withTransaction, db } from '../src/lib/db';
-import { redis as sharedRedis } from '../src/lib/redis';
-import { createIdempotencyMiddleware } from '../src/middleware/idempotency';
-import { registerForWorkshop } from '../src/services/registration';
-import { syncOfflineCheckins } from '../src/services/checkin';
+import app from '../../../src/app';
+import { query, withTransaction, db } from '../../../src/lib/db';
+import { redis as sharedRedis } from '../../../src/lib/redis';
+import { createIdempotencyMiddleware } from '../../../src/middleware/idempotency';
+import { registerForWorkshop } from '../../../src/services/registration';
+import { syncOfflineCheckins } from '../../../src/services/checkin';
 import {
   closeNotificationQueue,
   publishRegistrationConfirmed
-} from '../src/jobs/notificationQueue';
-import { createNotificationWorker } from '../src/workers/notificationWorker';
+} from '../../../src/jobs/notificationQueue';
+import { createNotificationWorker } from '../../../src/workers/notificationWorker';
 
 // Run with:
 // RUN_INTEGRATION_TESTS=true DATABASE_URL=postgres://... REDIS_URL=redis://... npm test
