@@ -7,7 +7,7 @@ export function getRouteFromHash(): Route {
   const path = normalizePath(rawPath)
   const parts = path.split('/').filter(Boolean)
 
-  if (path === '/') return { key: 'home', path, params: {} }
+  if (path === '/') return { key: 'workshops', path: '/workshops', params: {} }
   if (path === '/workshops') return { key: 'workshops', path, params: {} }
   if (parts[0] === 'workshops' && parts[1]) {
     return { key: 'workshopDetail', path, params: { id: parts[1] } }

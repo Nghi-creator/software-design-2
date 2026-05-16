@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { CenteredLoadingState, EmptyState } from '../../components/State'
-import { buttonClass, cardClass, linkButtonClass, secondaryButtonClass } from '../../components/styles'
+import { CardGridSkeleton, EmptyState, Notice } from '../../components/State'
+import { buttonClass, cardClass, focusClass, linkButtonClass, secondaryButtonClass } from '../../components/styles'
 import { ApiError } from '../../lib/api'
+import { getUserFacingError } from '../../lib/apiErrorMessages'
 import { formatCurrency, formatDateTime } from '../../lib/format'
 import {
   createWorkshop,
@@ -28,6 +29,8 @@ type WorkshopDraft = {
   pdf: File | null
 }
 
+type WorkshopFormErrors = Partial<Record<keyof WorkshopDraft, string>>
+
 export function AdminWorkshopsPage() {
   const [workshops, setWorkshops] = useState<Workshop[]>([])
   const [rooms, setRooms] = useState<Room[]>([])
@@ -40,6 +43,7 @@ export function AdminWorkshopsPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [formErrors, setFormErrors] = useState<WorkshopFormErrors>({})
 
   const refreshStatsAndSummaries = useCallback(async (nextWorkshops: Workshop[]) => {
     const statsEntries = await Promise.all(
@@ -65,10 +69,10 @@ export function AdminWorkshopsPage() {
         currentDraft.roomId ? currentDraft : createEmptyDraft(roomResponse.items[0]?.id ?? ''),
       )
       await refreshStatsAndSummaries(workshopResponse.items)
-    } catch {
+    } catch (caughtError) {
       setWorkshops([])
       setRooms([])
-      setError('Live organizer data is unavailable. Please try again later.')
+      setError(getUserFacingError(caughtError, { action: 'Organizer workshop data' }))
       await refreshStatsAndSummaries([])
     } finally {
       setIsLoading(false)
@@ -85,16 +89,8 @@ export function AdminWorkshopsPage() {
   return (
     <>
       <h1 className="text-3xl font-extrabold leading-tight text-text-primary md:text-4xl">Workshop management</h1>
-      {message ? (
-        <p className="rounded-theme-md border border-status-success/40 bg-status-successBg px-theme-md py-theme-sm text-sm font-bold text-status-success">
-          {message}
-        </p>
-      ) : null}
-      {error ? (
-        <p className="rounded-theme-md border border-status-danger/40 bg-status-dangerBg px-theme-md py-theme-sm text-sm font-bold text-status-danger">
-          {error}
-        </p>
-      ) : null}
+      {message ? <Notice tone="success" message={message} /> : null}
+      {error ? <Notice tone="danger" message={error} /> : null}
       <section className="grid gap-theme-md md:grid-cols-4">
         <AdminStat label="Workshops" value={String(workshops.length)} />
         <AdminStat label="Reserved seats" value={String(dashboardTotals.reservedSeats)} />
@@ -104,18 +100,22 @@ export function AdminWorkshopsPage() {
       <section className="grid items-start gap-theme-lg xl:grid-cols-[minmax(420px,1fr)_minmax(0,2fr)]">
         <WorkshopForm
           draft={draft}
+          errors={formErrors}
           mode={mode}
           rooms={rooms}
           isSaving={isSaving}
           editingWorkshop={editingWorkshop}
           onCancel={startCreate}
-          onChange={setDraft}
+          onChange={(nextDraft) => {
+            setDraft(nextDraft)
+            setFormErrors({})
+          }}
           onCreate={startCreate}
           onSubmit={() => void saveWorkshop()}
         />
         <section className="grid gap-theme-md">
           {isLoading ? (
-            <CenteredLoadingState label="Loading organizer workshop data..." />
+            <CardGridSkeleton count={2} />
           ) : workshops.length === 0 ? (
             <EmptyState title="No workshops yet" message="Create a workshop and it will appear here." />
           ) : (
@@ -141,6 +141,7 @@ export function AdminWorkshopsPage() {
     setDraft(createEmptyDraft(rooms[0]?.id ?? ''))
     setMessage(null)
     setError(null)
+    setFormErrors({})
   }
 
   function startEdit(workshop: Workshop) {
@@ -149,12 +150,22 @@ export function AdminWorkshopsPage() {
     setDraft(createDraftFromWorkshop(workshop))
     setMessage(null)
     setError(null)
+    setFormErrors({})
   }
 
   async function saveWorkshop() {
-    setIsSaving(true)
     setMessage(null)
     setError(null)
+    const validationErrors = validateWorkshopDraft(draft, rooms)
+
+    if (Object.keys(validationErrors).length > 0) {
+      setFormErrors(validationErrors)
+      setError('Some workshop fields need attention before saving.')
+      return
+    }
+
+    setIsSaving(true)
+    setFormErrors({})
 
     try {
       const input = toWorkshopFormInput(draft)
@@ -194,6 +205,7 @@ export function AdminWorkshopsPage() {
 function WorkshopForm({
   draft,
   editingWorkshop,
+  errors,
   isSaving,
   mode,
   rooms,
@@ -204,6 +216,7 @@ function WorkshopForm({
 }: {
   draft: WorkshopDraft
   editingWorkshop: Workshop | null
+  errors: WorkshopFormErrors
   isSaving: boolean
   mode: WorkshopMode
   rooms: Room[]
@@ -233,24 +246,31 @@ function WorkshopForm({
           </button>
         ) : null}
       </div>
-      <FormField label="Title" value={draft.title} onChange={(title) => onChange({ ...draft, title })} />
-      <FormField label="Speaker" value={draft.speaker} onChange={(speaker) => onChange({ ...draft, speaker })} />
+      <FormField error={errors.title} label="Title" value={draft.title} onChange={(title) => onChange({ ...draft, title })} />
+      <FormField error={errors.speaker} label="Speaker" value={draft.speaker} onChange={(speaker) => onChange({ ...draft, speaker })} />
       <label className="grid gap-theme-xs text-sm font-bold text-text-primary">
         Room
-        <select className={fieldClass} value={draft.roomId} onChange={(event) => onChange({ ...draft, roomId: event.target.value })}>
+        <select
+          aria-invalid={Boolean(errors.roomId)}
+          className={fieldClass}
+          disabled={rooms.length === 0}
+          value={draft.roomId}
+          onChange={(event) => onChange({ ...draft, roomId: event.target.value })}
+        >
           {rooms.map((room) => (
             <option key={room.id} value={room.id}>
               {room.name} · {room.location}
             </option>
           ))}
         </select>
+        {errors.roomId ? <span className="text-sm font-bold text-status-danger">{errors.roomId}</span> : null}
       </label>
       <div className="grid gap-theme-md md:grid-cols-2">
-        <FormField label="Capacity" type="number" value={draft.capacity} onChange={(capacity) => onChange({ ...draft, capacity })} />
-        <FormField label="Fee" type="number" value={draft.price} onChange={(price) => onChange({ ...draft, price })} />
+        <FormField error={errors.capacity} label="Capacity" type="number" value={draft.capacity} onChange={(capacity) => onChange({ ...draft, capacity })} />
+        <FormField error={errors.price} label="Fee" type="number" value={draft.price} onChange={(price) => onChange({ ...draft, price })} />
       </div>
-      <FormField label="Start time" type="datetime-local" value={draft.startTime} onChange={(startTime) => onChange({ ...draft, startTime })} />
-      <FormField label="PDF URL" value={draft.pdfUrl} required={false} onChange={(pdfUrl) => onChange({ ...draft, pdfUrl })} />
+      <FormField error={errors.startTime} label="Start time" type="datetime-local" value={draft.startTime} onChange={(startTime) => onChange({ ...draft, startTime })} />
+      <FormField error={errors.pdfUrl} label="PDF URL" value={draft.pdfUrl} required={false} onChange={(pdfUrl) => onChange({ ...draft, pdfUrl })} />
       {mode === 'create' ? (
         <label className="grid gap-theme-xs text-sm font-bold text-text-primary">
           PDF upload
@@ -331,12 +351,14 @@ function WorkshopAdminCard({
 }
 
 function FormField({
+  error,
   label,
   onChange,
   required = true,
   type = 'text',
   value,
 }: {
+  error?: string
   label: string
   onChange: (value: string) => void
   required?: boolean
@@ -346,7 +368,15 @@ function FormField({
   return (
     <label className="grid gap-theme-xs text-sm font-bold text-text-primary">
       {label}
-      <input className={fieldClass} type={type} value={value} onChange={(event) => onChange(event.target.value)} required={required} />
+      <input
+        aria-invalid={Boolean(error)}
+        className={fieldClass}
+        type={type}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        required={required}
+      />
+      {error ? <span className="text-sm font-bold text-status-danger">{error}</span> : null}
     </label>
   )
 }
@@ -405,6 +435,31 @@ function toWorkshopFormInput(draft: WorkshopDraft): WorkshopFormInput {
     startTime: new Date(draft.startTime).toISOString(),
     pdfUrl: draft.pdfUrl.trim(),
     pdf: draft.pdf,
+  }
+}
+
+function validateWorkshopDraft(draft: WorkshopDraft, rooms: Room[]): WorkshopFormErrors {
+  const errors: WorkshopFormErrors = {}
+  const capacity = Number(draft.capacity)
+  const price = Number(draft.price || 0)
+
+  if (!draft.title.trim()) errors.title = 'Title is required.'
+  if (!draft.speaker.trim()) errors.speaker = 'Speaker is required.'
+  if (!draft.roomId || !rooms.some((room) => room.id === draft.roomId)) errors.roomId = 'Choose an available room.'
+  if (!Number.isInteger(capacity) || capacity <= 0) errors.capacity = 'Capacity must be a positive whole number.'
+  if (Number.isNaN(price) || price < 0) errors.price = 'Fee must be zero or higher.'
+  if (!draft.startTime || Number.isNaN(Date.parse(draft.startTime))) errors.startTime = 'Start time must be valid.'
+  if (draft.pdfUrl.trim() && !isValidUrl(draft.pdfUrl.trim())) errors.pdfUrl = 'PDF URL must be a valid URL.'
+
+  return errors
+}
+
+function isValidUrl(value: string) {
+  try {
+    new URL(value)
+    return true
+  } catch {
+    return false
   }
 }
 
@@ -476,12 +531,14 @@ function getAdminErrorMessage(error: unknown) {
     if (error.status === 409) {
       return `${error.message}. Capacity cannot be reduced below already reserved seats, and workshops with registrations cannot be deleted.`
     }
-    return error.message
   }
 
-  if (error instanceof TypeError) return 'Could not reach the UniHub API. Try again when the backend is available.'
-  return 'The organizer action failed. Please try again.'
+  return getUserFacingError(error, {
+    action: 'Workshop administration',
+    fallback: 'The organizer action failed. Please try again.',
+    validation: 'The workshop form could not be saved.',
+  })
 }
 
 const fieldClass =
-  'min-h-11 rounded-theme-md border border-border-strong bg-background-subtle px-theme-sm text-text-primary placeholder:text-text-muted focus:border-border-focus focus:outline-none'
+  `min-h-11 rounded-theme-md border border-border-strong bg-background-subtle px-theme-sm text-text-primary placeholder:text-text-muted focus:border-border-focus focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 ${focusClass}`

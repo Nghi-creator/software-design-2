@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { EmptyState, LoadingState } from '../../components/State'
+import { EmptyState, Notice, PanelSkeleton } from '../../components/State'
 import { buttonClass, cardClass, secondaryButtonClass } from '../../components/styles'
-import { ApiError } from '../../lib/api'
+import { getUserFacingError } from '../../lib/apiErrorMessages'
 import { formatDateTime } from '../../lib/format'
 import { getLatestCsvImportJob, listCsvImportErrors } from '../../lib/importApi'
 import type { CsvImportError, CsvImportJob } from '../../types'
@@ -71,9 +71,9 @@ export function AdminImportsPage() {
     <>
       <h1 className="text-3xl font-extrabold leading-tight text-text-primary md:text-4xl">CSV import health</h1>
       {isLoadingJob ? (
-        <LoadingState label="Loading latest CSV import status..." />
+        <PanelSkeleton label="Loading latest CSV import status" />
       ) : jobError ? (
-        <StatusNotice tone="warning" message={jobError} />
+        <Notice tone="warning" message={jobError} />
       ) : !job ? (
         <EmptyState title="No CSV import jobs yet" message="The organizer dashboard is ready; row errors will appear after the first legacy student import runs." />
       ) : (
@@ -130,10 +130,10 @@ export function AdminImportsPage() {
                 </button>
               </div>
             </div>
-            {errorListError ? <StatusNotice tone="warning" message={errorListError} /> : null}
+            {errorListError ? <Notice tone="warning" message={errorListError} /> : null}
             {isLoadingErrors ? (
               <div className="p-theme-md">
-                <LoadingState label="Loading import errors..." />
+                <PanelSkeleton label="Loading import errors" />
               </div>
             ) : errors.length === 0 ? (
               <div className="p-theme-md">
@@ -218,16 +218,6 @@ function StatusBadge({ status }: { status: CsvImportJob['status'] }) {
   )
 }
 
-function StatusNotice({ message, tone }: { message: string; tone: 'warning' }) {
-  const className = tone === 'warning' ? 'border-status-warning/40 bg-status-warningBg text-status-warning' : ''
-
-  return (
-    <p className={`rounded-theme-md border px-theme-md py-theme-sm text-sm font-bold ${className}`}>
-      {message}
-    </p>
-  )
-}
-
 function getCompletionNote(job: CsvImportJob | null) {
   if (!job) return ''
   if (job.status === 'RUNNING') return 'The legacy student import is still processing.'
@@ -252,11 +242,9 @@ function formatImportStatus(status: CsvImportJob['status']) {
 }
 
 function getImportErrorMessage(error: unknown, fallbackMessage: string) {
-  if (error instanceof ApiError) {
-    if (error.status === 404) return `${fallbackMessage} The backend route may not be deployed yet.`
-    return error.message
-  }
-
-  if (error instanceof TypeError) return `${fallbackMessage} The UniHub API could not be reached.`
-  return fallbackMessage
+  return getUserFacingError(error, {
+    action: 'CSV import visibility',
+    fallback: fallbackMessage,
+    notFound: `${fallbackMessage} The backend route may not be deployed yet.`,
+  })
 }

@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { MetricCard } from '../../components/MetricCard'
-import { CenteredLoadingState } from '../../components/State'
+import { DashboardSkeleton, EmptyState, Notice } from '../../components/State'
 import { cardClass } from '../../components/styles'
 
 import { formatDateTime } from '../../lib/format'
+import { getUserFacingError } from '../../lib/apiErrorMessages'
 import { getWorkshopStats, listWorkshops } from '../../lib/workshopApi'
 import type { Workshop, WorkshopStats } from '../../types'
 
@@ -24,15 +25,16 @@ export function AdminHomePage() {
       try {
         const response = await listWorkshops()
         const statsEntries = await Promise.all(
-          response.items.map(async (workshop) => [workshop.id, await getWorkshopStats(workshop.id)] as const),
+          response.items.map(async (workshop) => [workshop.id, await getOptionalDashboardStats(workshop)] as const),
         )
         if (!isMounted) return
         setWorkshops(response.items)
         setStats(Object.fromEntries(statsEntries))
-      } catch {
+      } catch (caughtError) {
         if (!isMounted) return
         setWorkshops([])
-        setError('Live organizer metrics are unavailable. Please try again later.')
+        setStats({})
+        setError(getUserFacingError(caughtError, { action: 'Organizer metrics' }))
       } finally {
         if (isMounted) setIsLoading(false)
       }
@@ -48,13 +50,9 @@ export function AdminHomePage() {
   return (
     <>
       <h1 className="text-3xl font-extrabold leading-tight text-text-primary md:text-4xl">Admin dashboard</h1>
-      {error ? (
-        <p className="rounded-theme-md border border-status-warning/40 bg-status-warningBg px-theme-md py-theme-sm text-sm font-bold text-status-warning">
-          {error}
-        </p>
-      ) : null}
+      {error ? <Notice tone="warning" message={error} /> : null}
       {isLoading ? (
-        <CenteredLoadingState label="Loading organizer dashboard..." />
+        <DashboardSkeleton />
       ) : (
         <>
           <section className="grid gap-theme-md md:grid-cols-4">
@@ -70,19 +68,41 @@ export function AdminHomePage() {
               <span>Remaining</span>
               <span>Starts</span>
             </div>
-            {workshops.slice(0, 4).map((workshop) => (
-              <div className="grid gap-theme-md border-t border-border-subtle px-theme-md py-theme-md text-text-secondary md:grid-cols-[minmax(260px,2fr)_1fr_1fr_1fr]" key={workshop.id}>
-                <span className="font-bold text-text-primary">{workshop.title}</span>
-                <span>{workshop.room?.name ?? workshop.roomId}</span>
-                <span>{workshop.seatsRemaining}/{workshop.capacity}</span>
-                <span>{formatDateTime(workshop.startTime)}</span>
+            {workshops.length === 0 ? (
+              <div className="border-t border-border-subtle p-theme-md">
+                <EmptyState title="No dashboard stats yet" message="Organizer metrics will appear after workshops are published." />
               </div>
-            ))}
+            ) : (
+              workshops.slice(0, 4).map((workshop) => (
+                <div className="grid gap-theme-md border-t border-border-subtle px-theme-md py-theme-md text-text-secondary md:grid-cols-[minmax(260px,2fr)_1fr_1fr_1fr]" key={workshop.id}>
+                  <span className="font-bold text-text-primary">{workshop.title}</span>
+                  <span>{workshop.room?.name ?? workshop.roomId}</span>
+                  <span>{workshop.seatsRemaining}/{workshop.capacity}</span>
+                  <span>{formatDateTime(workshop.startTime)}</span>
+                </div>
+              ))
+            )}
           </section>
         </>
       )}
     </>
   )
+}
+
+async function getOptionalDashboardStats(workshop: Workshop) {
+  try {
+    return await getWorkshopStats(workshop.id)
+  } catch {
+    const reservedSeats = workshop.capacity - workshop.seatsRemaining
+    return {
+      workshopId: workshop.id,
+      capacity: workshop.capacity,
+      seatsRemaining: workshop.seatsRemaining,
+      registrations: { pending: 0, confirmed: reservedSeats, cancelled: 0 },
+      checkedInCount: 0,
+      successfulPaymentCount: workshop.price > 0 ? reservedSeats : 0,
+    }
+  }
 }
 
 function getAdminTotals(workshops: Workshop[], stats: Record<string, WorkshopStats>) {

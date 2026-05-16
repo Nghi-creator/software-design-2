@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import QRCode from 'qrcode'
 import { EmptyState } from '../../components/State'
 import { cardClass, secondaryButtonClass } from '../../components/styles'
 import { formatCurrency, formatDateTime } from '../../lib/format'
@@ -33,7 +34,7 @@ export function RegistrationsPage({ user }: { user: SessionUser }) {
           message="Register for a workshop from the schedule and confirmed tickets will appear here."
         />
       ) : (
-        <section className="grid gap-theme-md">
+        <section className="grid w-full max-w-6xl gap-theme-md">
           {registrations.map((registration) => (
             <RegistrationCard
               key={`${registration.id}-${registration.updatedAt}`}
@@ -63,8 +64,8 @@ function RegistrationCard({
   const statusContent = getRegistrationStatusContent(registration)
 
   return (
-    <article className={`${cardClass} grid gap-theme-md p-theme-lg lg:grid-cols-[minmax(0,1fr)_minmax(260px,360px)]`}>
-      <div className="grid gap-theme-md">
+    <article className={`${cardClass} grid items-start gap-theme-md p-theme-lg lg:grid-cols-[minmax(0,1fr)_minmax(220px,260px)]`}>
+      <div className="grid gap-theme-md lg:pr-theme-md">
         <div className="flex flex-wrap items-start justify-between gap-theme-sm">
           <div>
             <h2 className="text-2xl font-extrabold text-text-primary">{registration.workshop.title}</h2>
@@ -72,7 +73,8 @@ function RegistrationCard({
               {registration.workshop.speaker} · {formatDateTime(registration.workshop.startTime)}
             </p>
           </div>
-          <span className={`rounded-full px-theme-sm py-1 text-xs font-extrabold uppercase ${statusContent.badgeClass}`}>
+          <span className="inline-flex min-h-8 items-center gap-theme-sm rounded-full border border-white/12 bg-black/30 px-theme-sm text-xs font-extrabold uppercase text-text-secondary shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+            <span className={`size-2 rounded-full ${statusContent.dotClass}`} aria-hidden="true" />
             {statusContent.label}
           </span>
         </div>
@@ -98,7 +100,7 @@ function RegistrationCard({
           </p>
         ) : null}
       </div>
-      <div className="grid content-start gap-theme-sm rounded-theme-md border border-border-subtle bg-background-subtle p-theme-md">
+      <div className="grid w-full max-w-64 content-start gap-theme-sm justify-self-center rounded-theme-md border border-border-subtle bg-background-subtle p-theme-md lg:justify-self-end">
         <strong className="text-text-primary">QR ticket</strong>
         {registration.qrTicket ? (
           <QrTicket token={registration.qrTicket.qrCode} />
@@ -144,17 +146,52 @@ function RegistrationCard({
 }
 
 function QrTicket({ token }: { token: string }) {
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
+  const [qrError, setQrError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let isMounted = true
+
+    QRCode.toDataURL(token, {
+      color: {
+        dark: '#171126',
+        light: '#f6f0ff',
+      },
+      errorCorrectionLevel: 'M',
+      margin: 2,
+      scale: 8,
+      width: 320,
+    })
+      .then((dataUrl) => {
+        if (!isMounted) return
+        setQrDataUrl(dataUrl)
+        setQrError(null)
+      })
+      .catch(() => {
+        if (!isMounted) return
+        setQrDataUrl(null)
+        setQrError('QR image could not be generated. Use the token below.')
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [token])
+
   return (
     <div className="grid gap-theme-sm">
-      <div className="grid aspect-square place-items-center rounded-theme-md border border-border-strong bg-surface-inverse p-theme-md text-text-inverse">
-        <div className="grid size-full grid-cols-5 gap-1" aria-hidden="true">
-          {Array.from({ length: 25 }, (_, index) => (
-            <span
-              className={`rounded-sm ${getQrCellClass(token, index)}`}
-              key={`${token}-${index}`}
-            />
-          ))}
-        </div>
+      <div className="grid aspect-square place-items-center rounded-theme-md border border-border-strong bg-surface-inverse p-theme-sm">
+        {qrDataUrl ? (
+          <img
+            className="size-full rounded-theme-sm object-contain"
+            src={qrDataUrl}
+            alt="Scannable QR ticket"
+          />
+        ) : (
+          <div className="grid size-full place-items-center rounded-theme-sm bg-background-overlay p-theme-md text-center text-sm font-bold text-text-secondary">
+            {qrError ?? 'Generating QR ticket...'}
+          </div>
+        )}
       </div>
       <code className="break-all rounded-theme-md bg-background-overlay px-theme-sm py-theme-xs text-xs text-text-secondary">
         {token}
@@ -167,7 +204,7 @@ function getRegistrationStatusContent(registration: StoredRegistration) {
   if (registration.status === 'CONFIRMED') {
     return {
       label: 'Confirmed',
-      badgeClass: 'bg-status-successBg text-status-success',
+      dotClass: 'bg-status-success',
       qrMessage: 'QR ticket is being prepared.',
     }
   }
@@ -175,7 +212,7 @@ function getRegistrationStatusContent(registration: StoredRegistration) {
   if (registration.payment?.status === 'FAILED') {
     return {
       label: 'Payment failed',
-      badgeClass: 'bg-status-dangerBg text-status-danger',
+      dotClass: 'bg-status-danger',
       qrMessage: 'No QR is issued for failed payment attempts.',
     }
   }
@@ -183,14 +220,14 @@ function getRegistrationStatusContent(registration: StoredRegistration) {
   if (registration.status === 'PENDING') {
     return {
       label: 'Pending',
-      badgeClass: 'bg-status-warningBg text-status-warning',
+      dotClass: 'bg-status-warning',
       qrMessage: 'QR ticket will appear after confirmation.',
     }
   }
 
   return {
     label: 'Cancelled',
-    badgeClass: 'bg-background-overlay text-text-muted',
+    dotClass: 'bg-text-muted',
     qrMessage: 'No QR is issued for cancelled registrations.',
   }
 }
@@ -210,9 +247,4 @@ function formatPaymentStatus(registration: StoredRegistration) {
     case 'PENDING':
       return 'Pending'
   }
-}
-
-function getQrCellClass(token: string, index: number) {
-  const codePoint = token.charCodeAt(index % token.length) || index
-  return (codePoint + index) % 3 === 0 ? 'bg-text-inverse' : 'bg-transparent'
 }

@@ -8,7 +8,6 @@ export type LoginCredentials = {
 }
 
 export type RouteKey =
-  | 'home'
   | 'workshops'
   | 'workshopDetail'
   | 'registrations'
@@ -66,10 +65,14 @@ export type WorkshopSortBy = 'startTime' | 'title' | 'speaker' | 'price' | 'seat
 
 export type WorkshopAvailabilityFilter = 'all' | 'hasSeats' | 'free' | 'paid'
 
+export type WorkshopRegistrationFilter = 'all' | 'registered' | 'unregistered'
+
 export type WorkshopFilters = {
   query: string
-  day: string
+  startDate: string
+  endDate: string
   availability: WorkshopAvailabilityFilter
+  registration: WorkshopRegistrationFilter
   sortBy: WorkshopSortBy
 }
 

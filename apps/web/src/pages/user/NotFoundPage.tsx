@@ -6,7 +6,7 @@ export function NotFoundPage() {
     <StatePanel
       title="Page not found"
       message="The requested route is not part of the current UniHub web map."
-      action={<a className={buttonClass} href="#/">Go home</a>}
+      action={<a className={buttonClass} href="#/workshops">Go to schedule</a>}
     />
   )
 }

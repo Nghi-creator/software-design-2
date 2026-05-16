@@ -1,4 +1,4 @@
-import { CenteredLoadingState, EmptyState, StatePanel } from '../../components/State'
+import { DetailSkeleton, EmptyState, Notice, StatePanel } from '../../components/State'
 import { PageHeader } from '../../components/PageHeader'
 import { RegistrationAction } from '../../components/RegistrationAction'
 import { buttonClass, panelClass } from '../../components/styles'
@@ -12,7 +12,7 @@ export function WorkshopDetailPage({ user, workshopId }: { user: SessionUser | n
   const workshop = workshops.find((item) => item.id === workshopId)
 
   if (!workshop && isLoading) {
-    return <CenteredLoadingState label="Fetching workshop details..." />
+    return <DetailSkeleton />
   }
 
   if (!workshop) {
@@ -35,9 +35,10 @@ export function WorkshopDetailPage({ user, workshopId }: { user: SessionUser | n
         topContent={<BackToScheduleLink />}
       />
       {error ? (
-        <p className="rounded-theme-md border border-status-warning/40 bg-status-warningBg px-theme-md py-theme-sm text-sm font-bold text-status-warning">
-          {error} This detail page is still available, and registration/payment actions can recover independently.
-        </p>
+        <Notice
+          tone="warning"
+          message={`${error} This detail page is still available, and registration/payment actions can recover independently.`}
+        />
       ) : null}
       <section className="grid gap-theme-md md:grid-cols-2">
         <article className={panelClass}>

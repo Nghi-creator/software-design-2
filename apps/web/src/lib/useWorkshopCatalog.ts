@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { seedWorkshops } from '../data/seedWorkshops'
 import type { Workshop } from '../types'
+import { getUserFacingError } from './apiErrorMessages'
 import type { WorkshopCatalogSource } from './workshopCatalog'
 import { listWorkshops } from './workshopApi'
 
@@ -31,13 +33,16 @@ export function useWorkshopCatalog(): WorkshopCatalogState {
           isLoading: false,
           error: null,
         })
-      } catch {
+      } catch (caughtError) {
         if (!isMounted) return
         setState({
-          workshops: [],
+          workshops: seedWorkshops,
           source: 'fallback',
           isLoading: false,
-          error: 'Live workshop data is unavailable. Please try again later.',
+          error: `${getUserFacingError(caughtError, {
+            action: 'Live workshop browsing',
+            fallback: 'Live workshop data is unavailable.',
+          })} Showing seed workshops so browsing still works.`,
         })
       }
     }

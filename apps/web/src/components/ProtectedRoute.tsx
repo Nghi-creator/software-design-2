@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { formatRole } from '../lib/roles'
 import type { AuthStatus, Role, SessionUser } from '../types'
-import { LoadingState, StatePanel } from './State'
+import { PanelSkeleton, StatePanel } from './State'
 import { buttonClass, secondaryButtonClass } from './styles'
 
 type ProtectedRouteProps = {
@@ -13,7 +13,7 @@ type ProtectedRouteProps = {
 
 export function ProtectedRoute({ authStatus, user, allowedRoles, children }: ProtectedRouteProps) {
   if (authStatus === 'checking') {
-    return <LoadingState label="Checking your UniHub session..." />
+    return <PanelSkeleton label="Checking your UniHub session" />
   }
 
   if (!user) {
@@ -31,7 +31,7 @@ export function ProtectedRoute({ authStatus, user, allowedRoles, children }: Pro
       <StatePanel
         title="Access denied"
         message={`${user.name} is signed in as ${formatRole(user.role)}. This page is reserved for ${allowedRoles.map(formatRole).join(', ')}.`}
-        action={<a className={secondaryButtonClass} href="#/">Back home</a>}
+        action={<a className={secondaryButtonClass} href="#/workshops">Back to schedule</a>}
       />
     )
   }

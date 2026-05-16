@@ -24,25 +24,22 @@ export function NotificationBanner({ user }: { user: SessionUser | null }) {
     return subscribeToNotificationChanges(refreshNotification)
   }, [user])
 
+  useEffect(() => {
+    if (!notification) return undefined
+    const timeoutId = window.setTimeout(() => markNotificationRead(notification.id), 10000)
+    return () => window.clearTimeout(timeoutId)
+  }, [notification])
+
   if (!user || !notification) return null
 
   return (
-    <section className="grid gap-theme-sm rounded-theme-md border border-status-success/40 bg-status-successBg px-theme-md py-theme-sm text-status-success md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+    <section className="fixed bottom-theme-lg left-theme-md right-theme-md z-50 grid gap-theme-xs rounded-theme-md border border-status-success/40 bg-status-successBg px-theme-md py-theme-sm text-status-success shadow-theme-glow animate-fade-in md:left-auto md:max-w-md">
       <div>
         <p className="text-xs font-extrabold uppercase">{formatNotificationChannel(notification.channel)}</p>
         <strong className="block text-text-primary">{notification.title}</strong>
         <p className="text-sm font-bold">{notification.message}</p>
       </div>
-      <div className="flex flex-wrap gap-theme-sm">
-        <a className={linkButtonClass} href="#/notifications">History</a>
-        <button
-          className={linkButtonClass}
-          type="button"
-          onClick={() => markNotificationRead(notification.id)}
-        >
-          Dismiss
-        </button>
-      </div>
+      <a className={`${linkButtonClass} min-h-0 justify-self-start px-0 py-0`} href="#/notifications">History</a>
     </section>
   )
 }
