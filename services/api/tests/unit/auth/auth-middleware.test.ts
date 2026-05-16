@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { attachUser, requireAuth, requireRole } from '../src/middleware/auth';
-import { Roles } from '../src/types/domain';
+import { attachUser, requireAuth, requireRole } from '../../../src/middleware/auth';
+import { Roles } from '../../../src/types/domain';
 
 test('attachUser ignores legacy identity headers when no bearer token is present', async () => {
   const request = createRequest({

@@ -6,7 +6,7 @@ import {
   validateCheckinSyncPayload,
   validateCsvImportErrorQuery,
   validateUuidParam
-} from '../src/middleware/requestValidation';
+} from '../../../src/middleware/requestValidation';
 
 test('check-in payload validation rejects missing qrCode', () => {
   const { req, res, nextCalled } = runMiddleware(validateCheckinPayload, {

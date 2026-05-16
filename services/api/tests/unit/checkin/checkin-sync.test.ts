@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { syncOfflineCheckins } from '../src/services/checkin';
+import { checkInOnline, syncOfflineCheckins } from '../../../src/services/checkin';
 
 test('offline sync is item-level and idempotent for duplicate QR scans', async () => {
   const registrations = new Map([
@@ -153,4 +153,110 @@ test('offline sync reports already checked in when concurrent update wins the ra
       registrationId: 'registration-1'
     }
   ]);
+});
+
+test('offline sync reports transient item failures and continues later scans for retry safety', async () => {
+  const dependencies = {
+    query: async <T = any>(_text: string, params: unknown[] = []) => {
+      if (params[0] === 'qr-error') {
+        throw new Error('temporary database outage');
+      }
+
+      return {
+        rows: [
+          {
+            id: 'registration-2',
+            status: 'CONFIRMED',
+            checkedInAt: null,
+            checkinId: null
+          }
+        ] as T[]
+      };
+    },
+    withTransaction: async <T>(callback: (client: { query: any }) => Promise<T>) => {
+      const client = {
+        query: async <R = any>(text: string) => {
+          const sql = text.replace(/\s+/g, ' ').trim();
+
+          if (sql.startsWith('update registrations set checked_in_at')) {
+            return { rows: [{ id: 'registration-2' }] as R[], rowCount: 1 };
+          }
+
+          if (sql.startsWith('insert into checkins')) {
+            return { rows: [] as R[] };
+          }
+
+          throw new Error(`Unexpected query: ${sql}`);
+        }
+      };
+
+      return callback(client);
+    }
+  };
+
+  const results = await syncOfflineCheckins(
+    [
+      { localId: 'scan-error', qrCode: 'qr-error' },
+      { localId: 'scan-ok', qrCode: 'qr-ok' }
+    ],
+    'staff-1',
+    dependencies
+  );
+
+  assert.deepEqual(results, [
+    { localId: 'scan-error', qrCode: 'qr-error', status: 'failed' },
+    {
+      localId: 'scan-ok',
+      qrCode: 'qr-ok',
+      status: 'checked_in',
+      registrationId: 'registration-2'
+    }
+  ]);
+});
+
+test('online check-in records ONLINE source and does not use offline scannedAt timestamps', async () => {
+  const insertedCheckins: Array<{ source: string; checkinTime: Date }> = [];
+  const dependencies = {
+    query: async <T = any>() => ({
+      rows: [
+        {
+          id: 'registration-1',
+          status: 'CONFIRMED',
+          checkedInAt: null,
+          checkinId: null
+        }
+      ] as T[]
+    }),
+    withTransaction: async <T>(callback: (client: { query: any }) => Promise<T>) => {
+      const client = {
+        query: async <R = any>(text: string, params: unknown[] = []) => {
+          const sql = text.replace(/\s+/g, ' ').trim();
+
+          if (sql.startsWith('update registrations set checked_in_at')) {
+            return { rows: [{ id: 'registration-1' }] as R[], rowCount: 1 };
+          }
+
+          if (sql.startsWith('insert into checkins')) {
+            const [_registrationId, _staffId, checkinTime, source] = params as [string, string, Date, string];
+            insertedCheckins.push({ source, checkinTime });
+            return { rows: [] as R[] };
+          }
+
+          throw new Error(`Unexpected query: ${sql}`);
+        }
+      };
+
+      return callback(client);
+    }
+  };
+
+  const beforeCheckin = Date.now();
+  const result = await checkInOnline('qr-confirmed', 'staff-1', dependencies);
+  const afterCheckin = Date.now();
+
+  assert.deepEqual(result, { status: 'checked_in', registrationId: 'registration-1' });
+  assert.equal(insertedCheckins.length, 1);
+  assert.equal(insertedCheckins[0].source, 'ONLINE');
+  assert.ok(insertedCheckins[0].checkinTime.getTime() >= beforeCheckin);
+  assert.ok(insertedCheckins[0].checkinTime.getTime() <= afterCheckin);
 });

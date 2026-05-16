@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { parseRoomListQuery, parseWorkshopListQuery } from '../src/lib/browseQuery';
+import { parseRoomListQuery, parseWorkshopListQuery } from '../../../src/lib/browseQuery';
 
 test('room browse query uses pagination and sort defaults', () => {
   const query = parseRoomListQuery({});
