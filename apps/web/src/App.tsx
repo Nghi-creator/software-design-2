@@ -68,7 +68,7 @@ function RouteRenderer({
     case 'registrations':
       return (
         <ProtectedRoute authStatus={authStatus} user={user} allowedRoles={['STUDENT']}>
-          <RegistrationsPage />
+          {user ? <RegistrationsPage user={user} /> : null}
         </ProtectedRoute>
       )
     case 'login':
