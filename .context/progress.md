@@ -28,6 +28,7 @@
 - **Opt-In Real-Service Integration Scaffolding**: Added skipped-by-default Postgres/Redis integration tests for registration/payment idempotency and offline check-in sync. Run with `RUN_INTEGRATION_TESTS=true DATABASE_URL=... REDIS_URL=... npm test`.
 - **Check-In/Import Repository Extraction**: Check-in QR retrieval, online/offline check-in, and CSV import status/error flows now keep DB access in repository modules with dependencies supplied through `di.ts`.
 - **Mobile Check-In App**: Replaced the Flutter visual scaffold with a working staff app: bearer-token login, secure session persistence, camera QR scanning, online check-in calls, durable SQLite offline queue, connectivity-aware automatic retry, item-level sync result handling, and queue/profile UI.
+- **Web Progress Tracker**: Added `.context/web-progress.md` for React web tasks and requirement coverage.
 
 ## In Progress
 - API contract still partial; QR validation remains undefined. Supabase SQL schema must be applied manually per environment.
