@@ -111,6 +111,7 @@ export function TopNav({ activePath, items, user, onLogout }: TopNavProps) {
 
 function isActivePath(activePath: string, itemPath: string) {
   if (itemPath === '/') return activePath === '/'
+  if (itemPath === '/admin') return activePath === '/admin'
   return activePath === itemPath || activePath.startsWith(`${itemPath}/`)
 }
 

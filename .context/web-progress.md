@@ -39,16 +39,13 @@ Purpose: track React web work separately from Flutter mobile work. Move finished
 - **Notifications Verification**: `npm run lint`, `npm run build`, and a Vite dev-server HTTP smoke pass after notification UI implementation.
 - **Organizer Admin Flow**: Organizer dashboard now loads workshop metrics, and workshop management supports live/seed workshop listing, room selection, create/edit forms, PDF upload on create, PDF URL metadata edits, delete confirmation, capacity-conflict messaging, stats display, room layout references, and AI summary status.
 - **Organizer Verification**: `npm run lint`, `npm run build`, and a Vite dev-server HTTP smoke pass after organizer admin implementation.
+- **CSV Import Admin Visibility**: Organizer imports page now loads latest CSV import status, shows failure/error counts without blocking workshop administration, and paginates row-level import errors when backend endpoints are available.
+- **CSV Import Verification**: `npm run lint`, `npm run build`, and a local Vite HTTP smoke pass after import visibility implementation.
 
 ## In Progress
 - No active web implementation task yet.
 
 ## Backlog
-
-### CSV Import Admin Visibility
-- [ ] Add organizer view for latest student CSV import job status if backend endpoint exists.
-- [ ] Show import errors with pagination if backend endpoint exists.
-- [ ] Make CSV import failures visible without blocking normal workshop administration.
 
 ### Resilience And UX Requirements
 - [ ] Add user-facing handling for 401, 403, 404, 429, and 500 API responses.
@@ -77,6 +74,6 @@ Purpose: track React web work separately from Flutter mobile work. Move finished
 - [x] Organizer statistics.
 - [x] Strict web page access control.
 - [x] AI PDF summary display/status.
-- [ ] CSV import status/error visibility where backend endpoints exist.
+- [x] CSV import status/error visibility where backend endpoints exist.
 - [ ] README/setup instructions for running the web app.
 - [x] Seed-data-friendly demo flow.

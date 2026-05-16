@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { PageHeader } from '../../components/PageHeader'
 import { CenteredLoadingState, EmptyState } from '../../components/State'
 import { buttonClass, cardClass, linkButtonClass, secondaryButtonClass } from '../../components/styles'
 import { ApiError } from '../../lib/api'
@@ -85,12 +84,7 @@ export function AdminWorkshopsPage() {
 
   return (
     <>
-      <PageHeader
-        eyebrow="Organizer"
-        title="Workshop management"
-        description="Create, edit, inspect stats, monitor AI summaries and safely cancel workshops from one organizer surface."
-        action={<button className={buttonClass} type="button" onClick={() => startCreate()}>Create workshop</button>}
-      />
+      <h1 className="text-3xl font-extrabold leading-tight text-text-primary md:text-4xl">Workshop management</h1>
       {message ? (
         <p className="rounded-theme-md border border-status-success/40 bg-status-successBg px-theme-md py-theme-sm text-sm font-bold text-status-success">
           {message}
@@ -107,7 +101,7 @@ export function AdminWorkshopsPage() {
         <AdminStat label="Checked in" value={String(dashboardTotals.checkedInCount)} />
         <AdminStat label="Paid" value={String(dashboardTotals.successfulPaymentCount)} />
       </section>
-      <section className="grid gap-theme-lg xl:grid-cols-[minmax(420px,1fr)_minmax(0,2fr)]">
+      <section className="grid items-start gap-theme-lg xl:grid-cols-[minmax(420px,1fr)_minmax(0,2fr)]">
         <WorkshopForm
           draft={draft}
           mode={mode}
@@ -116,6 +110,7 @@ export function AdminWorkshopsPage() {
           editingWorkshop={editingWorkshop}
           onCancel={startCreate}
           onChange={setDraft}
+          onCreate={startCreate}
           onSubmit={() => void saveWorkshop()}
         />
         <section className="grid gap-theme-md">
@@ -204,6 +199,7 @@ function WorkshopForm({
   rooms,
   onCancel,
   onChange,
+  onCreate,
   onSubmit,
 }: {
   draft: WorkshopDraft
@@ -213,21 +209,29 @@ function WorkshopForm({
   rooms: Room[]
   onCancel: () => void
   onChange: (draft: WorkshopDraft) => void
+  onCreate: () => void
   onSubmit: () => void
 }) {
   return (
     <form
-      className={`${cardClass} grid content-start gap-theme-md p-theme-lg`}
+      className={`${cardClass} grid self-start gap-theme-md p-theme-lg`}
       onSubmit={(event) => {
         event.preventDefault()
         onSubmit()
       }}
     >
-      <div>
-        <h2 className="text-2xl font-extrabold text-text-primary">
-          {mode === 'edit' ? 'Edit workshop' : 'Create workshop'}
-        </h2>
-        {editingWorkshop ? <p className="text-text-secondary">{editingWorkshop.title}</p> : null}
+      <div className="grid gap-theme-sm sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+        <div>
+          <h2 className="text-2xl font-extrabold text-text-primary">
+            {mode === 'edit' ? 'Edit workshop' : 'Create workshop'}
+          </h2>
+          {editingWorkshop ? <p className="text-text-secondary">{editingWorkshop.title}</p> : null}
+        </div>
+        {mode === 'edit' ? (
+          <button className={buttonClass} type="button" onClick={onCreate}>
+            Create workshop
+          </button>
+        ) : null}
       </div>
       <FormField label="Title" value={draft.title} onChange={(title) => onChange({ ...draft, title })} />
       <FormField label="Speaker" value={draft.speaker} onChange={(speaker) => onChange({ ...draft, speaker })} />
