@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import fsPromises from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { Readable, PassThrough } from 'node:stream';
 import test from 'node:test';
 import csv from 'csv-parser';
 import { runCsvImportFromFile } from '../src/services/importStatus';
@@ -120,4 +121,157 @@ test('CSV import reports row errors without stopping the whole import', async ()
     'email must be valid',
     'duplicate email'
   ]);
+});
+
+test('CSV import marks the job failed when the scheduled export file is missing', async () => {
+  const filePath = path.join(os.tmpdir(), `missing-students-${Date.now()}.csv`);
+  const finishedJobs: Array<{
+    status: string;
+    totalRows: number;
+    successCount: number;
+    errorCount: number;
+    message: string | null;
+  }> = [];
+
+  const result = await runCsvImportFromFile(filePath, {
+    query: async (text, params = []) => {
+      const sql = text.replace(/\s+/g, ' ').trim();
+
+      if (sql.startsWith('insert into csv_import_jobs')) {
+        return {
+          rows: [
+            {
+              id: 'job-missing',
+              source: params[0],
+              status: 'RUNNING',
+              startedAt: new Date('2026-05-15T00:00:00.000Z'),
+              finishedAt: null,
+              totalRows: 0,
+              successCount: 0,
+              errorCount: 0,
+              message: null
+            }
+          ]
+        };
+      }
+
+      if (sql.startsWith('update csv_import_jobs')) {
+        const [_jobId, status, totalRows, successCount, errorCount, message] = params as [
+          string,
+          string,
+          number,
+          number,
+          number,
+          string | null
+        ];
+        finishedJobs.push({ status, totalRows, successCount, errorCount, message: message as string | null });
+
+        return {
+          rows: [
+            {
+              id: 'job-missing',
+              source: filePath,
+              status,
+              startedAt: new Date('2026-05-15T00:00:00.000Z'),
+              finishedAt: new Date('2026-05-15T00:01:00.000Z'),
+              totalRows,
+              successCount,
+              errorCount,
+              message
+            }
+          ]
+        };
+      }
+
+      throw new Error(`Unexpected query: ${sql}`);
+    },
+    fileExists: () => false,
+    createReadStream: fs.createReadStream,
+    createCsvParser: () => csv()
+  });
+
+  assert.equal(result.status, 'FAILED');
+  assert.deepEqual(finishedJobs, [
+    {
+      status: 'FAILED',
+      totalRows: 0,
+      successCount: 0,
+      errorCount: 1,
+      message: 'CSV file not found'
+    }
+  ]);
+});
+
+test('CSV import marks the job failed when the CSV stream cannot be parsed', async () => {
+  const filePath = path.join(os.tmpdir(), `broken-students-${Date.now()}.csv`);
+
+  const result = await runCsvImportFromFile(filePath, {
+    query: async (text, params = []) => {
+      const sql = text.replace(/\s+/g, ' ').trim();
+
+      if (sql.startsWith('insert into csv_import_jobs')) {
+        return {
+          rows: [
+            {
+              id: 'job-broken',
+              source: params[0],
+              status: 'RUNNING',
+              startedAt: new Date('2026-05-15T00:00:00.000Z'),
+              finishedAt: null,
+              totalRows: 0,
+              successCount: 0,
+              errorCount: 0,
+              message: null
+            }
+          ]
+        };
+      }
+
+      if (sql.startsWith('update csv_import_jobs')) {
+        const [_jobId, status, totalRows, successCount, errorCount, message] = params as [
+          string,
+          string,
+          number,
+          number,
+          number,
+          string | null
+        ];
+
+        return {
+          rows: [
+            {
+              id: 'job-broken',
+              source: filePath,
+              status,
+              startedAt: new Date('2026-05-15T00:00:00.000Z'),
+              finishedAt: new Date('2026-05-15T00:01:00.000Z'),
+              totalRows,
+              successCount,
+              errorCount,
+              message
+            }
+          ]
+        };
+      }
+
+      throw new Error(`Unexpected query: ${sql}`);
+    },
+    fileExists: () => true,
+    createReadStream: (() => Readable.from([
+      'studentId,name,email\nS001,Alice,alice@example.com\n'
+    ])) as unknown as typeof fs.createReadStream,
+    createCsvParser: () => {
+      const stream = new PassThrough({ objectMode: true });
+
+      queueMicrotask(() => stream.emit('error', new Error('malformed CSV export')));
+
+      return stream;
+    }
+  });
+
+  assert.equal(result.status, 'FAILED');
+  assert.equal(result.totalRows, 0);
+  assert.equal(result.successCount, 0);
+  assert.equal(result.errorCount, 1);
+  assert.equal(result.message, 'malformed CSV export');
 });

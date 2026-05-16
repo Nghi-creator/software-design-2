@@ -38,6 +38,7 @@
 - **Web Manual Verification**: Completed student browse/detail/register, organizer CRUD/stats, and auth/RBAC verification for the React web app.
 - **Event-Driven Notifications**: Added BullMQ registration-confirmed publishing, a separate notification worker, extensible channel dispatching, delivery-status persistence, and unit coverage for send/idempotency/failure paths.
 - **Notification Real-Service Verification**: Added opt-in BullMQ/Postgres integration coverage that publishes a real registration-confirmed job, runs the real worker, and asserts persisted `SENT` delivery status.
+- **Requirement Flow Test Pass**: Added backend coverage for AI PDF text cleaning/model handoff/fallback, online check-in source behavior, offline sync retry-safe failed items, and CSV import file-level failure reporting. Full `services/api` test suite passes.
 - **Registration Seat-Contention Coverage**: Added registration unit coverage for free workshops, missing payment tokens, full workshops, duplicate registrations, and bounded seat release; expanded opt-in real-service coverage with a two-student last-seat race plus a live HTTP burst test proving 100 simultaneous requests against 60 seats yield exactly 60 confirmations and no overbooking.
 
 ## In Progress
