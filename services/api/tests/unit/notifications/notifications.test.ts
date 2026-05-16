@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { deliverRegistrationConfirmedNotification } from '../../../src/services/notifications';
+import { GmailEmailTransport } from '../../../src/services/notificationChannels';
 import { NotificationChannels, NotificationStatuses } from '../../../src/types/notification';
 
 const context = {
@@ -104,4 +105,116 @@ test('failed channel delivery is persisted before retrying', async () => {
   );
 
   assert.deepEqual(failures, ['smtp timeout']);
+});
+
+test('missing registration context produces no notification work', async () => {
+  let findOrCreateCalls = 0;
+  let sendCalls = 0;
+
+  await deliverRegistrationConfirmedNotification(
+    { registrationId: context.registrationId },
+    {
+      findContext: async () => undefined,
+      findOrCreate: async () => {
+        findOrCreateCalls += 1;
+        return { id: 'notification-1', status: NotificationStatuses.PENDING, attemptCount: 0 };
+      },
+      markSent: async () => undefined,
+      markFailed: async () => undefined,
+      channels: [
+        {
+          channel: NotificationChannels.EMAIL,
+          send: async () => {
+            sendCalls += 1;
+          }
+        }
+      ]
+    }
+  );
+
+  assert.equal(findOrCreateCalls, 0);
+  assert.equal(sendCalls, 0);
+});
+
+test('missing email channel fails loudly so configuration mistakes are visible', async () => {
+  await assert.rejects(
+    deliverRegistrationConfirmedNotification(
+      { registrationId: context.registrationId },
+      {
+        findContext: async () => context,
+        findOrCreate: async () => ({
+          id: 'notification-1',
+          status: NotificationStatuses.PENDING,
+          attemptCount: 0
+        }),
+        markSent: async () => undefined,
+        markFailed: async () => undefined,
+        channels: []
+      }
+    ),
+    /No channel registered for EMAIL/
+  );
+});
+
+test('extra future channels can coexist without changing email delivery flow', async () => {
+  const calls: string[] = [];
+
+  await deliverRegistrationConfirmedNotification(
+    { registrationId: context.registrationId },
+    {
+      findContext: async () => context,
+      findOrCreate: async () => ({
+        id: 'notification-1',
+        status: NotificationStatuses.PENDING,
+        attemptCount: 0
+      }),
+      markSent: async () => undefined,
+      markFailed: async () => undefined,
+      channels: [
+        {
+          channel: NotificationChannels.EMAIL,
+          send: async () => {
+            calls.push('email');
+          }
+        },
+        {
+          channel: 'TELEGRAM' as any,
+          send: async () => {
+            calls.push('telegram');
+          }
+        }
+      ]
+    }
+  );
+
+  assert.deepEqual(calls, ['email']);
+});
+
+test('gmail transport uses configured sender and delegates to nodemailer', async () => {
+  const sentMessages: unknown[] = [];
+  const transport = new GmailEmailTransport(
+    { user: 'sender@gmail.com', pass: 'app-password' },
+    (() =>
+      ({
+        sendMail: async (message: unknown) => {
+          sentMessages.push(message);
+          return undefined as any;
+        }
+      }) as any) as any
+  );
+
+  await transport.send({
+    to: 'student@example.com',
+    subject: 'Registration confirmed',
+    text: 'See you there'
+  });
+
+  assert.deepEqual(sentMessages, [
+    {
+      from: 'sender@gmail.com',
+      to: 'student@example.com',
+      subject: 'Registration confirmed',
+      text: 'See you there'
+    }
+  ]);
 });

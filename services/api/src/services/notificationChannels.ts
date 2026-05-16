@@ -24,6 +24,8 @@ type GmailTransportConfig = {
   pass: string;
 };
 
+type NodemailerTransport = Pick<ReturnType<typeof nodemailer.createTransport>, 'sendMail'>;
+
 export class EmailNotificationChannel implements NotificationChannelAdapter {
   readonly channel = NotificationChannels.EMAIL;
 
@@ -48,10 +50,15 @@ export class ConsoleEmailTransport implements EmailTransport {
 }
 
 export class GmailEmailTransport implements EmailTransport {
-  private readonly transporter;
+  private readonly transporter: NodemailerTransport;
+  private readonly sender: string;
 
-  constructor(config: GmailTransportConfig) {
-    this.transporter = nodemailer.createTransport({
+  constructor(
+    config: GmailTransportConfig,
+    createTransport: typeof nodemailer.createTransport = nodemailer.createTransport
+  ) {
+    this.sender = config.user;
+    this.transporter = createTransport({
       service: 'gmail',
       auth: {
         user: config.user,
@@ -62,7 +69,7 @@ export class GmailEmailTransport implements EmailTransport {
 
   async send(message: { to: string; subject: string; text: string }) {
     await this.transporter.sendMail({
-      from: process.env.MAIL_USER,
+      from: this.sender,
       to: message.to,
       subject: message.subject,
       text: message.text

@@ -88,3 +88,9 @@ npm run load:cleanup:registration
 ```
 
 Có thể đặt `LOAD_TEST_COHORT=<name>` nếu muốn nhiều cohort độc lập.
+
+## Kiểm thử thông báo
+
+- `npm test`: chạy unit tests và các integration tests mặc định/skip-by-default.
+- `RUN_INTEGRATION_TESTS=true DATABASE_URL=... REDIS_URL=... npm test`: chạy kiểm thử thật với Postgres + Redis cho hàng đợi BullMQ và trạng thái delivery.
+- `RUN_GMAIL_TESTS=true MAIL_USER=... MAIL_PASS=... MAIL_TEST_TO=... npm test`: gửi một email thật qua Gmail SMTP. Bài test này cần tài khoản Gmail thật, App Password, và một inbox đích có thể nhận mail.

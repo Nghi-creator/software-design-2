@@ -14,6 +14,14 @@ import {
   publishRegistrationConfirmed
 } from '../../../src/jobs/notificationQueue';
 import { createNotificationWorker } from '../../../src/workers/notificationWorker';
+import {
+  findOrCreateNotification,
+  findRegistrationNotificationContext,
+  markNotificationFailed,
+  markNotificationSent
+} from '../../../src/repositories/notificationRepository';
+import { deliverRegistrationConfirmedNotification } from '../../../src/services/notifications';
+import { NotificationChannels } from '../../../src/types/notification';
 
 // Run with:
 // RUN_INTEGRATION_TESTS=true DATABASE_URL=postgres://... REDIS_URL=redis://... npm test
@@ -321,7 +329,23 @@ test('real BullMQ worker delivers registration notification and persists sent st
 }, async () => {
   const fixture = await createFixture();
   const registration = await createConfirmedRegistration(fixture, `qr-notify-${fixture.suffix}`);
-  const worker = createNotificationWorker();
+  const sentTo: string[] = [];
+  const worker = createNotificationWorker((event) =>
+    deliverRegistrationConfirmedNotification(event, {
+      findContext: findRegistrationNotificationContext,
+      findOrCreate: findOrCreateNotification,
+      markSent: markNotificationSent,
+      markFailed: markNotificationFailed,
+      channels: [
+        {
+          channel: NotificationChannels.EMAIL,
+          send: async (context) => {
+            sentTo.push(context.recipientEmail);
+          }
+        }
+      ]
+    })
+  );
 
   try {
     await publishRegistrationConfirmed(registration.id);
@@ -332,6 +356,7 @@ test('real BullMQ worker delivers registration notification and persists sent st
     assert.equal(notification.channel, 'EMAIL');
     assert.equal(notification.attemptCount, 1);
     assert.match(notification.subject, /Registration confirmed/);
+    assert.deepEqual(sentTo, [`student.${fixture.suffix}@example.test`]);
   } finally {
     await worker.close();
     await query('delete from notifications where registration_id = $1', [registration.id]);
