@@ -78,7 +78,8 @@ export type PaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED'
 
 export type Registration = {
   id: string
-  studentId: string
+  userId?: string
+  studentId?: string
   workshopId: string
   status: RegistrationStatus
   qrCode: string
@@ -101,6 +102,14 @@ export type QrTicket = {
   workshopId: string
   workshopTitle: string
   qrCode: string
+}
+
+export type StoredRegistration = Registration & {
+  workshop: Workshop
+  qrTicket?: QrTicket | null
+  message?: string | null
+  createdAt: string
+  updatedAt: string
 }
 
 export type AiSummaryStatus = 'not_uploaded' | 'processing' | 'ready' | 'failed'

@@ -33,23 +33,13 @@ Purpose: track React web work separately from Flutter mobile work. Move finished
 - **Browsing Verification**: `npm run lint`, `npm run build`, and a Vite dev-server HTTP smoke pass after the student browsing implementation.
 - **Web Shell UI Pass**: Navbar is a full-width sticky top bar with its own raised background, explicit Home link, left-aligned primary navigation, non-clickable logo, and avatar-style authenticated account control.
 - **Workshop Detail UX Pass**: Detail headers include a back-to-schedule control and show a centered fetching state while live workshop data is still loading instead of a premature not-found message.
+- **Registration And Payment Flow**: Student registration buttons now handle free and paid workshops, collect payment tokens for paid workshops, send `Idempotency-Key`, disable duplicate submissions, surface full/rate-limit/payment-unavailable/API-offline failures, store local registration outcomes, retrieve confirmed QR tickets, and render "My registrations" with pending/confirmed/cancelled/payment-failed states.
+- **Registration Verification**: `npm run lint`, `npm run build`, and a Vite dev-server HTTP smoke pass after registration/payment UI implementation.
 
 ## In Progress
 - No active web implementation task yet.
 
 ## Backlog
-
-### Registration And Payment
-- [ ] Add free-workshop registration flow.
-- [ ] Add paid-workshop registration flow.
-- [ ] Generate and send an `Idempotency-Key` for registration/payment POST requests.
-- [ ] Prevent accidental duplicate submissions from repeated clicks/retries.
-- [ ] Surface seat contention outcomes clearly when a workshop fills up.
-- [ ] Show payment timeout/failure states without breaking normal browsing.
-- [ ] Add graceful degradation messaging when the payment gateway circuit is open.
-- [ ] Display successful registration confirmation.
-- [ ] Retrieve and display the QR ticket for confirmed registrations.
-- [ ] Add "My registrations" view with statuses for pending, confirmed, cancelled, paid, and failed payment cases.
 
 ### Notifications
 - [ ] Display in-app confirmation notification after successful registration.
@@ -91,10 +81,10 @@ Purpose: track React web work separately from Flutter mobile work. Move finished
 
 ## Requirement Coverage Checklist
 - [x] Workshop browsing and real-time remaining seats.
-- [ ] Free and paid registration.
-- [ ] QR ticket display after successful registration.
-- [ ] No duplicate client-side registration/payment submission.
-- [ ] Payment instability graceful degradation.
+- [x] Free and paid registration.
+- [x] QR ticket display after successful registration.
+- [x] No duplicate client-side registration/payment submission.
+- [x] Payment instability graceful degradation.
 - [ ] In-app registration confirmation notification.
 - [ ] Organizer workshop create, update, cancel/delete.
 - [ ] Organizer statistics.
