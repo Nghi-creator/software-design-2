@@ -36,7 +36,7 @@
 - **Web Schedule Filter Polish**: Replaced the student schedule day dropdown with native start/end date inputs, added All/Registered/Unregistered schedule filtering, suppressing the empty-state panel for date ranges with no workshops, and restyled confirmed registration/QR actions as compact purple pills.
 
 ## In Progress
-- API contract still partial; QR validation remains undefined. Supabase SQL schema must be applied manually per environment.
+- API contract still partial for future features outside the current check-in flow. QR validation is intentionally merged into check-in requests. Supabase SQL schema must be applied manually per environment.
 
 ## Next Steps
-- Add remaining API endpoints from `api_spec.md` Still Undefined section, especially a separate QR validation contract if the team wants pre-check validation before committing check-in.
+- Add remaining APIs only when new product scope requires them; keep QR validation merged into check-in unless requirements change.

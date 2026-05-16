@@ -23,3 +23,9 @@
 ### 2026-05-14: Single React Web App with RBAC
 - **Decision**: Use one React web app for both students and admins, with RBAC-protected routes and actions.
 - **Reason**: Avoid duplicated frontend shells while keeping permissions centralized and explicit.
+
+## Check-In
+
+### 2026-05-16: Keep QR Validation Inside Check-In
+- **Decision**: Do not create a separate QR validation endpoint; validate QR tokens inside online and offline check-in flows.
+- **Reason**: Current product flow only needs validation at commit time, so a separate pre-check endpoint would add contract surface without required behavior.

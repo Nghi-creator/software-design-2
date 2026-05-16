@@ -217,6 +217,7 @@ Errors: 400, 401, 403, 500
 Notes: row-level errors include rowNumber, studentId, email, error, rawRow, and createdAt. Malformed rows are recorded without stopping later rows in the import.
 ```
 
-## Still Undefined
+## Check-In Contract Note
 
-- QR validation endpoint separate from check-in.
+- QR validation is intentionally performed inside `POST /api/checkin` and `POST /api/checkin/sync`.
+- No separate pre-check QR validation endpoint is planned.
