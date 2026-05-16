@@ -15,12 +15,12 @@
 ## Phase 3: Mobile & Offline Check-in
 
 - [x] QR Code Generation Service.
-- [ ] Mobile Check-in App Development.
-- [ ] Offline Local Storage & Syncing Mechanism in the mobile app.
+- [x] Mobile Check-in App Development.
+- [x] Offline Local Storage & Syncing Mechanism in the mobile app.
 - [x] Backend offline sync endpoint and idempotent processing.
 
 ## Phase 4: Enhancements
 
-- [ ] Event-driven Notifications (RabbitMQ).
+- [ ] Event-driven Notifications (BullMQ + Upstash Redis).
 - [x] AI Summary Integration (Gemini API).
 - [x] Legacy CSV Sync Service.

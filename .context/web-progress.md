@@ -44,6 +44,7 @@ Purpose: track React web work separately from Flutter mobile work. Move finished
 - **Resilience And UX Pass**: Added shared user-facing API error handling for auth/not-found/rate-limit/server failures, rate-limit retry guidance, seed workshop fallback for offline browsing, stable skeleton loading states, empty dashboard/import/list states, workshop form validation, and keyboard focus visibility.
 - **Resilience Verification**: `npm run lint`, `npm run build`, local Vite HTTP smoke, and static responsive class audit pass. Browser screenshot capture was blocked by local macOS ScreenCaptureKit.
 - **Web QA Cleanup Pass**: Fixed schedule registration filter state so lint passes without synchronous effect updates, preserved organizer create/update success messages after form reset, corrected shared mobile frame sizing to remove horizontal overflow, and hardened shared headings/auth notice wrapping on narrow screens.
+- **Manual Web Verification**: Completed student browse/detail/register, organizer CRUD/stats, and auth/RBAC verification against the implemented web flow.
 
 ## In Progress
 - No active web implementation task yet.
@@ -51,9 +52,6 @@ Purpose: track React web work separately from Flutter mobile work. Move finished
 ## Backlog
 
 ### Testing And Delivery
-- [ ] Manually verify student browse/detail/register flow against seed data.
-- [ ] Manually verify organizer CRUD/stats flow against seed data.
-- [ ] Manually verify auth redirects and role-based page protection.
 - [ ] Update this progress file after each completed web milestone.
 
 ## Requirement Coverage Checklist

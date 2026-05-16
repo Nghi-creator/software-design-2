@@ -8,7 +8,7 @@ UniHub uses a layered modular monolith for core product flows, with asynchronous
 - API layer: Express REST controllers, validation, authentication, and response shaping.
 - Service layer: workshop, registration, payment, check-in, notification, AI summary, and CSV import logic.
 - Repository layer: all PostgreSQL access and transactions.
-- Async layer: RabbitMQ queues and workers for email, AI summaries, and legacy CSV import.
+- Async layer: BullMQ queues backed by Upstash Redis, with workers for email notifications and other retryable jobs.
 
 Keep the backend stateless so it can scale horizontally during registration spikes.
 
@@ -18,15 +18,15 @@ Keep the backend stateless so it can scale horizontally during registration spik
 - Mobile Check-in App: scan QR codes, support offline local queue, sync when online.
 - API Server: owns business logic, auth/RBAC, registration concurrency, payment coordination, and check-in APIs.
 - PostgreSQL: primary data store for users, rooms, workshops, registrations, payments, check-ins, and notifications.
-- Redis: cache, token-bucket rate limiting, idempotency response cache.
-- RabbitMQ + Workers: background notifications, AI summaries, and CSV sync.
+- Upstash Redis: cache, token-bucket rate limiting, idempotency response cache, and BullMQ job storage.
+- BullMQ + Workers: background notifications and other retryable jobs.
 - Object Storage: uploaded workshop PDFs.
 - External Services: mock payment gateway and Google Gemini API.
 
 ## Communication
 
 - The React web app and mobile client call the API over REST.
-- Backend publishes async events to RabbitMQ when work does not need to block user-facing requests.
+- Backend publishes async events to BullMQ when work does not need to block user-facing requests.
 - Workers consume queue messages and retry transient failures where appropriate.
 - Mobile check-in stores scans locally when offline and syncs batches after connectivity returns.
 
@@ -38,9 +38,8 @@ Example synchronous flows:
 
 Example async flows:
 
-- Registration confirmed -> notification event -> email worker.
-- Workshop PDF uploaded -> AI summary event -> AI worker.
-- Legacy CSV received -> import event -> CSV worker.
+- Registration confirmed -> notification job -> email worker.
+- Future retryable background work can be moved behind BullMQ workers when warranted.
 
 ## Key Reliability Patterns
 
@@ -77,6 +76,7 @@ Add feature-level checks in services when RBAC alone is too coarse.
 - Modular monolith over microservices: simpler development and deployment for the assignment scale, while preserving module boundaries for future extraction.
 - PostgreSQL over NoSQL for core data: stronger consistency and row locking for seat inventory, with Redis used to reduce hot-path pressure.
 - Async workers over synchronous background work: faster user-facing responses and better retry behavior, at the cost of queue and eventual-consistency handling.
+- BullMQ on Upstash Redis over RabbitMQ for the current scope: preserves a recognizable queue + worker architecture while reusing managed Redis already needed by the system. QStash remains the better fallback if deployment becomes fully serverless and cannot host a worker process.
 - RBAC over ABAC: simpler and sufficient for the current role model; add explicit service checks before adopting a policy engine.
 
 ## Cross-References

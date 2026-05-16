@@ -7,7 +7,7 @@ A comprehensive workshop management platform for universities to handle high-con
 - **Frontend**: React single web app for students/admins via RBAC-protected routes, Flutter (Mobile Check-in)
 - **Backend**: Node.js, Express (REST API)
 - **Database**: PostgreSQL (Relational), Redis (Caching & Rate Limiting)
-- **Infrastructure**: RabbitMQ (Message Queue), Object Storage (PDFs)
+- **Infrastructure**: BullMQ on Upstash Redis for queued jobs, Object Storage (PDFs)
 
 ## Core Features
 1. **Browse & Register**: Students scan/browse and sign up for workshops.

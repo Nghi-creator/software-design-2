@@ -18,6 +18,11 @@
 - **Decision**: Use Opossum for payment gateway integration.
 - **Reason**: Prevent cascading failures when external payment mocks are unstable.
 
+### 2026-05-16: BullMQ on Upstash Redis for Notifications
+- **Decision**: Implement event-driven notifications with BullMQ backed by Upstash Redis, using a separate worker process for delivery jobs.
+- **Reason**: UniHub already uses Redis, `bullmq` is already present in the backend, and this keeps a recognizable message-queue architecture without adding RabbitMQ solely for one remaining feature.
+- **Fallback**: If deployment becomes fully serverless and cannot keep a worker process alive, use QStash instead of BullMQ for HTTP-based job delivery.
+
 ## Frontend
 
 ### 2026-05-14: Single React Web App with RBAC
