@@ -21,6 +21,6 @@
 
 ## Phase 4: Enhancements
 
-- [ ] Event-driven Notifications (RabbitMQ).
+- [ ] Event-driven Notifications (BullMQ + Upstash Redis).
 - [x] AI Summary Integration (Gemini API).
 - [x] Legacy CSV Sync Service.

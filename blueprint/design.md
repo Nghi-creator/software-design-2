@@ -13,7 +13,7 @@ Các thành phần chính:
 - **Redis**: in-memory store cho token-bucket rate limiting và idempotency response cache.
 - **CSV import job**: `node-cron` job chạy trong Backend API process để đồng bộ dữ liệu sinh viên từ file CSV hằng đêm.
 
-Implementation hiện tại không có message broker/worker service riêng. Một số dependency như `bullmq` đã có trong `package.json`, nhưng runtime hiện tại vẫn xử lý CSV sync trong API process.
+Implementation hiện tại không có message broker/worker service riêng. `bullmq` đã có trong `package.json`, và hướng hoàn thiện đã chọn là thêm worker riêng dùng BullMQ trên Upstash Redis cho notification jobs; runtime hiện tại vẫn xử lý CSV sync trong API process.
 
 ## Architectural Style
 
@@ -249,7 +249,7 @@ Level 2 phân rã các container hiện có:
 - Redis: rate limiting và idempotency cache.
 - Student CSV File: input cho cron sync job.
 
-Không vẽ Message Broker như runtime container bắt buộc vì implementation hiện tại chưa có queue worker riêng.
+Không vẽ Message Broker như runtime container bắt buộc vì implementation hiện tại chưa có queue worker riêng; bước hoàn thiện còn lại là thêm BullMQ worker trên Upstash Redis cho notification jobs.
 
 ## Thiết kế cơ sở dữ liệu
 
@@ -374,7 +374,7 @@ Payment mock gateway được bọc bằng Opossum. Khi gateway lỗi liên tụ
 
 ## Alternatives đã xem xét
 
-- **Message broker + worker riêng**: Phù hợp khi cần email, notification, retry queue và job volume lớn. Chưa được triển khai như runtime container hiện tại, nên tài liệu chỉ xem đây là hướng mở rộng.
+- **BullMQ + Upstash Redis worker riêng**: Phù hợp cho email notification, retry queue và job volume của scope hiện tại; giữ kiến trúc queue + worker dễ giải thích mà không cần thêm RabbitMQ chỉ cho một feature còn lại. Nếu chuyển sang serverless hoàn toàn và không giữ được worker process, QStash là phương án thay thế phù hợp hơn.
 - **Microservices**: Chưa cần thiết cho scope hiện tại; modular monolith giúp dễ debug và giữ transaction registration đơn giản.
 - **NoSQL database cho registration**: Không phù hợp bằng PostgreSQL cho bài toán ghế cuối vì cần ACID transaction và row-level locking.
 - **Chỉ disable button ở frontend để chống double click**: Không đủ vì retry mạng/API client vẫn có thể gửi trùng. Backend idempotency vẫn là bắt buộc cho paid registration.

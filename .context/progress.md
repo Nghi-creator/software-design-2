@@ -38,7 +38,8 @@
 
 ## In Progress
 - API contract still partial for future features outside the current check-in flow. QR validation is intentionally merged into check-in requests. Supabase SQL schema must be applied manually per environment.
+- Event-driven notification delivery design is now set: BullMQ + Upstash Redis with a worker process; QStash is the fallback only for serverless deployment.
 
 ## Next Steps
 - Add remaining APIs only when new product scope requires them; keep QR validation merged into check-in unless requirements change.
-- Event-driven notifications remain the only open roadmap feature.
+- Event-driven notifications remain the only open roadmap feature; implement registration-confirmed jobs, a BullMQ worker, retry handling, and delivery-status persistence.
