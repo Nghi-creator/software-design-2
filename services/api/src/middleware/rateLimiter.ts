@@ -144,6 +144,26 @@ export const createPreAuthRegistrationRateLimiter = (
 
 export const preAuthRegistrationRateLimiter = createPreAuthRegistrationRateLimiter();
 
+export const rejectSoldOutRegistrations = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const workshopId = req.params.id;
+    const isSoldOut = await redis.get(`registration:soldout:${workshopId}`);
+
+    if (isSoldOut) {
+      return res.status(400).json({ success: false, error: 'Workshop is full' });
+    }
+
+    next();
+  } catch (error) {
+    console.error('Sold-Out Cache Error:', error);
+    next();
+  }
+};
+
 const reject = (res: Response) => res.status(429).json({
   success: false,
   error: 'Too Many Requests'

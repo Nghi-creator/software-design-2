@@ -25,7 +25,17 @@ export const registerForWorkshop = async ({
     throw Object.assign(new Error('Payment token required'), { statusCode: 400 });
   }
 
-  const reservation = await reserveSeat({ workshopId, userId, idempotencyKey }, dependencies);
+  let reservation;
+
+  try {
+    reservation = await reserveSeat({ workshopId, userId, idempotencyKey }, dependencies);
+  } catch (error: any) {
+    if (error.message === 'Workshop is full') {
+      await dependencies.markWorkshopSoldOut(workshopId);
+    }
+
+    throw error;
+  }
 
   if (reservation.price > 0) {
     try {
@@ -66,4 +76,5 @@ export const cancelPendingReservation = async (
   dependencies: RegistrationDependencies = registrationDependencies
 ) => {
   await cancelReservation(registrationId, workshopId, dependencies);
+  await dependencies.clearWorkshopSoldOut(workshopId);
 };

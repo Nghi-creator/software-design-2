@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   createPreAuthRegistrationRateLimiter,
-  createRegistrationRateLimiter
+  createRegistrationRateLimiter,
+  rejectSoldOutRegistrations
 } from '../src/middleware/rateLimiter';
 
 test('registration limiter checks the global bucket before the per-student bucket', async () => {
@@ -186,6 +187,24 @@ test('pre-auth registration limiter uses forwarded IP so rejection can happen be
   assert.deepEqual(seenKeys, ['ratelimit:registration:preauth:203.0.113.7']);
 });
 
+test('sold-out registration cache rejects before auth when a workshop is already full', async () => {
+  const originalGet = require('../src/lib/redis').redis.get;
+  require('../src/lib/redis').redis.get = async () => '1';
+  const { req, res, next, done } = createHarness();
+  req.params = { id: 'workshop-1' };
+
+  try {
+    await rejectSoldOutRegistrations(req as any, res as any, next as any);
+    await done;
+  } finally {
+    require('../src/lib/redis').redis.get = originalGet;
+  }
+
+  assert.equal(res.statusCode, 400);
+  assert.deepEqual(res.body, { success: false, error: 'Workshop is full' });
+  assert.equal(next.called, false);
+});
+
 const createHarness = ({
   userId,
   ip = '127.0.0.1',
@@ -202,7 +221,8 @@ const createHarness = ({
   const req = {
     ip,
     headers: forwardedFor ? { 'x-forwarded-for': forwardedFor } : {},
-    user: userId ? { id: userId } : undefined
+    user: userId ? { id: userId } : undefined,
+    params: {} as Record<string, string>
   };
   const res = {
     statusCode: 200,

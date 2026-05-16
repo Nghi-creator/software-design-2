@@ -44,6 +44,12 @@
 - **Pre-Auth Registration Shield**: Added an early Redis IP limiter on `POST /api/workshops/:id/register` before bearer-token verification, so abusive traffic can be shed before the database-backed auth lookup while keeping post-auth global/per-student fairness controls in place.
 - **Batched Load Fixture Prep**: Optimized the k6 student-prep script from 12,000 sequential inserts to batched upserts (default 500 rows/query) so repeated load-test setup is fast enough to use in practice.
 - **Paid Registration Prevalidation**: Missing `paymentToken` on paid workshops is now rejected before seat reservation, preventing invalid requests from entering the hot seat-lock/cancel path under load.
+- **Self-Contained Load Fixtures**: The k6 prep/cleanup scripts now create and remove their own disposable free workshop plus room per cohort, so surge tests no longer depend on seeded business data.
+- **Load Fixture Metadata Handoff**: The prep script now writes workshop metadata beside the token file, and the k6 script reads that metadata by default so surge runs no longer require manually exporting `WORKSHOP_ID`.
+- **Shorter Seat Reservation Critical Section**: Replaced the `SELECT ... FOR UPDATE` workshop lock plus later decrement with a single atomic conditional decrement, reducing how long the hot workshop row is held during registration bursts while preserving no-oversell behavior.
+- **Realistic Surge Fixture Capacity**: Changed the disposable k6 workshop default from 12,000 seats to 60 seats so the main surge test models the assignment’s contention scenario instead of unintentionally benchmarking 12,000 successful writes to one workshop.
+- **Full-Workshop Fast Reject**: Added a cheap seat-availability precheck before the atomic decrement so requests arriving after sell-out can return `Workshop is full` without needlessly contending on the already-empty workshop row.
+- **Sold-Out Redis Shield**: Added a pre-auth sold-out cache for registration attempts; once a workshop is proven full, later requests can return before DB-backed auth/idempotency work, and cancellation clears the marker if a seat reopens.
 
 ## In Progress
 - API contract still partial for future features outside the current check-in flow. QR validation is intentionally merged into check-in requests. Supabase SQL schema must be applied manually per environment.

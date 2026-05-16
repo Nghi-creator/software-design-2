@@ -68,17 +68,16 @@ npm run dev
 ```bash
 npm run load:prepare:registration
 ```
-Lệnh này idempotent theo cohort mặc định `registration_surge`: lần chạy sau sẽ reuse sinh viên cũ và chỉ ghi lại file token.
+Lệnh này idempotent theo cohort mặc định `registration_surge`: lần chạy sau sẽ reuse sinh viên cũ, reuse workshop/room load-test, và chỉ ghi lại file token.
 Mặc định script upsert theo batch 500 user/lần; có thể chỉnh bằng `LOAD_STUDENT_BATCH_SIZE=...`.
+Workshop load-test mặc định có 60 chỗ để mô phỏng bài toán tranh chấp ghế; có thể chỉnh bằng `LOAD_WORKSHOP_CAPACITY=...`.
 
-3. Tạo hoặc chọn một workshop miễn phí còn đủ chỗ, lấy `WORKSHOP_ID`.
-
-4. Chạy mô phỏng đúng profile yêu cầu: 7.200 request trong 3 phút đầu, 4.800 request trong 7 phút tiếp theo:
+3. Chạy mô phỏng đúng profile yêu cầu: 7.200 request trong 3 phút đầu, 4.800 request trong 7 phút tiếp theo:
 ```bash
-BASE_URL=http://127.0.0.1:3000 WORKSHOP_ID=<uuid> npm run load:registration
+BASE_URL=http://127.0.0.1:3000 npm run load:registration
 ```
 
-Mặc định script đọc token từ `load-tests/registration-surge.tokens.json`. Có thể đổi bằng `TOKENS_FILE=...`.
+Mặc định script đọc token từ `load-tests/registration-surge.tokens.json` và workshop metadata từ `load-tests/registration-surge.metadata.json`. Có thể đổi bằng `TOKENS_FILE=...` và `LOAD_TEST_METADATA_FILE=...`.
 
 5. Dọn cohort load test khi cần:
 ```bash

@@ -4,11 +4,15 @@ const { writeFileSync } = require('node:fs');
 const { Pool } = require('pg');
 
 const studentCount = Number(process.env.LOAD_STUDENT_COUNT || 12000);
+const workshopCapacity = Number(process.env.LOAD_WORKSHOP_CAPACITY || 60);
 const cohort = process.env.LOAD_TEST_COHORT || 'registration_surge';
 const outputFile = process.env.TOKENS_FILE || './load-tests/registration-surge.tokens.json';
+const metadataFile = process.env.LOAD_TEST_METADATA_FILE || './load-tests/registration-surge.metadata.json';
 const batchSize = Number(process.env.LOAD_STUDENT_BATCH_SIZE || 500);
 const jwtSecret = process.env.JWT_SECRET;
 const expiresInSeconds = Number(process.env.JWT_EXPIRES_IN_SECONDS || 60 * 60 * 24);
+const roomName = `Load Test Room ${cohort}`;
+const workshopTitle = `Load Test Registration Surge ${cohort}`;
 
 if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL is required');
@@ -42,6 +46,40 @@ const createToken = (id) => {
 const main = async () => {
   const tokens = new Array(studentCount);
   let createdCount = 0;
+  const existingRoom = await pool.query(
+    'select id from rooms where name = $1 and location = $2',
+    [roomName, 'Load Test']
+  );
+  const roomId = existingRoom.rows[0]?.id ?? (
+    await pool.query(
+      'insert into rooms (name, location, capacity) values ($1, $2, $3) returning id',
+      [roomName, 'Load Test', studentCount]
+    )
+  ).rows[0].id;
+  const existingWorkshop = await pool.query(
+    'select id from workshops where title = $1',
+    [workshopTitle]
+  );
+  const workshopId = existingWorkshop.rows[0]?.id ?? (
+    await pool.query(
+      `
+        insert into workshops (title, speaker, room_id, capacity, seats_remaining, price, start_time)
+        values ($1, $2, $3, $4, $4, 0, now() + interval '1 day')
+        returning id
+      `,
+      [workshopTitle, 'Load Test Harness', roomId, workshopCapacity]
+    )
+  ).rows[0].id;
+  await pool.query(
+    `
+      update workshops
+      set capacity = $2,
+        seats_remaining = least(seats_remaining, $2),
+        updated_at = now()
+      where id = $1
+    `,
+    [workshopId, workshopCapacity]
+  );
 
   for (let start = 0; start < studentCount; start += batchSize) {
     const rows = Array.from(
@@ -94,9 +132,20 @@ const main = async () => {
   }
 
   writeFileSync(outputFile, JSON.stringify(tokens, null, 2));
+  writeFileSync(metadataFile, JSON.stringify({
+    cohort,
+    roomId,
+    workshopId,
+    studentCount,
+    workshopCapacity
+  }, null, 2));
   console.log(`cohort: ${cohort}`);
   console.log(`created ${createdCount} students, reused ${studentCount - createdCount}`);
+  console.log(`room id: ${roomId}`);
+  console.log(`workshop id: ${workshopId}`);
+  console.log(`workshop capacity: ${workshopCapacity}`);
   console.log(`wrote ${outputFile}`);
+  console.log(`wrote ${metadataFile}`);
 };
 
 main()

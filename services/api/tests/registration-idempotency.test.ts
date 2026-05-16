@@ -46,16 +46,14 @@ const createRegistrationDependencies = (
   processPayment,
   createQrCode: () => `qr-${state.insertedRegistrations + state.reusedCancelledRegistrations + 1}`,
   publishRegistrationConfirmed: async () => undefined,
+  markWorkshopSoldOut: async () => undefined,
+  clearWorkshopSoldOut: async () => undefined,
   withTransaction: async <T>(callback: (client: { query: any }) => Promise<T>) => {
     const query = async <R = any>(text: string, params: unknown[] = []) => {
       const sql = text.replace(/\s+/g, ' ').trim();
 
       if (sql.startsWith('select price from workshops')) {
         return { rows: [{ price: state.workshop.price }] as R[] };
-      }
-
-      if (sql.startsWith('select id, price, seats_remaining')) {
-        return { rows: [state.workshop] as R[] };
       }
 
       if (sql.startsWith('select id, status from registrations')) {
@@ -71,8 +69,16 @@ const createRegistrationDependencies = (
       }
 
       if (sql.startsWith('update workshops set seats_remaining = seats_remaining - 1')) {
+        if (state.workshop.seatsRemaining <= 0) {
+          return { rows: [] as R[] };
+        }
+
         state.workshop.seatsRemaining -= 1;
-        return { rows: [] as R[] };
+        return { rows: [state.workshop] as R[] };
+      }
+
+      if (sql.startsWith('select id, seats_remaining as "seatsRemaining" from workshops')) {
+        return { rows: [{ id: state.workshop.id, seatsRemaining: state.workshop.seatsRemaining }] as R[] };
       }
 
       if (sql.startsWith('update registrations set qr_code')) {
@@ -322,6 +328,11 @@ test('missing payment token is rejected before reserving a seat', async () => {
 test('full workshop rejects a new registration without creating rows', async () => {
   const state = createRegistrationState();
   state.workshop.seatsRemaining = 0;
+  let markedSoldOut = false;
+  const dependencies = createRegistrationDependencies(state, async () => 'unused');
+  dependencies.markWorkshopSoldOut = async () => {
+    markedSoldOut = true;
+  };
 
   await assert.rejects(
     registerForWorkshop(
@@ -331,7 +342,7 @@ test('full workshop rejects a new registration without creating rows', async () 
         paymentToken: 'tok-unused',
         idempotencyKey: 'idem-full'
       },
-      createRegistrationDependencies(state, async () => 'unused')
+      dependencies
     ),
     /Workshop is full/
   );
@@ -340,6 +351,7 @@ test('full workshop rejects a new registration without creating rows', async () 
   assert.equal(state.registration, undefined);
   assert.equal(state.payment, undefined);
   assert.equal(state.insertedRegistrations, 0);
+  assert.equal(markedSoldOut, true);
 });
 
 test('duplicate non-cancelled registration is rejected before another seat is consumed', async () => {

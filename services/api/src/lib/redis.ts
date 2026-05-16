@@ -3,6 +3,7 @@ import Redis from 'ioredis';
 const createTestRedis = () => ({
   get: async () => null,
   setex: async () => undefined,
+  del: async () => 0,
   defineCommand: () => undefined,
   tokenBucket: async () => 1,
   on: () => undefined

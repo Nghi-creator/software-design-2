@@ -45,12 +45,13 @@ Example async flows:
 
 ### Registration Concurrency
 
-Use PostgreSQL transactions and row-level locks around capacity checks and seat updates. Registration must never oversell seats. See `data_models.md` for entities and `specs/payment.md` for payment sequencing.
+Use PostgreSQL transactions with a cheap no-lock availability precheck plus an atomic conditional seat decrement (`... where seats_remaining > 0 returning ...`) for reservation. Registration must never oversell seats, and once a workshop is already full, losers should fail before contending on the hot decrement row. See `data_models.md` for entities and `specs/payment.md` for payment sequencing.
 
 ### Rate Limiting
 
 Use Redis token-bucket rate limiting for spike-prone endpoints. Registration combines:
 - a pre-auth IP bucket on the registration path to shed abusive traffic before DB-backed bearer verification
+- a pre-auth Redis sold-out cache so already-full workshops can reject later attempts before auth or DB work
 - a post-auth global bucket to protect API capacity during the 12,000-student opening surge
 - a per-student bucket so one client cannot crowd out others; unauthenticated callers fall back to IP identity
 

@@ -3,11 +3,13 @@ import { check } from 'k6';
 import { SharedArray } from 'k6/data';
 
 const baseUrl = __ENV.BASE_URL || 'http://127.0.0.1:3000';
-const workshopId = __ENV.WORKSHOP_ID;
 const tokenFile = __ENV.TOKENS_FILE || './registration-surge.tokens.json';
+const metadataFile = __ENV.LOAD_TEST_METADATA_FILE || './registration-surge.metadata.json';
+const metadata = JSON.parse(open(metadataFile));
+const workshopId = __ENV.WORKSHOP_ID || metadata.workshopId;
 
 if (!workshopId) {
-  throw new Error('WORKSHOP_ID is required');
+  throw new Error('WORKSHOP_ID is required or must exist in the metadata file');
 }
 
 const tokens = new SharedArray('student tokens', () => JSON.parse(open(tokenFile)));

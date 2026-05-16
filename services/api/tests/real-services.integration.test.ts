@@ -57,7 +57,9 @@ test('real Postgres/Redis registration idempotency persists and replays payment 
         withTransaction,
         processPayment: async () => 'unused-for-free-workshop',
         createQrCode: () => `qr-${fixture.suffix}`,
-        publishRegistrationConfirmed: async () => undefined
+        publishRegistrationConfirmed: async () => undefined,
+        markWorkshopSoldOut: async () => undefined,
+        clearWorkshopSoldOut: async () => undefined
       }
     );
 
@@ -443,7 +445,9 @@ const freeRegistrationDependencies = (qrCode: string) => ({
   withTransaction,
   processPayment: async () => 'unused-for-free-workshop',
   createQrCode: () => qrCode,
-  publishRegistrationConfirmed: async () => undefined
+  publishRegistrationConfirmed: async () => undefined,
+  markWorkshopSoldOut: async () => undefined,
+  clearWorkshopSoldOut: async () => undefined
 });
 
 const registerHttpStudent = async (baseUrl: string, suffix: string, index: number) => {
