@@ -15,18 +15,27 @@ const processPaymentGateway = async (userId: string, amount: number, token: stri
   return 'txn_' + Math.random().toString(36).substr(2, 9);
 };
 
-const breakerOptions = {
+export const breakerOptions = {
   timeout: 3000, // If function takes longer than 3 seconds, trigger a failure
   errorThresholdPercentage: 50, // When 50% of requests fail, open the circuit
   resetTimeout: 10000 // After 10 seconds, try again (half-open)
 };
 
-export const paymentCircuitBreaker = new CircuitBreaker(processPaymentGateway, breakerOptions);
+export const createPaymentCircuitBreaker = (
+  gateway: typeof processPaymentGateway = processPaymentGateway,
+  options: Record<string, number> = breakerOptions
+) => {
+  const breaker = new CircuitBreaker(gateway, options);
 
-paymentCircuitBreaker.fallback(() => {
-  throw new Error('Payment Service is currently unavailable. Please try again later.');
-});
+  breaker.fallback(async () => {
+    throw new Error('Payment Service is currently unavailable. Please try again later.');
+  });
 
-paymentCircuitBreaker.on('open', () => console.log('Payment Circuit Breaker is OPEN'));
-paymentCircuitBreaker.on('halfOpen', () => console.log('Payment Circuit Breaker is HALF-OPEN'));
-paymentCircuitBreaker.on('close', () => console.log('Payment Circuit Breaker is CLOSED'));
+  breaker.on('open', () => console.log('Payment Circuit Breaker is OPEN'));
+  breaker.on('halfOpen', () => console.log('Payment Circuit Breaker is HALF-OPEN'));
+  breaker.on('close', () => console.log('Payment Circuit Breaker is CLOSED'));
+
+  return breaker;
+};
+
+export const paymentCircuitBreaker = createPaymentCircuitBreaker();

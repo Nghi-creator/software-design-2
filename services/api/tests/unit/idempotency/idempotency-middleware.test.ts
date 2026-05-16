@@ -62,6 +62,29 @@ test('idempotency middleware replays completed PostgreSQL responses and restores
   assert.equal(next.called, false);
 });
 
+test('idempotency middleware replays failed payment responses instead of re-running the handler', async () => {
+  const middleware = createIdempotencyMiddleware({
+    query: async () => {
+      throw new Error('database should not be used on redis hit');
+    },
+    redis: {
+      get: async () => JSON.stringify({
+        statusCode: 503,
+        body: { success: false, error: 'gateway timeout' }
+      }),
+      setex: async () => undefined
+    }
+  });
+  const { req, res, next, done } = createMiddlewareHarness('idem-failed-payment');
+
+  await middleware(req as any, res as any, next as any);
+  await done;
+
+  assert.equal(res.statusCode, 503);
+  assert.deepEqual(res.body, { success: false, error: 'gateway timeout' });
+  assert.equal(next.called, false);
+});
+
 test('idempotency middleware persists final registration response after handler JSON', async () => {
   const updates: Array<{ statusCode: number; body: string }> = [];
   const middleware = createIdempotencyMiddleware({

@@ -126,6 +126,89 @@ test('real Postgres paid registration stores a successful payment and confirmed 
   }
 });
 
+test('real HTTP paid registration timeout replays one failed result and leaves browse available', {
+  skip: skipReason
+}, async () => {
+  process.env.AUTH_ALLOW_ROLE_REGISTRATION = 'true';
+  const fixture = await createFixture();
+  const { server, baseUrl } = startHttpServer();
+  const student = await registerHttpStudent(baseUrl, fixture.suffix, 500);
+  const idempotencyKey = `real-timeout-${fixture.suffix}`;
+  const originalProcessPayment = (await import('../../../src/di')).registrationDependencies.processPayment;
+  let paymentCalls = 0;
+
+  try {
+    await query('update workshops set price = 75 where id = $1', [fixture.workshopId]);
+    (await import('../../../src/di')).registrationDependencies.processPayment = async () => {
+      paymentCalls += 1;
+      throw new Error('gateway timeout');
+    };
+
+    const first = await fetch(`${baseUrl}/api/workshops/${fixture.workshopId}/register`, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${student.accessToken}`,
+        'content-type': 'application/json',
+        'idempotency-key': idempotencyKey
+      },
+      body: JSON.stringify({ paymentToken: `tok_${fixture.suffix}` })
+    });
+    const firstBody = await first.json();
+
+    const browse = await fetch(
+      `${baseUrl}/api/workshops?q=${encodeURIComponent(`Workshop ${fixture.suffix}`)}`
+    );
+    const browseBody = await browse.json();
+
+    const replay = await fetch(`${baseUrl}/api/workshops/${fixture.workshopId}/register`, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${student.accessToken}`,
+        'content-type': 'application/json',
+        'idempotency-key': idempotencyKey
+      },
+      body: JSON.stringify({ paymentToken: `tok_retry_${fixture.suffix}` })
+    });
+    const replayBody = await replay.json();
+
+    const workshop = await query<{ seatsRemaining: number }>(
+      'select seats_remaining as "seatsRemaining" from workshops where id = $1',
+      [fixture.workshopId]
+    );
+    const registration = await query<{ status: string }>(
+      'select status from registrations where user_id = $1 and workshop_id = $2',
+      [student.user.id, fixture.workshopId]
+    );
+    const payment = await query<{ status: string }>(
+      `
+        select p.status
+        from payments p
+        join registrations r on r.id = p.registration_id
+        where r.user_id = $1 and r.workshop_id = $2
+      `,
+      [student.user.id, fixture.workshopId]
+    );
+
+    assert.equal(first.status, 503);
+    assert.deepEqual(firstBody, { success: false, error: 'gateway timeout' });
+    assert.equal(browse.status, 200);
+    assert.equal(browseBody.items[0].id, fixture.workshopId);
+    assert.equal(replay.status, 503);
+    assert.deepEqual(replayBody, firstBody);
+    assert.equal(paymentCalls, 1);
+    assert.equal(workshop.rows[0].seatsRemaining, 20);
+    assert.equal(registration.rows[0].status, 'CANCELLED');
+    assert.equal(payment.rows[0].status, 'FAILED');
+  } finally {
+    (await import('../../../src/di')).registrationDependencies.processPayment = originalProcessPayment;
+    await query('delete from idempotency_keys where key = $1', [idempotencyKey]);
+    await cleanupFixture(fixture, [student.user.id]);
+    await new Promise<void>((resolve, reject) => {
+      server.close((error) => error ? reject(error) : resolve());
+    });
+  }
+});
+
 test('real Postgres allows only one winner when two students race for the last seat', {
   skip: skipReason
 }, async () => {
