@@ -55,8 +55,14 @@ PostgreSQL is the source of truth. Use transactions for multi-step writes and ro
 ### Notification
 - `id` primary key
 - `user_id` foreign key to `User`
-- `message` text
-- `type` enum: `EMAIL`, `APP_PUSH`
+- `registration_id` nullable foreign key to `Registration`
+- `event_key` unique event idempotency key per channel
+- `channel` enum: `EMAIL`
+- `subject` text
+- `body` text
+- `status` enum: `PENDING`, `SENT`, `FAILED`
+- `attempt_count` integer
+- `last_error` text, nullable
 - `sent_at` timestamp, nullable
 
 ### CsvImportJob
@@ -96,5 +102,8 @@ PostgreSQL is the source of truth. Use transactions for multi-step writes and ro
 - Index `Registration.workshop_id` for admin stats.
 - Index `Payment.idempotency_key` for duplicate-payment protection.
 - Index `Checkin.registration_id` for QR validation and sync.
+- Unique notification per `(event_key, channel)`.
+- Index `Notification.user_id` for inbox/history queries.
+- Index `Notification.status` for delivery monitoring/retry queries.
 - Index `CsvImportJob.started_at` desc for latest status.
 - Index `CsvImportError.job_id` for per-import error reporting.

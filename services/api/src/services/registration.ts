@@ -29,7 +29,7 @@ export const registerForWorkshop = async ({
     try {
       const transactionId = await dependencies.processPayment(userId, reservation.price, paymentToken);
 
-      return markPaymentSuccessAndConfirmRegistration(
+      const registration = await markPaymentSuccessAndConfirmRegistration(
         {
           paymentId: reservation.payment.id,
           transactionId,
@@ -37,13 +37,15 @@ export const registerForWorkshop = async ({
         },
         dependencies
       );
+      await dependencies.publishRegistrationConfirmed(registration.id);
+      return registration;
     } catch (error: any) {
       await cancelPendingReservation(reservation.registration.id, workshopId, error.message, dependencies);
       throw Object.assign(new Error(error.message), { statusCode: 503 });
     }
   }
 
-  return markPaymentSuccessAndConfirmRegistration(
+  const registration = await markPaymentSuccessAndConfirmRegistration(
     {
       paymentId: reservation.payment.id,
       transactionId: 'free',
@@ -51,6 +53,8 @@ export const registerForWorkshop = async ({
     },
     dependencies
   );
+  await dependencies.publishRegistrationConfirmed(registration.id);
+  return registration;
 };
 
 export const cancelPendingReservation = async (

@@ -45,6 +45,7 @@ const createRegistrationDependencies = (
 ) => ({
   processPayment,
   createQrCode: () => `qr-${state.insertedRegistrations + state.reusedCancelledRegistrations + 1}`,
+  publishRegistrationConfirmed: async () => undefined,
   withTransaction: async <T>(callback: (client: { query: any }) => Promise<T>) => {
     const query = async <R = any>(text: string, params: unknown[] = []) => {
       const sql = text.replace(/\s+/g, ' ').trim();

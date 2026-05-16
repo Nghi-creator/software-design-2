@@ -35,11 +35,11 @@
 - **Web Progress Tracker**: Added `.context/web-progress.md` for React web tasks and requirement coverage.
 - **Web Schedule Filter Polish**: Replaced the student schedule day dropdown with native start/end date inputs, added All/Registered/Unregistered schedule filtering, suppressing the empty-state panel for date ranges with no workshops, and restyled confirmed registration/QR actions as compact purple pills.
 - **Web Manual Verification**: Completed student browse/detail/register, organizer CRUD/stats, and auth/RBAC verification for the React web app.
+- **Event-Driven Notifications**: Added BullMQ registration-confirmed publishing, a separate notification worker, extensible channel dispatching, delivery-status persistence, and unit coverage for send/idempotency/failure paths.
 
 ## In Progress
 - API contract still partial for future features outside the current check-in flow. QR validation is intentionally merged into check-in requests. Supabase SQL schema must be applied manually per environment.
-- Event-driven notification delivery design is now set: BullMQ + Upstash Redis with a worker process; QStash is the fallback only for serverless deployment.
 
 ## Next Steps
 - Add remaining APIs only when new product scope requires them; keep QR validation merged into check-in unless requirements change.
-- Event-driven notifications remain the only open roadmap feature; implement registration-confirmed jobs, a BullMQ worker, retry handling, and delivery-status persistence.
+- Apply the new notifications migration per environment and replace the console email transport with a real provider when product scope needs outbound email.

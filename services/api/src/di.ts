@@ -22,6 +22,7 @@ export type RegistrationDependencies = {
   withTransaction: <T>(callback: (client: TransactionClient) => Promise<T>) => Promise<T>;
   processPayment: (userId: string, amount: number, token: string) => Promise<string>;
   createQrCode: () => string;
+  publishRegistrationConfirmed: (registrationId: string) => Promise<void>;
 };
 
 export type CheckinDependencies = {
@@ -62,7 +63,11 @@ export const registrationDependencies: RegistrationDependencies = {
     const { paymentCircuitBreaker } = await import('./services/payment');
     return paymentCircuitBreaker.fire(userId, amount, token);
   },
-  createQrCode: uuidv4
+  createQrCode: uuidv4,
+  publishRegistrationConfirmed: async (registrationId) => {
+    const { publishRegistrationConfirmed } = await import('./jobs/notificationQueue');
+    await publishRegistrationConfirmed(registrationId);
+  }
 };
 
 export const checkinDependencies: CheckinDependencies = {

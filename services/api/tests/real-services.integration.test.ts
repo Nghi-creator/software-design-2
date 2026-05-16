@@ -46,7 +46,8 @@ test('real Postgres/Redis registration idempotency persists and replays payment 
       {
         withTransaction,
         processPayment: async () => 'unused-for-free-workshop',
-        createQrCode: () => `qr-${fixture.suffix}`
+        createQrCode: () => `qr-${fixture.suffix}`,
+        publishRegistrationConfirmed: async () => undefined
       }
     );
 
