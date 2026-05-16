@@ -171,13 +171,15 @@ export function AdminWorkshopsPage() {
       const input = toWorkshopFormInput(draft)
       if (mode === 'edit' && editingWorkshop) {
         await updateWorkshop(editingWorkshop.id, input)
+        await refreshAdminData()
+        startCreate()
         setMessage('Workshop updated.')
       } else {
         await createWorkshop(input)
+        await refreshAdminData()
+        startCreate()
         setMessage('Workshop created.')
       }
-      await refreshAdminData()
-      startCreate()
     } catch (caughtError) {
       setError(getAdminErrorMessage(caughtError))
     } finally {

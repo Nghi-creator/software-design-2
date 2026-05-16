@@ -34,6 +34,10 @@ export function subscribeToRegistrationChanges(listener: () => void) {
   }
 }
 
+export function getStoredRegistrationSnapshot() {
+  return localStorage.getItem(REGISTRATION_STORAGE_KEY) ?? ''
+}
+
 export function createStoredRegistration({
   message,
   paymentStatus,

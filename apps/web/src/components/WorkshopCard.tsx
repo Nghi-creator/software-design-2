@@ -21,7 +21,7 @@ export function WorkshopCard({ user, workshop }: { user: SessionUser | null; wor
           {seatStatus.label}
         </span>
       </div>
-      <h2 className="mb-theme-sm text-xl font-bold text-text-primary">{workshop.title}</h2>
+      <h2 className="mb-theme-sm break-words text-xl font-bold text-text-primary">{workshop.title}</h2>
       <p className="text-text-secondary">{workshop.speaker}</p>
       <dl className="my-theme-lg grid gap-theme-sm md:grid-cols-2">
         <div>

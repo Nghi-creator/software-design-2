@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import { PageHeader } from "../../components/PageHeader";
 import { CardGridSkeleton, EmptyState, Notice } from "../../components/State";
 import { WorkshopCard } from "../../components/WorkshopCard";
@@ -13,6 +13,7 @@ import {
 } from "../../lib/workshopCatalog";
 import {
   getStoredRegistrations,
+  getStoredRegistrationSnapshot,
   subscribeToRegistrationChanges,
 } from "../../lib/registrationStore";
 import { useWorkshopCatalog } from "../../lib/useWorkshopCatalog";
@@ -29,34 +30,19 @@ export function WorkshopsPage({ user }: { user: SessionUser | null }) {
   const [filters, setFilters] = useState<WorkshopFilters>(
     defaultWorkshopFilters,
   );
-  const [registeredWorkshopIds, setRegisteredWorkshopIds] = useState(
-    () => new Set<string>(),
+  const registrationSnapshot = useSyncExternalStore(
+    subscribeToRegistrationChanges,
+    getStoredRegistrationSnapshot,
+  );
+  const registeredWorkshopIds = useMemo(
+    () => getConfirmedWorkshopIds(user, registrationSnapshot),
+    [registrationSnapshot, user],
   );
   const filteredWorkshops = useMemo(
     () => filterAndSortWorkshops(workshops, filters, registeredWorkshopIds),
     [filters, registeredWorkshopIds, workshops],
   );
   const hasDateRangeFilter = Boolean(filters.startDate || filters.endDate);
-
-  useEffect(() => {
-    if (!user || user.role !== "STUDENT") {
-      setRegisteredWorkshopIds(new Set());
-      return undefined;
-    }
-
-    const userId = user.id;
-
-    function refreshRegisteredWorkshops() {
-      const confirmedWorkshopIds = getStoredRegistrations(userId)
-        .filter((registration) => registration.status === "CONFIRMED")
-        .map((registration) => registration.workshopId);
-
-      setRegisteredWorkshopIds(new Set(confirmedWorkshopIds));
-    }
-
-    refreshRegisteredWorkshops();
-    return subscribeToRegistrationChanges(refreshRegisteredWorkshops);
-  }, [user]);
 
   function updateFilter<Value extends keyof WorkshopFilters>(
     key: Value,
@@ -68,7 +54,7 @@ export function WorkshopsPage({ user }: { user: SessionUser | null }) {
   return (
     <>
       <PageHeader
-        eyebrow="Unihub"
+        eyebrow="UniHub"
         title="Browse workshops"
         description="Search the event-week schedule by topic, speaker, room, day, availability and fee."
       />
@@ -208,3 +194,14 @@ export function WorkshopsPage({ user }: { user: SessionUser | null }) {
 }
 
 const fieldClass = `min-h-11 rounded-theme-md border border-border-strong bg-background-subtle px-theme-sm text-text-primary placeholder:text-text-muted focus:border-border-focus focus:outline-none ${focusClass}`;
+
+function getConfirmedWorkshopIds(user: SessionUser | null, registrationSnapshot: string) {
+  if (!user || user.role !== "STUDENT") return new Set<string>();
+  if (!registrationSnapshot) return new Set<string>();
+
+  return new Set(
+    getStoredRegistrations(user.id)
+      .filter((registration) => registration.status === "CONFIRMED")
+      .map((registration) => registration.workshopId),
+  );
+}

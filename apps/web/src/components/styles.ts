@@ -1,7 +1,7 @@
 export const shellClass = 'min-h-screen bg-background-page text-text-primary antialiased'
 
 export const frameClass =
-  'mx-auto grid w-full gap-theme-lg px-theme-md py-theme-lg md:px-theme-xl'
+  'mx-auto grid w-full box-border gap-theme-lg px-theme-md py-theme-lg md:px-theme-xl'
 
 export const cardClass = 'rounded-theme-lg border border-border-subtle bg-surface-card shadow-theme-sm'
 

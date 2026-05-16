@@ -38,7 +38,7 @@ export function TopNav({ activePath, items, user, onLogout }: TopNavProps) {
 
   return (
     <header className="sticky top-0 z-30 border-b border-border-subtle bg-background-raised shadow-theme-sm">
-      <div className="grid min-h-20 w-full items-center gap-theme-md px-theme-md md:grid-cols-[auto_minmax(0,1fr)_auto] md:px-theme-xl">
+      <div className="grid min-h-20 w-full box-border items-center gap-theme-md px-theme-md md:grid-cols-[auto_minmax(0,1fr)_auto] md:px-theme-xl">
         <div className="inline-flex items-center gap-theme-sm text-text-primary" aria-label="UniHub Workshop logo">
           <img src={logoUrl} alt="UH Logo" className="size-11 shrink-0 rounded-theme-md object-cover shadow-theme-glow" />
           <div className="hidden sm:block">

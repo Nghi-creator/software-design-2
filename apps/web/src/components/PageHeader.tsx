@@ -17,7 +17,7 @@ export function PageHeader({ eyebrow, title, description, action, topContent }: 
         <p className="mb-theme-sm text-xs font-extrabold uppercase tracking-[0.14em] text-brand-secondary">
           {eyebrow}
         </p>
-        <h1 className="mb-theme-md max-w-4xl text-4xl font-extrabold leading-none text-text-primary md:text-6xl">
+        <h1 className="mb-theme-md max-w-4xl break-words text-4xl font-extrabold leading-none text-text-primary md:text-6xl">
           {title}
         </h1>
         <p className="max-w-3xl text-text-secondary">{description}</p>

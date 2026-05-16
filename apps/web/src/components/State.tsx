@@ -105,7 +105,7 @@ export function StatePanel({
 }) {
   return (
     <section className={`${cardClass} grid min-h-96 content-center justify-items-start gap-theme-md p-theme-xl`}>
-      <h1 className="max-w-3xl text-4xl font-extrabold leading-none text-text-primary md:text-6xl">{title}</h1>
+      <h1 className="max-w-3xl break-words text-4xl font-extrabold leading-none text-text-primary md:text-6xl">{title}</h1>
       <p className="max-w-2xl text-text-secondary">{message}</p>
       {action ? <div className="flex flex-wrap gap-theme-sm">{action}</div> : null}
     </section>
