@@ -208,6 +208,69 @@ test('real HTTP registration keeps capacity exact under a burst larger than the 
   }
 });
 
+test('real Redis registration limiter blocks spam from one student without penalizing another on the same IP', {
+  skip: skipReason
+}, async () => {
+  process.env.AUTH_ALLOW_ROLE_REGISTRATION = 'true';
+  const redis = new Redis(process.env.REDIS_URL as string);
+  const fixture = await createFixture({ capacity: 20 });
+  const server = app.listen(0);
+  const address = server.address() as AddressInfo;
+  const baseUrl = `http://127.0.0.1:${address.port}`;
+  const firstStudent = await registerHttpStudent(baseUrl, fixture.suffix, 201);
+  const secondStudent = await registerHttpStudent(baseUrl, fixture.suffix, 202);
+  const keys = Array.from({ length: 7 }, (_, index) => `fairness-${fixture.suffix}-${index}`);
+
+  try {
+    await redis.del(
+      'ratelimit:registration:global',
+      `ratelimit:registration:student:${firstStudent.user.id}`,
+      `ratelimit:registration:student:${secondStudent.user.id}`,
+      ...keys.map((key) => `idempotency:${key}`)
+    );
+    await query('delete from idempotency_keys where key = any($1::text[])', [keys]);
+
+    const firstResponses = [];
+    for (let index = 0; index < 6; index += 1) {
+      firstResponses.push(await fetch(`${baseUrl}/api/workshops/${fixture.workshopId}/register`, {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${firstStudent.accessToken}`,
+          'content-type': 'application/json',
+          'idempotency-key': keys[index]
+        },
+        body: JSON.stringify({})
+      }));
+    }
+
+    const secondResponse = await fetch(`${baseUrl}/api/workshops/${fixture.workshopId}/register`, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${secondStudent.accessToken}`,
+        'content-type': 'application/json',
+        'idempotency-key': keys[6]
+      },
+      body: JSON.stringify({})
+    });
+
+    assert.deepEqual(firstResponses.map((response) => response.status), [200, 400, 400, 400, 400, 429]);
+    assert.equal(secondResponse.status, 200);
+  } finally {
+    await redis.del(
+      'ratelimit:registration:global',
+      `ratelimit:registration:student:${firstStudent.user.id}`,
+      `ratelimit:registration:student:${secondStudent.user.id}`,
+      ...keys.map((key) => `idempotency:${key}`)
+    );
+    await query('delete from idempotency_keys where key = any($1::text[])', [keys]);
+    await cleanupFixture(fixture, [firstStudent.user.id, secondStudent.user.id]);
+    redis.disconnect();
+    await new Promise<void>((resolve, reject) => {
+      server.close((error) => error ? reject(error) : resolve());
+    });
+  }
+});
+
 test('real Postgres offline check-in sync is idempotent for repeated QR scans', {
   skip: skipReason
 }, async () => {

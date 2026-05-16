@@ -1,11 +1,13 @@
-import { Request, Response, NextFunction } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { redis } from '../lib/redis';
+import { RequestWithUser } from '../types/request';
 
-// Lua script for Token Bucket
+// Lua script for token bucket bookkeeping. Every bucket is independent; callers
+// compose buckets when they need both aggregate protection and actor fairness.
 const tokenBucketScript = `
   local key = KEYS[1]
   local capacity = tonumber(ARGV[1])
-  local refillRate = tonumber(ARGV[2]) -- tokens per second
+  local refillRate = tonumber(ARGV[2])
   local now = tonumber(ARGV[3])
   local requested = 1
 
@@ -38,28 +40,95 @@ const tokenBucketScript = `
 
 redis.defineCommand('tokenBucket', {
   numberOfKeys: 1,
-  lua: tokenBucketScript,
+  lua: tokenBucketScript
 });
 
-export const rateLimiter = (capacity: number, refillRate: number) => {
+type TokenBucketRedis = {
+  tokenBucket: (key: string, capacity: number, refillRate: number, now: number) => Promise<number>;
+};
+
+type RateLimitDependencies = {
+  redis: TokenBucketRedis;
+  now?: () => number;
+};
+
+type BucketConfig = {
+  capacity: number;
+  refillRate: number;
+};
+
+type RegistrationRateLimitConfig = {
+  global: BucketConfig;
+  actor: BucketConfig;
+};
+
+const DEFAULT_REGISTRATION_LIMITS: RegistrationRateLimitConfig = {
+  // 12k students / first 10 minutes, with 60% concentrated in the first
+  // 3 minutes, is roughly 40 requests/second at the sharp edge.
+  global: { capacity: 120, refillRate: 40 },
+  actor: { capacity: 5, refillRate: 0.5 }
+};
+
+export const createRegistrationRateLimiter = (
+  config: RegistrationRateLimitConfig = DEFAULT_REGISTRATION_LIMITS,
+  dependencies: RateLimitDependencies = { redis }
+) => {
+  const now = dependencies.now ?? (() => Math.floor(Date.now() / 1000));
+
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown';
-      const key = `ratelimit:${ip}`;
-      const now = Math.floor(Date.now() / 1000);
+      const userId = (req as RequestWithUser).user?.id;
+      const actorIdentity = userId ? `student:${userId}` : `ip:${getRequestIp(req)}`;
+      const timestamp = now();
 
-      // @ts-ignore - custom command
-      const allowed = await redis.tokenBucket(key, capacity, refillRate, now);
+      const globalAllowed = await dependencies.redis.tokenBucket(
+        'ratelimit:registration:global',
+        config.global.capacity,
+        config.global.refillRate,
+        timestamp
+      );
 
-      if (allowed === 1) {
-        next();
-      } else {
-        res.status(429).json({ success: false, error: 'Too Many Requests' });
+      if (globalAllowed !== 1) {
+        return reject(res);
       }
+
+      const actorAllowed = await dependencies.redis.tokenBucket(
+        `ratelimit:registration:${actorIdentity}`,
+        config.actor.capacity,
+        config.actor.refillRate,
+        timestamp
+      );
+
+      if (actorAllowed !== 1) {
+        return reject(res);
+      }
+
+      next();
     } catch (error) {
       console.error('Rate Limiter Error:', error);
-      // Fail open
+      // Fail open so Redis outages do not turn into a registration outage.
       next();
     }
   };
+};
+
+export const registrationRateLimiter = createRegistrationRateLimiter();
+
+const reject = (res: Response) => res.status(429).json({
+  success: false,
+  error: 'Too Many Requests'
+});
+
+const getRequestIp = (req: Request) => {
+  const forwardedFor = req.headers['x-forwarded-for'];
+
+  if (typeof forwardedFor === 'string') {
+    return forwardedFor.split(',')[0].trim();
+  }
+
+  if (Array.isArray(forwardedFor) && forwardedFor[0]) {
+    return forwardedFor[0];
+  }
+
+  return req.ip || 'unknown';
 };

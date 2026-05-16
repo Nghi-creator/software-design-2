@@ -49,7 +49,11 @@ Use PostgreSQL transactions and row-level locks around capacity checks and seat 
 
 ### Rate Limiting
 
-Use Redis token-bucket rate limiting for spike-prone endpoints. The current target scenario is about 12,000 students arriving around registration opening. Return `429` when requests exceed configured limits.
+Use Redis token-bucket rate limiting for spike-prone endpoints. Registration combines:
+- a global bucket to protect API capacity during the 12,000-student opening surge
+- a per-student bucket so one client cannot crowd out others; unauthenticated callers fall back to IP identity
+
+Return `429` when either bucket exceeds its configured limit.
 
 ### Payment Resilience
 
