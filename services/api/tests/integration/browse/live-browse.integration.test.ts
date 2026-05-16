@@ -19,9 +19,9 @@ before(async () => {
   baseUrl = `http://127.0.0.1:${address.port}`;
 
   const rooms = await Promise.all([
-    createRoom(`Alpha ${suffix}`, `North ${suffix}`, 20),
-    createRoom(`Beta ${suffix}`, `North ${suffix}`, 40),
-    createRoom(`Gamma ${suffix}`, `North ${suffix}`, 60)
+    createRoom(`Alpha ${suffix}`, `North ${suffix}`, 20, `https://example.test/maps/${suffix}/alpha`),
+    createRoom(`Beta ${suffix}`, `North ${suffix}`, 40, `https://example.test/maps/${suffix}/beta`),
+    createRoom(`Gamma ${suffix}`, `North ${suffix}`, 60, null)
   ]);
   roomIds.push(...rooms.map((room) => room.id));
 
@@ -92,12 +92,28 @@ test('GET /api/workshops filters, sorts, and paginates live data', async () => {
     [[`Systems ${suffix}`, '50.00']]
   );
   assert.equal(body.items[0].room.id, workshopRoomId);
+  assert.equal(body.items[0].speaker, `Speaker ${suffix}`);
+  assert.equal(body.items[0].room.layoutUrl, `https://example.test/maps/${suffix}/alpha`);
   assert.deepEqual(body.pagination, {
     page: 1,
     pageSize: 1,
     totalItems: 2,
     totalPages: 2
   });
+});
+
+test('GET /api/workshops returns the latest seats remaining from storage', async () => {
+  const targetWorkshopId = workshopIds[0];
+  await query('update workshops set seats_remaining = 11 where id = $1', [targetWorkshopId]);
+
+  const response = await fetch(
+    `${baseUrl}/api/workshops?q=${encodeURIComponent(`Intro ${suffix}`)}&page=1&pageSize=10`
+  );
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(body.items[0].id, targetWorkshopId);
+  assert.equal(body.items[0].seatsRemaining, 11);
 });
 
 test('GET /api/workshops returns 400 for invalid typed params', async () => {
@@ -108,10 +124,10 @@ test('GET /api/workshops returns 400 for invalid typed params', async () => {
   assert.match(body.error, /hasSeats must be true or false/);
 });
 
-async function createRoom(name: string, location: string, capacity: number) {
+async function createRoom(name: string, location: string, capacity: number, layoutUrl: string | null) {
   const result = await query<{ id: string }>(
-    'insert into rooms (name, location, capacity) values ($1, $2, $3) returning id',
-    [name, location, capacity]
+    'insert into rooms (name, location, capacity, layout_url) values ($1, $2, $3, $4) returning id',
+    [name, location, capacity, layoutUrl]
   );
 
   return result.rows[0];

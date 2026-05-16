@@ -84,6 +84,48 @@ test('real Postgres/Redis registration idempotency persists and replays payment 
   }
 });
 
+test('real Postgres paid registration stores a successful payment and confirmed QR registration', {
+  skip: skipReason
+}, async () => {
+  const fixture = await createFixture();
+
+  try {
+    await query('update workshops set price = 75 where id = $1', [fixture.workshopId]);
+
+    const registration = await registerForWorkshop(
+      {
+        workshopId: fixture.workshopId,
+        userId: fixture.studentId,
+        paymentToken: `tok_${fixture.suffix}`,
+        idempotencyKey: `paid-${fixture.suffix}`
+      },
+      {
+        withTransaction,
+        processPayment: async () => `txn-${fixture.suffix}`,
+        createQrCode: () => `qr-paid-${fixture.suffix}`,
+        publishRegistrationConfirmed: async () => undefined,
+        markWorkshopSoldOut: async () => undefined,
+        clearWorkshopSoldOut: async () => undefined
+      }
+    );
+
+    const payment = await query<{ status: string; amount: string; transactionId: string }>(
+      'select status, amount, transaction_id as "transactionId" from payments where registration_id = $1',
+      [registration.id]
+    );
+
+    assert.equal(registration.status, 'CONFIRMED');
+    assert.equal(registration.qrCode, `qr-paid-${fixture.suffix}`);
+    assert.deepEqual(payment.rows[0], {
+      status: 'SUCCESS',
+      amount: '75.00',
+      transactionId: `txn-${fixture.suffix}`
+    });
+  } finally {
+    await cleanupFixture(fixture);
+  }
+});
+
 test('real Postgres allows only one winner when two students race for the last seat', {
   skip: skipReason
 }, async () => {
