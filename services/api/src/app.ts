@@ -6,10 +6,12 @@ import roomRoutes from './routes/room';
 import authRoutes from './routes/auth';
 import importRoutes from './routes/import';
 import { attachUser } from './middleware/auth';
+import { logApiRequest } from './middleware/requestLogger';
 
 const app = express();
 
 app.use(cors());
+app.use(logApiRequest);
 app.use(express.json());
 app.use(attachUser);
 

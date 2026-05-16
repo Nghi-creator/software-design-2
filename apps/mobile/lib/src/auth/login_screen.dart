@@ -35,6 +35,11 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } on ApiException catch (error) {
       setState(() => _error = error.message);
+    } catch (_) {
+      setState(
+        () => _error =
+            'Could not reach the server. Check the API URL and network connection.',
+      );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
