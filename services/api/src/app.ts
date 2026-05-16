@@ -7,11 +7,13 @@ import authRoutes from './routes/auth';
 import importRoutes from './routes/import';
 import { attachUser } from './middleware/auth';
 import { logApiRequest } from './middleware/requestLogger';
+import { logApiResponse } from './middleware/responseLogger';
 
 const app = express();
 
 app.use(cors());
 app.use(logApiRequest);
+app.use(logApiResponse);
 app.use(express.json());
 app.use(attachUser);
 

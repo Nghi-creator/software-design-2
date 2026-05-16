@@ -30,6 +30,7 @@
 - **Mobile Check-In App**: Replaced the Flutter visual scaffold with a working staff app: bearer-token login, secure session persistence, camera QR scanning, online check-in calls, durable SQLite offline queue, connectivity-aware automatic retry, item-level sync result handling, and queue/profile UI.
 - **Mobile Login Feedback**: The check-in login screen now surfaces transport failures instead of appearing inert when the API cannot be reached.
 - **API Request Logging**: Added lightweight Express request logging so mobile/backend debugging can confirm whether requests reach the server, including method, path, status, latency, IP, and user agent without logging sensitive bodies.
+- **API Response Logging**: Added redacted JSON response logging for backend debugging, masking secrets such as passwords, access tokens, auth tokens, and QR codes.
 - **Web Progress Tracker**: Added `.context/web-progress.md` for React web tasks and requirement coverage.
 
 ## In Progress
