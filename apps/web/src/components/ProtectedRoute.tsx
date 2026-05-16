@@ -31,7 +31,7 @@ export function ProtectedRoute({ authStatus, user, allowedRoles, children }: Pro
       <StatePanel
         title="Access denied"
         message={`${user.name} is signed in as ${formatRole(user.role)}. This page is reserved for ${allowedRoles.map(formatRole).join(', ')}.`}
-        action={<a className={secondaryButtonClass} href="#/">Back home</a>}
+        action={<a className={secondaryButtonClass} href="#/workshops">Back to schedule</a>}
       />
     )
   }

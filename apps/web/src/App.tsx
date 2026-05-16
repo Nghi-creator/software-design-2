@@ -6,7 +6,6 @@ import { useHashRoute } from './lib/router'
 import { AdminHomePage } from './pages/admin/AdminHomePage'
 import { AdminImportsPage } from './pages/admin/AdminImportsPage'
 import { AdminWorkshopsPage } from './pages/admin/AdminWorkshopsPage'
-import { HomePage } from './pages/user/HomePage'
 import { LoginPage } from './pages/user/LoginPage'
 import { NotFoundPage } from './pages/user/NotFoundPage'
 import { NotificationsPage } from './pages/user/NotificationsPage'
@@ -16,7 +15,6 @@ import { WorkshopsPage } from './pages/user/WorkshopsPage'
 import type { AuthStatus, LoginCredentials, NavItem, Route, SessionUser } from './types'
 
 const publicNav: NavItem[] = [
-  { label: 'Home', path: '/' },
   { label: 'Schedule', path: '/workshops' },
   { label: 'My QR', path: '/registrations', roles: ['STUDENT'] },
   { label: 'Notifications', path: '/notifications', roles: ['STUDENT'] },
@@ -63,8 +61,6 @@ function RouteRenderer({
   onLogin: (credentials: LoginCredentials) => Promise<void>
 }) {
   switch (route.key) {
-    case 'home':
-      return <HomePage />
     case 'workshops':
       return <WorkshopsPage user={user} />
     case 'workshopDetail':

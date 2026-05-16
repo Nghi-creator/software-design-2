@@ -4,6 +4,7 @@ import type {
   Workshop,
   WorkshopAvailabilityFilter,
   WorkshopFilters,
+  WorkshopRegistrationFilter,
   WorkshopSortBy,
 } from '../types'
 
@@ -11,31 +12,23 @@ export type WorkshopCatalogSource = 'api' | 'fallback'
 
 export const defaultWorkshopFilters: WorkshopFilters = {
   query: '',
-  day: 'all',
+  startDate: '',
+  endDate: '',
   availability: 'all',
+  registration: 'all',
   sortBy: 'startTime',
 }
 
-
-export function getWorkshopDayOptions(workshops: Workshop[]) {
-  const days = new Map<string, string>()
-
-  workshops.forEach((workshop) => {
-    const date = new Date(workshop.startTime)
-    const value = date.toISOString().slice(0, 10)
-    days.set(value, formatDayOption(date))
-  })
-
-  return Array.from(days, ([value, label]) => ({ value, label })).sort((a, b) =>
-    a.value.localeCompare(b.value),
-  )
-}
-
-export function filterAndSortWorkshops(workshops: Workshop[], filters: WorkshopFilters) {
+export function filterAndSortWorkshops(
+  workshops: Workshop[],
+  filters: WorkshopFilters,
+  registeredWorkshopIds = new Set<string>(),
+) {
   return workshops
     .filter((workshop) => matchesSearch(workshop, filters.query))
-    .filter((workshop) => matchesDay(workshop, filters.day))
+    .filter((workshop) => matchesDateRange(workshop, filters.startDate, filters.endDate))
     .filter((workshop) => matchesAvailability(workshop, filters.availability))
+    .filter((workshop) => matchesRegistration(workshop, filters.registration, registeredWorkshopIds))
     .sort((first, second) => compareWorkshops(first, second, filters.sortBy))
 }
 
@@ -61,9 +54,12 @@ function matchesSearch(workshop: Workshop, query: string) {
   return searchableValues.some((value) => value.toLowerCase().includes(normalizedQuery))
 }
 
-function matchesDay(workshop: Workshop, day: string) {
-  if (day === 'all') return true
-  return workshop.startTime.slice(0, 10) === day
+function matchesDateRange(workshop: Workshop, startDate: string, endDate: string) {
+  const workshopDate = workshop.startTime.slice(0, 10)
+
+  if (startDate && workshopDate < startDate) return false
+  if (endDate && workshopDate > endDate) return false
+  return true
 }
 
 function matchesAvailability(workshop: Workshop, availability: WorkshopAvailabilityFilter) {
@@ -74,6 +70,21 @@ function matchesAvailability(workshop: Workshop, availability: WorkshopAvailabil
       return workshop.price === 0
     case 'paid':
       return workshop.price > 0
+    case 'all':
+      return true
+  }
+}
+
+function matchesRegistration(
+  workshop: Workshop,
+  registration: WorkshopRegistrationFilter,
+  registeredWorkshopIds: Set<string>,
+) {
+  switch (registration) {
+    case 'registered':
+      return registeredWorkshopIds.has(workshop.id)
+    case 'unregistered':
+      return !registeredWorkshopIds.has(workshop.id)
     case 'all':
       return true
   }
@@ -92,12 +103,4 @@ function compareWorkshops(first: Workshop, second: Workshop, sortBy: WorkshopSor
     case 'startTime':
       return new Date(first.startTime).getTime() - new Date(second.startTime).getTime()
   }
-}
-
-function formatDayOption(date: Date) {
-  return new Intl.DateTimeFormat('en-GB', {
-    weekday: 'short',
-    day: '2-digit',
-    month: 'short',
-  }).format(date)
 }

@@ -1,38 +1,82 @@
-import { useMemo, useState } from 'react'
-import { PageHeader } from '../../components/PageHeader'
-import { CardGridSkeleton, EmptyState, Notice } from '../../components/State'
-import { WorkshopCard } from '../../components/WorkshopCard'
-import { cardClass, focusClass, linkButtonClass } from '../../components/styles'
+import { useEffect, useMemo, useState } from "react";
+import { PageHeader } from "../../components/PageHeader";
+import { CardGridSkeleton, EmptyState, Notice } from "../../components/State";
+import { WorkshopCard } from "../../components/WorkshopCard";
+import {
+  cardClass,
+  focusClass,
+  linkButtonClass,
+} from "../../components/styles";
 import {
   defaultWorkshopFilters,
   filterAndSortWorkshops,
-  getWorkshopDayOptions,
-} from '../../lib/workshopCatalog'
-import { useWorkshopCatalog } from '../../lib/useWorkshopCatalog'
-import type { SessionUser, WorkshopAvailabilityFilter, WorkshopFilters, WorkshopSortBy } from '../../types'
+} from "../../lib/workshopCatalog";
+import {
+  getStoredRegistrations,
+  subscribeToRegistrationChanges,
+} from "../../lib/registrationStore";
+import { useWorkshopCatalog } from "../../lib/useWorkshopCatalog";
+import type {
+  SessionUser,
+  WorkshopAvailabilityFilter,
+  WorkshopFilters,
+  WorkshopRegistrationFilter,
+  WorkshopSortBy,
+} from "../../types";
 
 export function WorkshopsPage({ user }: { user: SessionUser | null }) {
-  const { error, isLoading, source, workshops } = useWorkshopCatalog()
-  const [filters, setFilters] = useState<WorkshopFilters>(defaultWorkshopFilters)
+  const { error, isLoading, source, workshops } = useWorkshopCatalog();
+  const [filters, setFilters] = useState<WorkshopFilters>(
+    defaultWorkshopFilters,
+  );
+  const [registeredWorkshopIds, setRegisteredWorkshopIds] = useState(
+    () => new Set<string>(),
+  );
   const filteredWorkshops = useMemo(
-    () => filterAndSortWorkshops(workshops, filters),
-    [filters, workshops],
-  )
-  const dayOptions = useMemo(() => getWorkshopDayOptions(workshops), [workshops])
+    () => filterAndSortWorkshops(workshops, filters, registeredWorkshopIds),
+    [filters, registeredWorkshopIds, workshops],
+  );
+  const hasDateRangeFilter = Boolean(filters.startDate || filters.endDate);
 
-  function updateFilter<Value extends keyof WorkshopFilters>(key: Value, value: WorkshopFilters[Value]) {
-    setFilters((currentFilters) => ({ ...currentFilters, [key]: value }))
+  useEffect(() => {
+    if (!user || user.role !== "STUDENT") {
+      setRegisteredWorkshopIds(new Set());
+      return undefined;
+    }
+
+    const userId = user.id;
+
+    function refreshRegisteredWorkshops() {
+      const confirmedWorkshopIds = getStoredRegistrations(userId)
+        .filter((registration) => registration.status === "CONFIRMED")
+        .map((registration) => registration.workshopId);
+
+      setRegisteredWorkshopIds(new Set(confirmedWorkshopIds));
+    }
+
+    refreshRegisteredWorkshops();
+    return subscribeToRegistrationChanges(refreshRegisteredWorkshops);
+  }, [user]);
+
+  function updateFilter<Value extends keyof WorkshopFilters>(
+    key: Value,
+    value: WorkshopFilters[Value],
+  ) {
+    setFilters((currentFilters) => ({ ...currentFilters, [key]: value }));
   }
 
   return (
     <>
       <PageHeader
-        eyebrow="Student schedule"
+        eyebrow="Unihub"
         title="Browse workshops"
-        description="Search the event-week schedule by topic, speaker, room, day, availability and fee. Seat counts refresh from the live workshop API when it is reachable."
+        description="Search the event-week schedule by topic, speaker, room, day, availability and fee."
       />
       {error ? <Notice tone="warning" message={error} /> : null}
-      <section className={`${cardClass} grid gap-theme-md p-theme-md md:grid-cols-[2fr_1fr_1fr_1fr]`} aria-label="Workshop filters">
+      <section
+        className={`${cardClass} grid gap-theme-md p-theme-md md:grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr]`}
+        aria-label="Workshop filters"
+      >
         <label className="grid gap-theme-xs text-sm font-bold text-text-primary">
           Search
           <input
@@ -40,23 +84,34 @@ export function WorkshopsPage({ user }: { user: SessionUser | null }) {
             type="search"
             placeholder="Speaker, topic, room..."
             value={filters.query}
-            onChange={(event) => updateFilter('query', event.target.value)}
+            onChange={(event) => updateFilter("query", event.target.value)}
           />
         </label>
         <label className="grid gap-theme-xs text-sm font-bold text-text-primary">
-          Day
-          <select
+          From
+          <input
             className={fieldClass}
-            value={filters.day}
-            onChange={(event) => updateFilter('day', event.target.value)}
-          >
-            <option value="all">All days</option>
-            {dayOptions.map((day) => (
-              <option key={day.value} value={day.value}>
-                {day.label}
-              </option>
-            ))}
-          </select>
+            type="date"
+            value={filters.startDate}
+            max={filters.endDate || undefined}
+            onInput={(event) =>
+              updateFilter("startDate", event.currentTarget.value)
+            }
+            onChange={(event) => updateFilter("startDate", event.target.value)}
+          />
+        </label>
+        <label className="grid gap-theme-xs text-sm font-bold text-text-primary">
+          To
+          <input
+            className={fieldClass}
+            type="date"
+            value={filters.endDate}
+            min={filters.startDate || undefined}
+            onInput={(event) =>
+              updateFilter("endDate", event.currentTarget.value)
+            }
+            onChange={(event) => updateFilter("endDate", event.target.value)}
+          />
         </label>
         <label className="grid gap-theme-xs text-sm font-bold text-text-primary">
           Availability
@@ -64,7 +119,10 @@ export function WorkshopsPage({ user }: { user: SessionUser | null }) {
             className={fieldClass}
             value={filters.availability}
             onChange={(event) =>
-              updateFilter('availability', event.target.value as WorkshopAvailabilityFilter)
+              updateFilter(
+                "availability",
+                event.target.value as WorkshopAvailabilityFilter,
+              )
             }
           >
             <option value="all">Any availability</option>
@@ -74,11 +132,30 @@ export function WorkshopsPage({ user }: { user: SessionUser | null }) {
           </select>
         </label>
         <label className="grid gap-theme-xs text-sm font-bold text-text-primary">
+          Registration
+          <select
+            className={fieldClass}
+            value={filters.registration}
+            onChange={(event) =>
+              updateFilter(
+                "registration",
+                event.target.value as WorkshopRegistrationFilter,
+              )
+            }
+          >
+            <option value="all">All workshops</option>
+            <option value="registered">Registered</option>
+            <option value="unregistered">Unregistered</option>
+          </select>
+        </label>
+        <label className="grid gap-theme-xs text-sm font-bold text-text-primary">
           Sort
           <select
             className={fieldClass}
             value={filters.sortBy}
-            onChange={(event) => updateFilter('sortBy', event.target.value as WorkshopSortBy)}
+            onChange={(event) =>
+              updateFilter("sortBy", event.target.value as WorkshopSortBy)
+            }
           >
             <option value="startTime">Time</option>
             <option value="title">Title</option>
@@ -91,9 +168,13 @@ export function WorkshopsPage({ user }: { user: SessionUser | null }) {
       <div className="flex flex-wrap items-center justify-between gap-theme-sm">
         <p className="text-sm font-bold text-text-secondary">
           Showing {filteredWorkshops.length} of {workshops.length} workshops
-          {source === 'api' ? ' with live seat counts.' : ' from seed data.'}
+          {source === "api" ? " with live seat counts." : " from seed data."}
         </p>
-        <button className={linkButtonClass} type="button" onClick={() => setFilters(defaultWorkshopFilters)}>
+        <button
+          className={linkButtonClass}
+          type="button"
+          onClick={() => setFilters(defaultWorkshopFilters)}
+        >
           Reset filters
         </button>
       </div>
@@ -101,13 +182,17 @@ export function WorkshopsPage({ user }: { user: SessionUser | null }) {
         <CardGridSkeleton />
       ) : (
         <>
-          {filteredWorkshops.length === 0 ? (
+          {filteredWorkshops.length === 0 && !hasDateRangeFilter ? (
             <EmptyState
-              title={workshops.length === 0 ? 'No workshops yet' : 'No workshops match these filters'}
+              title={
+                workshops.length === 0
+                  ? "No workshops yet"
+                  : "No workshops match these filters"
+              }
               message={
                 workshops.length === 0
-                  ? 'The schedule is empty right now. Check back after organizers publish workshops.'
-                  : 'Try a broader search, another day, or a different fee and availability filter.'
+                  ? "The schedule is empty right now. Check back after organizers publish workshops."
+                  : "Try a broader search, another date range, or a different registration, fee and availability filter."
               }
             />
           ) : null}
@@ -119,8 +204,7 @@ export function WorkshopsPage({ user }: { user: SessionUser | null }) {
         </>
       )}
     </>
-  )
+  );
 }
 
-const fieldClass =
-  `min-h-11 rounded-theme-md border border-border-strong bg-background-subtle px-theme-sm text-text-primary placeholder:text-text-muted focus:border-border-focus focus:outline-none ${focusClass}`
+const fieldClass = `min-h-11 rounded-theme-md border border-border-strong bg-background-subtle px-theme-sm text-text-primary placeholder:text-text-muted focus:border-border-focus focus:outline-none ${focusClass}`;
