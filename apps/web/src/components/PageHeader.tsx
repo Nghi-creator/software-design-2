@@ -6,11 +6,13 @@ type PageHeaderProps = {
   title: string
   description: string
   action?: ReactNode
+  topContent?: ReactNode
 }
 
-export function PageHeader({ eyebrow, title, description, action }: PageHeaderProps) {
+export function PageHeader({ eyebrow, title, description, action, topContent }: PageHeaderProps) {
   return (
     <section className={`${cardClass} grid items-end gap-theme-lg p-theme-xl md:grid-cols-[minmax(0,1fr)_auto]`}>
+      {topContent ? <div className="md:col-span-2">{topContent}</div> : null}
       <div>
         <p className="mb-theme-sm text-xs font-extrabold uppercase tracking-[0.14em] text-brand-secondary">
           {eyebrow}

@@ -1,4 +1,4 @@
-import { EmptyState, StatePanel } from '../../components/State'
+import { CenteredLoadingState, EmptyState, StatePanel } from '../../components/State'
 import { PageHeader } from '../../components/PageHeader'
 import { RegistrationAction } from '../../components/RegistrationAction'
 import { buttonClass, panelClass } from '../../components/styles'
@@ -11,15 +11,15 @@ export function WorkshopDetailPage({ user, workshopId }: { user: SessionUser | n
   const { error, isLoading, source, workshops } = useWorkshopCatalog()
   const workshop = workshops.find((item) => item.id === workshopId)
 
+  if (!workshop && isLoading) {
+    return <CenteredLoadingState label="Fetching workshop details..." />
+  }
+
   if (!workshop) {
     return (
       <StatePanel
         title="Workshop not found"
-        message={
-          isLoading
-            ? 'Live workshop data is still loading. If this takes too long, return to the schedule and try again.'
-            : 'This workshop route exists, but the requested workshop is not in the current data set.'
-        }
+        message="This workshop route exists, but the requested workshop is not in the current data set."
         action={<a className={buttonClass} href="#/workshops">Back to schedule</a>}
       />
     )
@@ -32,6 +32,7 @@ export function WorkshopDetailPage({ user, workshopId }: { user: SessionUser | n
         title={workshop.title}
         description={`${workshop.speaker} in ${workshop.room?.name ?? workshop.roomId}. ${workshop.seatsRemaining} seats remain.`}
         action={<RegistrationAction user={user} workshop={workshop} />}
+        topContent={<BackToScheduleLink />}
       />
       {error ? (
         <p className="rounded-theme-md border border-status-warning/40 bg-status-warningBg px-theme-md py-theme-sm text-sm font-bold text-status-warning">
@@ -74,6 +75,26 @@ export function WorkshopDetailPage({ user, workshopId }: { user: SessionUser | n
         <SummaryPanel workshop={workshop} />
       </section>
     </>
+  )
+}
+
+function BackToScheduleLink() {
+  return (
+    <a
+      className="inline-flex min-h-10 items-center gap-theme-sm rounded-theme-md px-theme-sm text-sm font-bold text-brand-secondary no-underline transition hover:bg-background-overlay hover:text-text-primary"
+      href="#/workshops"
+    >
+      <svg aria-hidden="true" className="size-5" fill="none" viewBox="0 0 24 24">
+        <path
+          d="M15 18 9 12l6-6"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2.2"
+        />
+      </svg>
+      Back to schedule
+    </a>
   )
 }
 
