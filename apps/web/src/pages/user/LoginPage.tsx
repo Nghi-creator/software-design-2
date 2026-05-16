@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { StatePanel } from '../../components/State'
-import { buttonClass, cardClass, linkButtonClass } from '../../components/styles'
-import { ApiError } from '../../lib/api'
+import { Notice, StatePanel } from '../../components/State'
+import { buttonClass, cardClass, focusClass, linkButtonClass } from '../../components/styles'
+import { getUserFacingError } from '../../lib/apiErrorMessages'
 import { formatRole } from '../../lib/roles'
 import type { LoginCredentials, SessionUser } from '../../types'
 
@@ -74,7 +74,7 @@ export function LoginPage({
           <label className="grid gap-theme-xs text-sm font-bold text-text-primary">
             Email
             <input
-              className="min-h-11 rounded-theme-md border border-border-strong bg-background-subtle px-theme-sm text-text-primary placeholder:text-text-muted focus:border-border-focus focus:outline-none"
+              className={fieldClass}
               type="email"
               placeholder="mai.nguyen@student.unihub.edu"
               value={email}
@@ -85,7 +85,7 @@ export function LoginPage({
           <label className="grid gap-theme-xs text-sm font-bold text-text-primary">
             Password
             <input
-              className="min-h-11 rounded-theme-md border border-border-strong bg-background-subtle px-theme-sm text-text-primary placeholder:text-text-muted focus:border-border-focus focus:outline-none"
+              className={fieldClass}
               type="password"
               placeholder="Password123"
               value={password}
@@ -94,9 +94,7 @@ export function LoginPage({
             />
           </label>
           {error ? (
-            <p className="rounded-theme-md border border-status-danger/40 bg-status-dangerBg px-theme-md py-theme-sm text-sm font-bold text-status-danger" role="alert">
-              {error}
-            </p>
+            <Notice tone="danger" message={error} />
           ) : null}
           <div className="flex flex-wrap gap-theme-sm">
             <button className={buttonClass} type="submit" disabled={isSubmitting}>
@@ -122,9 +120,11 @@ export function LoginPage({
 }
 
 function getLoginErrorMessage(error: unknown) {
-  if (error instanceof ApiError) return error.message
-  if (error instanceof TypeError) {
-    return 'Could not reach the UniHub API. Check that the backend is running and VITE_API_BASE_URL is correct.'
-  }
-  return 'Login failed. Please try again.'
+  return getUserFacingError(error, {
+    action: 'Login',
+    fallback: 'Login failed. Please try again.',
+  })
 }
+
+const fieldClass =
+  `min-h-11 rounded-theme-md border border-border-strong bg-background-subtle px-theme-sm text-text-primary placeholder:text-text-muted focus:border-border-focus focus:outline-none ${focusClass}`

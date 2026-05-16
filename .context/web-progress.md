@@ -41,21 +41,13 @@ Purpose: track React web work separately from Flutter mobile work. Move finished
 - **Organizer Verification**: `npm run lint`, `npm run build`, and a Vite dev-server HTTP smoke pass after organizer admin implementation.
 - **CSV Import Admin Visibility**: Organizer imports page now loads latest CSV import status, shows failure/error counts without blocking workshop administration, and paginates row-level import errors when backend endpoints are available.
 - **CSV Import Verification**: `npm run lint`, `npm run build`, and a local Vite HTTP smoke pass after import visibility implementation.
+- **Resilience And UX Pass**: Added shared user-facing API error handling for auth/not-found/rate-limit/server failures, rate-limit retry guidance, seed workshop fallback for offline browsing, stable skeleton loading states, empty dashboard/import/list states, workshop form validation, and keyboard focus visibility.
+- **Resilience Verification**: `npm run lint`, `npm run build`, local Vite HTTP smoke, and static responsive class audit pass. Browser screenshot capture was blocked by local macOS ScreenCaptureKit.
 
 ## In Progress
 - No active web implementation task yet.
 
 ## Backlog
-
-### Resilience And UX Requirements
-- [ ] Add user-facing handling for 401, 403, 404, 429, and 500 API responses.
-- [ ] Show rate-limit feedback and retry guidance for traffic-spike protection.
-- [ ] Ensure core schedule browsing still works when registration/payment calls fail.
-- [ ] Add loading skeletons or stable loading states for list/detail/admin pages.
-- [ ] Add empty states for no workshops, no registrations, no import errors, and no stats.
-- [ ] Make forms resilient to validation errors returned by the API.
-- [ ] Ensure all interactive controls are keyboard accessible.
-- [ ] Verify responsive layouts for desktop, tablet, and mobile web widths.
 
 ### Testing And Delivery
 - [ ] Manually verify student browse/detail/register flow against seed data.

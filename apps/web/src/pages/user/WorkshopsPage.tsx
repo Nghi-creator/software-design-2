@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
 import { PageHeader } from '../../components/PageHeader'
-import { CenteredLoadingState, EmptyState } from '../../components/State'
+import { CardGridSkeleton, EmptyState, Notice } from '../../components/State'
 import { WorkshopCard } from '../../components/WorkshopCard'
-import { cardClass, linkButtonClass } from '../../components/styles'
+import { cardClass, focusClass, linkButtonClass } from '../../components/styles'
 import {
   defaultWorkshopFilters,
   filterAndSortWorkshops,
@@ -31,11 +31,7 @@ export function WorkshopsPage({ user }: { user: SessionUser | null }) {
         title="Browse workshops"
         description="Search the event-week schedule by topic, speaker, room, day, availability and fee. Seat counts refresh from the live workshop API when it is reachable."
       />
-      {error ? (
-        <p className="rounded-theme-md border border-status-warning/40 bg-status-warningBg px-theme-md py-theme-sm text-sm font-bold text-status-warning">
-          {error}
-        </p>
-      ) : null}
+      {error ? <Notice tone="warning" message={error} /> : null}
       <section className={`${cardClass} grid gap-theme-md p-theme-md md:grid-cols-[2fr_1fr_1fr_1fr]`} aria-label="Workshop filters">
         <label className="grid gap-theme-xs text-sm font-bold text-text-primary">
           Search
@@ -102,13 +98,17 @@ export function WorkshopsPage({ user }: { user: SessionUser | null }) {
         </button>
       </div>
       {isLoading ? (
-        <CenteredLoadingState label="Refreshing live workshop seats..." />
+        <CardGridSkeleton />
       ) : (
         <>
           {filteredWorkshops.length === 0 ? (
             <EmptyState
-              title="No workshops match these filters"
-              message="Try a broader search, another day, or a different fee and availability filter."
+              title={workshops.length === 0 ? 'No workshops yet' : 'No workshops match these filters'}
+              message={
+                workshops.length === 0
+                  ? 'The schedule is empty right now. Check back after organizers publish workshops.'
+                  : 'Try a broader search, another day, or a different fee and availability filter.'
+              }
             />
           ) : null}
           <section className="grid gap-theme-md md:grid-cols-3">
@@ -123,4 +123,4 @@ export function WorkshopsPage({ user }: { user: SessionUser | null }) {
 }
 
 const fieldClass =
-  'min-h-11 rounded-theme-md border border-border-strong bg-background-subtle px-theme-sm text-text-primary placeholder:text-text-muted focus:border-border-focus focus:outline-none'
+  `min-h-11 rounded-theme-md border border-border-strong bg-background-subtle px-theme-sm text-text-primary placeholder:text-text-muted focus:border-border-focus focus:outline-none ${focusClass}`

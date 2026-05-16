@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { ApiError } from '../lib/api'
+import { getUserFacingError } from '../lib/apiErrorMessages'
 import { formatCurrency } from '../lib/format'
 import { addStoredNotification } from '../lib/notificationStore'
 import {
@@ -14,7 +15,8 @@ import {
   subscribeToRegistrationChanges,
 } from '../lib/registrationStore'
 import type { SessionUser, StoredRegistration, Workshop } from '../types'
-import { buttonClass, linkButtonClass, secondaryButtonClass } from './styles'
+import { Notice } from './State'
+import { buttonClass, focusClass, linkButtonClass, secondaryButtonClass } from './styles'
 
 export function RegistrationAction({ user, workshop }: { user: SessionUser | null; workshop: Workshop }) {
   const [paymentToken, setPaymentToken] = useState('')
@@ -70,11 +72,12 @@ export function RegistrationAction({ user, workshop }: { user: SessionUser | nul
         <label className="grid gap-theme-xs text-sm font-bold text-text-primary">
           Payment token
           <input
-            className="min-h-10 rounded-theme-md border border-border-strong bg-background-subtle px-theme-sm text-text-primary placeholder:text-text-muted focus:border-border-focus focus:outline-none"
+            className={`min-h-10 rounded-theme-md border border-border-strong bg-background-subtle px-theme-sm text-text-primary placeholder:text-text-muted focus:border-border-focus focus:outline-none ${focusClass}`}
             placeholder="demo-payment-token"
             value={paymentToken}
             disabled={isSubmitting}
             onChange={(event) => setPaymentToken(event.target.value)}
+            aria-describedby={error ? `payment-error-${workshop.id}` : undefined}
           />
         </label>
       ) : null}
@@ -102,14 +105,12 @@ export function RegistrationAction({ user, workshop }: { user: SessionUser | nul
         ) : null}
       </div>
       {message ? (
-        <p className="rounded-theme-md border border-status-success/40 bg-status-successBg px-theme-sm py-theme-xs text-sm font-bold text-status-success">
-          {message}
-        </p>
+        <Notice tone="success" message={message} />
       ) : null}
       {error ? (
-        <p className="rounded-theme-md border border-status-danger/40 bg-status-dangerBg px-theme-sm py-theme-xs text-sm font-bold text-status-danger">
-          {error}
-        </p>
+        <div id={`payment-error-${workshop.id}`}>
+          <Notice tone="danger" message={error} />
+        </div>
       ) : null}
     </div>
   )
@@ -220,18 +221,16 @@ function getRegistrationErrorMessage(error: unknown) {
       return 'A registration request for this workshop is already being processed. Please wait a moment.'
     }
     if (error.status === 429) {
-      return 'Too many registration attempts. Please wait before trying again.'
+      return 'Too many registration attempts during a traffic spike. Wait one minute, then retry; browsing the schedule still works.'
     }
     if (error.status === 503) {
       return 'Payment is temporarily unavailable. Your schedule browsing still works; try registration again shortly.'
     }
-
-    return error.message
   }
 
-  if (error instanceof TypeError) {
-    return 'Could not reach the UniHub API. Your schedule remains available; try registration again when the connection recovers.'
-  }
-
-  return 'Registration failed. Please try again.'
+  return getUserFacingError(error, {
+    action: 'Registration',
+    fallback: 'Registration failed. Please try again.',
+    validation: 'Registration could not be submitted.',
+  })
 }

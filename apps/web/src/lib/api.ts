@@ -95,6 +95,8 @@ function getFallbackMessage(status: number) {
       return 'This action conflicts with the current workshop state.'
     case 429:
       return 'Too many requests. Please wait before trying again.'
+    case 500:
+      return 'The UniHub server hit an error. Please retry shortly.'
     case 503:
       return 'This feature is temporarily degraded.'
     default:
