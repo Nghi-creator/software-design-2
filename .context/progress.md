@@ -34,9 +34,11 @@
 - **API Response Logging**: Added redacted JSON response logging for backend debugging, masking secrets such as passwords, access tokens, auth tokens, and QR codes.
 - **Web Progress Tracker**: Added `.context/web-progress.md` for React web tasks and requirement coverage.
 - **Web Schedule Filter Polish**: Replaced the student schedule day dropdown with native start/end date inputs, added All/Registered/Unregistered schedule filtering, suppressing the empty-state panel for date ranges with no workshops, and restyled confirmed registration/QR actions as compact purple pills.
+- **Web Manual Verification**: Completed student browse/detail/register, organizer CRUD/stats, and auth/RBAC verification for the React web app.
 
 ## In Progress
 - API contract still partial for future features outside the current check-in flow. QR validation is intentionally merged into check-in requests. Supabase SQL schema must be applied manually per environment.
 
 ## Next Steps
 - Add remaining APIs only when new product scope requires them; keep QR validation merged into check-in unless requirements change.
+- Event-driven notifications remain the only open roadmap feature.
