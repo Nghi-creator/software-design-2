@@ -1,32 +1,6 @@
 import type { ReactNode } from 'react'
 import { cardClass, panelClass } from './styles'
 
-export function LoadingState({ label = 'Loading UniHub data...' }: { label?: string }) {
-  return (
-    <div className={`${panelClass} inline-flex items-center gap-theme-sm justify-self-start`} role="status">
-      <span
-        className="size-5 animate-spin rounded-full border-[3px] border-border-strong border-t-brand-primary"
-        aria-hidden="true"
-      />
-      <span>{label}</span>
-    </div>
-  )
-}
-
-export function CenteredLoadingState({ label = 'Loading UniHub data...' }: { label?: string }) {
-  return (
-    <div className="grid min-h-[calc(100vh-160px)] place-items-center" role="status">
-      <div className="grid justify-items-center gap-theme-md">
-        <span
-          className="size-16 animate-spin rounded-full border-[6px] border-border-strong border-t-brand-primary shadow-theme-glow"
-          aria-hidden="true"
-        />
-        <span className="text-sm font-bold text-text-secondary">{label}</span>
-      </div>
-    </div>
-  )
-}
-
 export function EmptyState({ title, message }: { title: string; message: string }) {
   return (
     <div className="rounded-theme-lg border border-dashed border-border-strong bg-background-subtle p-theme-lg">
@@ -87,6 +61,15 @@ export function DetailSkeleton() {
         <SkeletonBlock className="h-64" />
         <SkeletonBlock className="h-64" />
       </div>
+    </div>
+  )
+}
+
+export function PanelSkeleton({ label = 'Loading content' }: { label?: string }) {
+  return (
+    <div className={`${panelClass} grid gap-theme-sm`} role="status" aria-label={label}>
+      <SkeletonLine className="h-4 w-40" />
+      <SkeletonLine className="h-4 w-64 max-w-full" />
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { EmptyState, LoadingState, Notice } from '../../components/State'
+import { EmptyState, Notice, PanelSkeleton } from '../../components/State'
 import { buttonClass, cardClass, secondaryButtonClass } from '../../components/styles'
 import { getUserFacingError } from '../../lib/apiErrorMessages'
 import { formatDateTime } from '../../lib/format'
@@ -71,7 +71,7 @@ export function AdminImportsPage() {
     <>
       <h1 className="text-3xl font-extrabold leading-tight text-text-primary md:text-4xl">CSV import health</h1>
       {isLoadingJob ? (
-        <LoadingState label="Loading latest CSV import status..." />
+        <PanelSkeleton label="Loading latest CSV import status" />
       ) : jobError ? (
         <Notice tone="warning" message={jobError} />
       ) : !job ? (
@@ -133,7 +133,7 @@ export function AdminImportsPage() {
             {errorListError ? <Notice tone="warning" message={errorListError} /> : null}
             {isLoadingErrors ? (
               <div className="p-theme-md">
-                <LoadingState label="Loading import errors..." />
+                <PanelSkeleton label="Loading import errors" />
               </div>
             ) : errors.length === 0 ? (
               <div className="p-theme-md">

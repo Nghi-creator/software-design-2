@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { formatRole } from '../lib/roles'
 import type { AuthStatus, Role, SessionUser } from '../types'
-import { LoadingState, StatePanel } from './State'
+import { PanelSkeleton, StatePanel } from './State'
 import { buttonClass, secondaryButtonClass } from './styles'
 
 type ProtectedRouteProps = {
@@ -13,7 +13,7 @@ type ProtectedRouteProps = {
 
 export function ProtectedRoute({ authStatus, user, allowedRoles, children }: ProtectedRouteProps) {
   if (authStatus === 'checking') {
-    return <LoadingState label="Checking your UniHub session..." />
+    return <PanelSkeleton label="Checking your UniHub session" />
   }
 
   if (!user) {
