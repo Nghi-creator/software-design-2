@@ -21,6 +21,8 @@ const publicNav: NavItem[] = [
   { label: 'My QR', path: '/registrations', roles: ['STUDENT'] },
   { label: 'Notifications', path: '/notifications', roles: ['STUDENT'] },
   { label: 'Admin', path: '/admin', roles: ['ORGANIZER'] },
+  { label: 'Management', path: '/admin/workshops', roles: ['ORGANIZER'] },
+  { label: 'Imports', path: '/admin/imports', roles: ['ORGANIZER'] },
 ]
 
 function App() {

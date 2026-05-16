@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { MetricCard } from '../../components/MetricCard'
-import { PageHeader } from '../../components/PageHeader'
 import { CenteredLoadingState } from '../../components/State'
-import { buttonClass, cardClass } from '../../components/styles'
+import { cardClass } from '../../components/styles'
 
 import { formatDateTime } from '../../lib/format'
 import { getWorkshopStats, listWorkshops } from '../../lib/workshopApi'
@@ -48,12 +47,7 @@ export function AdminHomePage() {
 
   return (
     <>
-      <PageHeader
-        eyebrow="Organizer"
-        title="Admin dashboard"
-        description="Operational snapshot for workshop capacity, registrations, check-ins and paid seats."
-        action={<a className={buttonClass} href="#/admin/workshops">Manage workshops</a>}
-      />
+      <h1 className="text-3xl font-extrabold leading-tight text-text-primary md:text-4xl">Admin dashboard</h1>
       {error ? (
         <p className="rounded-theme-md border border-status-warning/40 bg-status-warningBg px-theme-md py-theme-sm text-sm font-bold text-status-warning">
           {error}
