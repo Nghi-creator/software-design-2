@@ -7,8 +7,8 @@
 - **Context Skill**: Repo-local Codex skill `.codex/skills/use-context` added for consistent `.context` usage.
 - **API Alignment Pass**: Backend schema and core routes aligned with payment/check-in specs: Room, Payment, Checkin, idempotency states, role-based authorization, short payment transactions, and item-level offline sync.
 - **Controller Layer**: API routes now delegate to controllers; workshop/room/check-in controllers call services instead of embedding request logic in route files.
-- **Supabase Postgres Switch**: API no longer uses Prisma Client. Database access now uses `pg` against Supabase Postgres, with schema setup in `services/api/sql/001_init_supabase.sql`.
-- **Supabase Seed SQL**: Added `services/api/sql/002_seed_supabase.sql` with sample users, rooms, workshops, registrations, payments, and check-ins for local/demo data.
+- **Supabase Postgres Switch**: API no longer uses Prisma Client. Database access now uses `pg` against Supabase Postgres, with schema setup in `supabase/migrations/20260514000000_init_supabase.sql`.
+- **Supabase Seed SQL**: Added `supabase/seed.sql` with sample users, rooms, workshops, registrations, payments, and check-ins for local/demo data.
 - **JWT Auth**: Added `/api/auth/register`, `/api/auth/login`, `/api/auth/me`, HS256 access tokens via `JWT_SECRET`, scrypt password hashes, bearer-token middleware, `users.password_hash`, and seed login hashes (`Password123`).
 - **Registration Consistency**: Seat reservation now reuses cancelled registration/payment rows for retries, cancellation releases a seat only once, confirmation requires `PENDING`, and idempotency completion is persisted before sending JSON responses.
 - **QR Token Retrieval**: Added `GET /api/checkin/qr/:registrationId` to return confirmed registration QR tokens with owner/staff/organizer authorization; clients render the QR image locally.
@@ -27,13 +27,12 @@
 - **Check-In/Import Request Validation**: Added lightweight route middleware for UUID params, online check-in QR payloads, offline sync item payloads, and CSV import error pagination, with focused middleware tests.
 - **Opt-In Real-Service Integration Scaffolding**: Added skipped-by-default Postgres/Redis integration tests for registration/payment idempotency and offline check-in sync. Run with `RUN_INTEGRATION_TESTS=true DATABASE_URL=... REDIS_URL=... npm test`.
 - **Check-In/Import Repository Extraction**: Check-in QR retrieval, online/offline check-in, and CSV import status/error flows now keep DB access in repository modules with dependencies supplied through `di.ts`.
+- **Mobile Check-In App**: Replaced the Flutter visual scaffold with a working staff app: bearer-token login, secure session persistence, camera QR scanning, online check-in calls, durable SQLite offline queue, connectivity-aware automatic retry, item-level sync result handling, and queue/profile UI.
 - **Web Progress Tracker**: Added `.context/web-progress.md` for React web tasks and requirement coverage.
 - **Web Schedule Filter Polish**: Replaced the student schedule day dropdown with native start/end date inputs, added All/Registered/Unregistered schedule filtering, suppressing the empty-state panel for date ranges with no workshops, and restyled confirmed registration/QR actions as compact purple pills.
 
 ## In Progress
-- Backend deploy-first work remains focused on `services/`; `apps/` has not been touched yet.
 - API contract still partial; QR validation remains undefined. Supabase SQL schema must be applied manually per environment.
 
 ## Next Steps
-- Add remaining API endpoints from `api_spec.md` Still Undefined section.
-- Person B has no active backend task left except QR validation, which remains upcoming pending team decision.
+- Add remaining API endpoints from `api_spec.md` Still Undefined section, especially a separate QR validation contract if the team wants pre-check validation before committing check-in.

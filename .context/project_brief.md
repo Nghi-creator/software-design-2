@@ -11,6 +11,6 @@ A comprehensive workshop management platform for universities to handle high-con
 
 ## Core Features
 1. **Browse & Register**: Students scan/browse and sign up for workshops.
-2. **QR Check-in**: Mobile-first QR scanning with offline support for local syncing.
+2. **QR Check-in**: Mobile QR scanning with durable temporary offline capture and later sync when connectivity returns.
 3. **Admin Dashboard**: RBAC-protected web routes for workshop CRUD, stats, and PDF resource management.
 4. **Background Tasks**: AI-generated workshop summaries, email notifications, and legacy CSV data sync.

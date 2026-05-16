@@ -19,7 +19,7 @@ These files are likely conflict points. Treat them as short handoff edits, not m
 | --- | --- |
 | `services/api/src/app.ts` | Only edit to mount a new top-level route. Whoever adds a new route owns this tiny edit for that task. |
 | `services/api/package.json` / `package-lock.json` | Avoid new dependencies unless both people agree. Prefer built-in Node test runner and existing packages. |
-| `services/api/sql/001_init_supabase.sql` | Person B owns schema changes for CSV import jobs/errors. Person A should avoid schema edits unless admin stats truly need an index. |
+| `supabase/migrations/*` | Person B owns schema changes for CSV import jobs/errors. Person A should avoid schema edits unless admin stats truly need an index. |
 | `.context/api_spec.md` | Edit only the section for your own endpoints. |
 | `.context/progress.md` | Last merger of the day updates the current state to avoid dueling progress edits. |
 
@@ -78,7 +78,7 @@ Own these files/modules:
 - `services/api/src/services/checkin.ts`
 - `services/api/src/jobs/csvSync.ts`
 - New files under `services/api/src/routes/import.ts`, `controllers/importController.ts`, `services/importStatus.ts`, and import/check-in repositories as needed
-- `services/api/sql/001_init_supabase.sql` and `002_seed_supabase.sql` for CSV import job/error tables only
+- `supabase/migrations/*` and `supabase/seed.sql` for CSV import job/error tables only
 - New tests named like `services/api/tests/checkin-*.test.ts`, `csv-import-*.test.ts`, and integration tests
 
 Tasks:
