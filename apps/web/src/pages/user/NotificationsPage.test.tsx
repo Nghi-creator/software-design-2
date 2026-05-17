@@ -1,7 +1,16 @@
-import { fireEvent, render, screen } from '@testing-library/react'
-import { beforeEach, describe, expect, it } from 'vitest'
-import { addStoredNotification, getStoredNotifications } from '../../lib/notificationStore'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NotificationsPage } from './NotificationsPage'
+
+const notificationStore = vi.hoisted(() => ({
+  getStoredNotifications: vi.fn(),
+  markNotificationRead: vi.fn(),
+}))
+
+vi.mock('../../lib/notificationStore', () => ({
+  getStoredNotifications: () => notificationStore.getStoredNotifications(),
+  markNotificationRead: (notificationId: string) => notificationStore.markNotificationRead(notificationId),
+}))
 
 const user = {
   id: 'student-1',
@@ -12,29 +21,48 @@ const user = {
 
 describe('NotificationsPage', () => {
   beforeEach(() => {
-    localStorage.clear()
+    notificationStore.getStoredNotifications.mockReset()
+    notificationStore.markNotificationRead.mockReset()
   })
 
-  it('shows an empty state before any notifications exist', () => {
+  it('shows an empty state before any notifications exist', async () => {
+    notificationStore.getStoredNotifications.mockResolvedValue([])
+
     render(<NotificationsPage user={user} />)
 
-    expect(screen.getByText('No notifications yet')).toBeInTheDocument()
+    expect(await screen.findByText('No notifications yet')).toBeInTheDocument()
   })
 
-  it('renders history and allows manual read acknowledgement', () => {
-    addStoredNotification({
+  it('renders history and allows manual read acknowledgement', async () => {
+    notificationStore.getStoredNotifications.mockResolvedValue([
+      {
+        id: 'notification-1',
+        userId: user.id,
+        title: 'Registration confirmed',
+        message: 'You are confirmed.',
+        channel: 'email',
+        status: 'sent',
+        createdAt: '2026-05-17T09:00:00.000Z',
+        registrationId: 'registration-1',
+      },
+    ])
+    notificationStore.markNotificationRead.mockResolvedValue({
+      id: 'notification-1',
       userId: user.id,
       title: 'Registration confirmed',
       message: 'You are confirmed.',
+      channel: 'email',
+      status: 'sent',
+      createdAt: '2026-05-17T09:00:00.000Z',
+      readAt: '2026-05-17T09:01:00.000Z',
       registrationId: 'registration-1',
     })
 
     render(<NotificationsPage user={user} />)
 
-    expect(screen.getByText('Registration confirmed')).toBeInTheDocument()
-    expect(screen.getByText('In-app')).toBeInTheDocument()
+    expect(await screen.findByText('Registration confirmed')).toBeInTheDocument()
+    expect(screen.getByText('Email')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Mark read' }))
-    expect(screen.getByText('Read')).toBeInTheDocument()
-    expect(getStoredNotifications(user.id)[0].readAt).toBeTruthy()
+    await waitFor(() => expect(screen.getByText('Read')).toBeInTheDocument())
   })
 })

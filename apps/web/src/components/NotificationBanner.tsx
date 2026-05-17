@@ -1,34 +1,50 @@
 import { useEffect, useState } from 'react'
-import {
-  getStoredNotifications,
-  markNotificationRead,
-  subscribeToNotificationChanges,
-} from '../lib/notificationStore'
+import { getStoredNotifications, markNotificationRead } from '../lib/notificationStore'
 import { formatNotificationChannel } from '../lib/notificationFormat'
 import type { SessionUser, StoredNotification } from '../types'
 import { linkButtonClass } from './styles'
 
-export function NotificationBanner({ user }: { user: SessionUser | null }) {
+export function NotificationBanner({
+  autoReadDelayMs = 10_000,
+  user,
+}: {
+  autoReadDelayMs?: number
+  user: SessionUser | null
+}) {
   const [notification, setNotification] = useState<StoredNotification | null>(null)
 
   useEffect(() => {
     if (!user) return undefined
-    const userId = user.id
+    let isMounted = true
 
-    function refreshNotification() {
-      const latestUnread = getStoredNotifications(userId).find((item) => !item.readAt)
-      setNotification(latestUnread ?? null)
+    async function refreshNotification() {
+      try {
+        const notifications = await getStoredNotifications()
+        if (!isMounted) return
+        setNotification(notifications.find((item) => !item.readAt) ?? null)
+      } catch {
+        if (isMounted) setNotification(null)
+      }
     }
 
-    refreshNotification()
-    return subscribeToNotificationChanges(refreshNotification)
+    void refreshNotification()
+    const intervalId = window.setInterval(refreshNotification, 30_000)
+
+    return () => {
+      isMounted = false
+      window.clearInterval(intervalId)
+    }
   }, [user])
 
   useEffect(() => {
     if (!notification) return undefined
-    const timeoutId = window.setTimeout(() => markNotificationRead(notification.id), 10000)
+    const timeoutId = window.setTimeout(() => {
+      void markNotificationRead(notification.id)
+        .then(() => setNotification(null))
+        .catch(() => undefined)
+    }, autoReadDelayMs)
     return () => window.clearTimeout(timeoutId)
-  }, [notification])
+  }, [autoReadDelayMs, notification])
 
   if (!user || !notification) return null
 

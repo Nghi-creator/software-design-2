@@ -65,6 +65,7 @@ PostgreSQL is the source of truth. Use transactions for multi-step writes and ro
 - `attempt_count` integer
 - `last_error` text, nullable
 - `sent_at` timestamp, nullable
+- `read_at` timestamp, nullable
 
 ### CsvImportJob
 - `id` UUID primary key

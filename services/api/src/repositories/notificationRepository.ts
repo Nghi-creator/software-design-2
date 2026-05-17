@@ -2,7 +2,8 @@ import { query } from '../lib/db';
 import {
   NotificationChannel,
   NotificationContext,
-  NotificationStatuses
+  NotificationStatuses,
+  StudentNotification
 } from '../types/notification';
 
 export const findRegistrationNotificationContext = async (
@@ -94,4 +95,81 @@ export const markNotificationFailed = async (notificationId: string, error: stri
     `,
     [notificationId, NotificationStatuses.FAILED, error]
   );
+};
+
+export const findStudentNotifications = async ({
+  userId,
+  limit,
+  offset
+}: {
+  userId: string;
+  limit: number;
+  offset: number;
+}) => {
+  const result = await query<StudentNotification & { totalCount: number }>(
+    `
+      select
+        notifications.id,
+        notifications.user_id as "userId",
+        notifications.registration_id as "registrationId",
+        registrations.workshop_id as "workshopId",
+        notifications.channel,
+        notifications.subject,
+        notifications.body,
+        notifications.status,
+        notifications.created_at as "createdAt",
+        notifications.sent_at as "sentAt",
+        notifications.read_at as "readAt",
+        count(*) over()::int as "totalCount"
+      from notifications
+      left join registrations on registrations.id = notifications.registration_id
+      where notifications.user_id = $1
+      order by notifications.created_at desc, notifications.id desc
+      limit $2 offset $3
+    `,
+    [userId, limit, offset]
+  );
+
+  return {
+    items: result.rows.map(({ totalCount: _totalCount, ...notification }) => notification),
+    totalItems: result.rows[0]?.totalCount ?? 0
+  };
+};
+
+export const markStudentNotificationRead = async ({
+  notificationId,
+  userId
+}: {
+  notificationId: string;
+  userId: string;
+}) => {
+  const result = await query<StudentNotification>(
+    `
+      with updated_notification as (
+        update notifications
+        set read_at = coalesce(read_at, now()),
+          updated_at = now()
+        where id = $1
+          and user_id = $2
+        returning *
+      )
+      select
+        updated_notification.id,
+        updated_notification.user_id as "userId",
+        updated_notification.registration_id as "registrationId",
+        registrations.workshop_id as "workshopId",
+        updated_notification.channel,
+        updated_notification.subject,
+        updated_notification.body,
+        updated_notification.status,
+        updated_notification.created_at as "createdAt",
+        updated_notification.sent_at as "sentAt",
+        updated_notification.read_at as "readAt"
+      from updated_notification
+      left join registrations on registrations.id = updated_notification.registration_id
+    `,
+    [notificationId, userId]
+  );
+
+  return result.rows[0];
 };
