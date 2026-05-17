@@ -66,6 +66,7 @@
 - **Demo Planning Guide**: Added `docs/demo-plan.md` with an English live-demo storyline, role-based script, and concrete proof points for every assignment requirement.
 - **Same-Day Check-In Guard**: Online and offline QR check-ins now reject valid registrations scanned outside the workshop's calendar day, using the offline scan timestamp when present and defaulting the university calendar timezone to `Asia/Bangkok`.
 - **Mobile Scanner Feedback Pass**: The Flutter scanner now pauses after each scan, shows an explicit result dialog before resuming, and keeps business-invalid online scans out of the offline queue. Check-in retries now follow the persisted `checkins` ledger row, so manually removed demo check-ins can be scanned again without stale `checked_in_at` blocking them.
+- **Authoritative Registration Hydration**: Added authenticated `GET /api/registrations/me` and web startup reconciliation so student registration badges/My QR now refresh from backend truth instead of persisting stale localStorage-only records forever.
 - **Room Layout Demo Assets**: Added local SVG room-layout maps for Innovation Hall, AI Lab, Startup Studio, and Data Theater, wired seeded room `layout_url` values to those assets, and rendered visible layout previews on workshop cards/detail pages.
 
 ## In Progress

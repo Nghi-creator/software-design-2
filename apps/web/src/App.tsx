@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { AppLayout } from './layouts/AppLayout'
 import { useAuthSession } from './lib/useAuthSession'
+import { useRegistrationSync } from './lib/useRegistrationSync'
 import { useHashRoute } from './lib/router'
 import { AdminHomePage } from './pages/admin/AdminHomePage'
 import { AdminImportsPage } from './pages/admin/AdminImportsPage'
@@ -26,6 +27,7 @@ const publicNav: NavItem[] = [
 function App() {
   const route = useHashRoute()
   const { authNotice, authStatus, login, logout, sessionUser } = useAuthSession()
+  useRegistrationSync(sessionUser)
   const visibleNav = useMemo(
     () => publicNav.filter((item) => canSeeNavItem(item, sessionUser)),
     [sessionUser],
