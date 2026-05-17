@@ -1,16 +1,10 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Notice, StatePanel } from '../../components/State'
-import { buttonClass, cardClass, focusClass, linkButtonClass } from '../../components/styles'
+import { buttonClass, cardClass, focusClass } from '../../components/styles'
 import { getUserFacingError } from '../../lib/apiErrorMessages'
 import { formatRole } from '../../lib/roles'
 import type { LoginCredentials, SessionUser } from '../../types'
-
-const seedAccounts = [
-  { label: 'Student seed', email: 'mai.nguyen@student.unihub.edu' },
-  { label: 'Organizer seed', email: 'admin@unihub.edu' },
-  { label: 'Check-in staff seed', email: 'checkin@unihub.edu' },
-]
 
 export function LoginPage({
   user,
@@ -42,12 +36,6 @@ export function LoginPage({
     } finally {
       setIsSubmitting(false)
     }
-  }
-
-  function fillSeedAccount(seedEmail: string) {
-    setEmail(seedEmail)
-    setPassword('Password123')
-    setError(null)
   }
 
   if (user) {
@@ -100,18 +88,6 @@ export function LoginPage({
             <button className={buttonClass} type="submit" disabled={isSubmitting}>
               {isSubmitting ? 'Logging in...' : 'Log in'}
             </button>
-          </div>
-          <div className="flex flex-wrap gap-theme-sm pt-theme-xs" aria-label="Seed account shortcuts">
-            {seedAccounts.map((account) => (
-              <button
-                className={linkButtonClass}
-                key={account.email}
-                type="button"
-                onClick={() => fillSeedAccount(account.email)}
-              >
-                {account.label}
-              </button>
-            ))}
           </div>
         </form>
       </div>

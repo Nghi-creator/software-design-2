@@ -19,18 +19,11 @@ set
 
 insert into rooms (id, name, location, capacity, layout_url)
 values
-<<<<<<< HEAD
-  ('22222222-2222-2222-2222-222222222221', 'Innovation Hall', 'Building A, Floor 2', 120, 'https://example.test/maps/innovation-hall'),
-  ('22222222-2222-2222-2222-222222222222', 'AI Lab', 'Building B, Floor 5', 60, 'https://example.test/maps/ai-lab'),
-  ('22222222-2222-2222-2222-222222222223', 'Startup Studio', 'Building C, Floor 1', 80, 'https://example.test/maps/startup-studio'),
-  ('22222222-2222-2222-2222-222222222224', 'Data Theater', 'Building D, Floor 3', 160, 'https://example.test/maps/data-theater'),
-  ('22222222-2222-2222-2222-222222222225', 'QR Demo Room', 'Demo Wing, Floor 1', 40, 'https://example.test/maps/qr-demo-room')
-=======
   ('22222222-2222-2222-2222-222222222221', 'Innovation Hall', 'Building A, Floor 2', 120, '/room-layouts/innovation-hall.svg'),
   ('22222222-2222-2222-2222-222222222222', 'AI Lab', 'Building B, Floor 5', 60, '/room-layouts/ai-lab.svg'),
   ('22222222-2222-2222-2222-222222222223', 'Startup Studio', 'Building C, Floor 1', 80, '/room-layouts/startup-studio.svg'),
-  ('22222222-2222-2222-2222-222222222224', 'Data Theater', 'Building D, Floor 3', 160, '/room-layouts/data-theater.svg')
->>>>>>> 55062c46aa88df939b55715e0e9598d96f0a3473
+  ('22222222-2222-2222-2222-222222222224', 'Data Theater', 'Building D, Floor 3', 160, '/room-layouts/data-theater.svg'),
+  ('22222222-2222-2222-2222-222222222225', 'QR Demo Room', 'Demo Wing, Floor 1', 40, null)
 on conflict (id) do update
 set
   name = excluded.name,
