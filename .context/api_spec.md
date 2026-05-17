@@ -167,6 +167,14 @@ Notes:
 - Paid workshops require paymentToken; free workshops confirm with transactionId="free".
 ```
 
+```text
+GET /api/registrations/me
+Auth: STUDENT
+Response: { success: true, items: Registration[] with workshop, room, payment, createdAt, updatedAt }
+Errors: 401, 403, 500
+Notes: returns the authenticated student's current registration truth for web/mobile hydration; clients should treat this as authoritative over stale local snapshots.
+```
+
 ## Check-In
 
 ```text

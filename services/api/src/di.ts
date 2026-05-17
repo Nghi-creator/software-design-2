@@ -26,6 +26,10 @@ export type RegistrationDependencies = {
   clearWorkshopSoldOut: (workshopId: string) => Promise<void>;
 };
 
+export type RegistrationReadDependencies = {
+  query: QueryFunction;
+};
+
 export type CheckinDependencies = {
   query: QueryFunction;
   withTransaction: <T>(callback: (client: { query: QueryFunction }) => Promise<T>) => Promise<T>;
@@ -77,6 +81,10 @@ export const registrationDependencies: RegistrationDependencies = {
     const { redis } = await import('./lib/redis');
     await redis.del(`registration:soldout:${workshopId}`);
   }
+};
+
+export const registrationReadDependencies: RegistrationReadDependencies = {
+  query: defaultQuery
 };
 
 export const checkinDependencies: CheckinDependencies = {

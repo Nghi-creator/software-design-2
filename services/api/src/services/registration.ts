@@ -2,6 +2,7 @@ import { RegistrationDependencies, registrationDependencies } from '../di';
 import {
   cancelReservation,
   getWorkshopPrice,
+  listRegistrationsForStudent,
   markPaymentSuccessAndConfirmRegistration,
   reserveSeat
 } from '../repositories/registrationRepository';
@@ -77,4 +78,8 @@ export const cancelPendingReservation = async (
 ) => {
   await cancelReservation(registrationId, workshopId, dependencies);
   await dependencies.clearWorkshopSoldOut(workshopId);
+};
+
+export const getStudentRegistrations = async (userId: string) => {
+  return listRegistrationsForStudent(userId);
 };

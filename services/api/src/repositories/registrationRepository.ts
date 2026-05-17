@@ -1,4 +1,9 @@
-import { RegistrationDependencies, registrationDependencies } from '../di';
+import {
+  RegistrationDependencies,
+  RegistrationReadDependencies,
+  registrationDependencies,
+  registrationReadDependencies
+} from '../di';
 
 export const getWorkshopPrice = async (
   workshopId: string,
@@ -194,4 +199,92 @@ export const cancelReservation = async (
       [workshopId]
     );
   });
+};
+
+export const listRegistrationsForStudent = async (
+  userId: string,
+  dependencies: RegistrationReadDependencies = registrationReadDependencies
+) => {
+  const result = await dependencies.query(
+    `
+      select
+        r.id,
+        r.user_id as "userId",
+        r.workshop_id as "workshopId",
+        r.status,
+        r.qr_code as "qrCode",
+        r.checked_in_at as "checkedInAt",
+        r.created_at as "createdAt",
+        r.updated_at as "updatedAt",
+        p.id as "paymentId",
+        p.amount as "paymentAmount",
+        p.status as "paymentStatus",
+        p.transaction_id as "paymentTransactionId",
+        p.idempotency_key as "paymentIdempotencyKey",
+        w.id as "workshopIdValue",
+        w.title as "workshopTitle",
+        w.speaker as "workshopSpeaker",
+        w.room_id as "workshopRoomId",
+        w.capacity as "workshopCapacity",
+        w.seats_remaining as "workshopSeatsRemaining",
+        w.price as "workshopPrice",
+        w.start_time as "workshopStartTime",
+        w.pdf_url as "workshopPdfUrl",
+        w.ai_summary as "workshopAiSummary",
+        room.id as "roomId",
+        room.name as "roomName",
+        room.location as "roomLocation",
+        room.capacity as "roomCapacity",
+        room.layout_url as "roomLayoutUrl"
+      from registrations r
+      join workshops w on w.id = r.workshop_id
+      left join payments p on p.registration_id = r.id
+      left join rooms room on room.id = w.room_id
+      where r.user_id = $1
+      order by r.updated_at desc
+    `,
+    [userId]
+  );
+
+  return result.rows.map((row: any) => ({
+    id: row.id,
+    userId: row.userId,
+    workshopId: row.workshopId,
+    status: row.status,
+    qrCode: row.qrCode,
+    checkedInAt: row.checkedInAt,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    workshop: {
+      id: row.workshopIdValue,
+      title: row.workshopTitle,
+      speaker: row.workshopSpeaker,
+      roomId: row.workshopRoomId,
+      capacity: row.workshopCapacity,
+      seatsRemaining: row.workshopSeatsRemaining,
+      price: Number(row.workshopPrice),
+      startTime: row.workshopStartTime,
+      pdfUrl: row.workshopPdfUrl,
+      aiSummary: row.workshopAiSummary,
+      room: row.roomId
+        ? {
+            id: row.roomId,
+            name: row.roomName,
+            location: row.roomLocation,
+            capacity: row.roomCapacity,
+            layoutUrl: row.roomLayoutUrl
+          }
+        : undefined
+    },
+    payment: row.paymentId
+      ? {
+          id: row.paymentId,
+          registrationId: row.id,
+          amount: Number(row.paymentAmount),
+          status: row.paymentStatus,
+          transactionId: row.paymentTransactionId,
+          idempotencyKey: row.paymentIdempotencyKey
+        }
+      : undefined
+  }));
 };

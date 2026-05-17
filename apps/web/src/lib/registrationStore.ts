@@ -24,6 +24,18 @@ export function saveStoredRegistration(registration: StoredRegistration) {
   window.dispatchEvent(new Event(REGISTRATION_EVENT))
 }
 
+export function replaceStoredRegistrationsForUser(userId: string, nextUserRegistrations: StoredRegistration[]) {
+  const otherRegistrations = readStoredRegistrations().filter(
+    (registration) => getRegistrationOwnerId(registration) !== userId,
+  )
+
+  localStorage.setItem(
+    REGISTRATION_STORAGE_KEY,
+    JSON.stringify([...nextUserRegistrations, ...otherRegistrations]),
+  )
+  window.dispatchEvent(new Event(REGISTRATION_EVENT))
+}
+
 export function subscribeToRegistrationChanges(listener: () => void) {
   window.addEventListener(REGISTRATION_EVENT, listener)
   window.addEventListener('storage', listener)
