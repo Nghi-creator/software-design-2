@@ -8,8 +8,8 @@ export type Workshop = {
   roomId: string;
   capacity: number;
   seatsRemaining: number;
-  price: string;
-  startTime: Date;
+  price: number;
+  startTime: string;
   pdfUrl: string | null;
   aiSummary: string | null;
   room?: {
@@ -19,6 +19,12 @@ export type Workshop = {
     capacity: number;
     layoutUrl: string | null;
   };
+};
+
+type WorkshopRow = Omit<Workshop, 'price' | 'startTime' | 'room'> & {
+  price: string;
+  startTime: Date;
+  room?: Workshop['room'];
 };
 
 export type ListWorkshopsQuery = {
@@ -106,7 +112,7 @@ export const findWorkshops = async ({
   values.push(pagination.pageSize, offset);
 
   const [itemsResult, countResult] = await Promise.all([
-    query<Workshop>(
+    query<WorkshopRow>(
       `
         select
           w.id,
@@ -145,7 +151,7 @@ export const findWorkshops = async ({
     )
   ]);
 
-  return toPaginatedResult(itemsResult.rows, Number(countResult.rows[0].totalItems), pagination);
+  return toPaginatedResult(itemsResult.rows.map(mapWorkshopRow), Number(countResult.rows[0].totalItems), pagination);
 };
 
 export const createWorkshop = ({
@@ -167,7 +173,7 @@ export const createWorkshop = ({
   pdfUrl?: string;
   aiSummary: string | null;
 }) => {
-  return query<Workshop>(
+  return query<WorkshopRow>(
     `
       insert into workshops (
         title, speaker, room_id, capacity, seats_remaining, price, start_time, pdf_url, ai_summary
@@ -178,11 +184,11 @@ export const createWorkshop = ({
         price, start_time as "startTime", pdf_url as "pdfUrl", ai_summary as "aiSummary"
     `,
     [title, speaker, roomId, capacity, price, startTime, pdfUrl, aiSummary]
-  ).then((result) => result.rows[0]);
+  ).then((result) => mapWorkshopRow(result.rows[0]));
 };
 
 export const findWorkshopById = async (workshopId: string) => {
-  const result = await query<Workshop>(
+  const result = await query<WorkshopRow>(
     `
       select
         id,
@@ -201,14 +207,14 @@ export const findWorkshopById = async (workshopId: string) => {
     [workshopId]
   );
 
-  return result.rows[0] ?? null;
+  return result.rows[0] ? mapWorkshopRow(result.rows[0]) : null;
 };
 
 export const updateWorkshop = (
   workshopId: string,
   { title, speaker, roomId, capacity, seatsRemaining, price, startTime, pdfUrl }: WorkshopUpdateInput
 ) => {
-  return query<Workshop>(
+  return query<WorkshopRow>(
     `
       update workshops
       set
@@ -227,7 +233,7 @@ export const updateWorkshop = (
         price, start_time as "startTime", pdf_url as "pdfUrl", ai_summary as "aiSummary"
     `,
     [workshopId, title, speaker, roomId, capacity, seatsRemaining, price, startTime, pdfUrl]
-  ).then((result) => result.rows[0] ?? null);
+  ).then((result) => result.rows[0] ? mapWorkshopRow(result.rows[0]) : null);
 };
 
 export const deleteWorkshop = async (workshopId: string) => {
@@ -255,3 +261,9 @@ export const findWorkshopSummaryStatus = async (workshopId: string) => {
 
   return result.rows[0] ?? null;
 };
+
+const mapWorkshopRow = (row: WorkshopRow): Workshop => ({
+  ...row,
+  price: Number(row.price),
+  startTime: row.startTime.toISOString()
+});

@@ -5,6 +5,7 @@ import checkinRoutes from './routes/checkin';
 import roomRoutes from './routes/room';
 import authRoutes from './routes/auth';
 import importRoutes from './routes/import';
+import notificationRoutes from './routes/notification';
 import { attachUser } from './middleware/auth';
 import { logApiRequest } from './middleware/requestLogger';
 import { logApiResponse } from './middleware/responseLogger';
@@ -28,6 +29,7 @@ app.use('/api/workshops', workshopRoutes);
 app.use('/api/checkin', checkinRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/imports', importRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });

@@ -88,9 +88,10 @@ test('GET /api/workshops filters, sorts, and paginates live data', async () => {
 
   assert.equal(response.status, 200);
   assert.deepEqual(
-    body.items.map((workshop: { title: string; price: string }) => [workshop.title, workshop.price]),
-    [[`Systems ${suffix}`, '50.00']]
+    body.items.map((workshop: { title: string; price: number }) => [workshop.title, workshop.price]),
+    [[`Systems ${suffix}`, 50]]
   );
+  assert.equal(body.items[0].startTime, '2026-06-01T09:00:00.000Z');
   assert.equal(body.items[0].room.id, workshopRoomId);
   assert.equal(body.items[0].speaker, `Speaker ${suffix}`);
   assert.equal(body.items[0].room.layoutUrl, `https://example.test/maps/${suffix}/alpha`);

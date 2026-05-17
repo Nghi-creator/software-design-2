@@ -1,6 +1,6 @@
 # API Spec
 
-Status: partially defined. Current contracts cover JWT auth, room CRUD, workshop browse/create, registration/payment, online check-in, and offline check-in sync.
+Status: partially defined. Current contracts cover JWT auth, room CRUD, workshop browse/create, registration/payment, notifications, online check-in, and offline check-in sync.
 
 ## Auth
 
@@ -74,6 +74,11 @@ Errors: 401, 403, 404
 ```
 
 ## Workshops
+
+Workshop response shape:
+- `price` is a JSON number even though PostgreSQL stores it as `numeric`.
+- `startTime` is an ISO 8601 string.
+- `room` is included on list responses and includes `layoutUrl`.
 
 ```text
 GET /api/workshops
@@ -215,6 +220,43 @@ Query:
 Response: { success: true, errors: CsvImportError[], pagination: { limit, offset } }
 Errors: 400, 401, 403, 500
 Notes: row-level errors include rowNumber, studentId, email, error, rawRow, and createdAt. Malformed rows are recorded without stopping later rows in the import.
+```
+
+## Notifications
+
+```text
+GET /api/notifications
+Auth: STUDENT
+Query:
+- page?: positive integer (default 1)
+- pageSize?: positive integer up to 100 (default 20)
+Response: {
+  success: true,
+  items: [{
+    id,
+    userId,
+    registrationId?,
+    workshopId?,
+    channel,
+    subject,
+    body,
+    status,
+    createdAt,
+    sentAt?,
+    readAt?
+  }],
+  pagination: { page, pageSize, totalItems, totalPages }
+}
+Errors: 400, 401, 403, 500
+Notes: returns only notifications owned by the authenticated student, newest first. Current channel values are backend delivery channels such as `EMAIL`.
+```
+
+```text
+PATCH /api/notifications/:id/read
+Auth: STUDENT
+Response: { success: true, notification: Notification }
+Errors: 400, 401, 403, 404, 500
+Notes: marks only the authenticated student's notification as read. The operation is idempotent; existing readAt values are preserved.
 ```
 
 ## Check-In Contract Note

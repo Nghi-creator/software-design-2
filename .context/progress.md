@@ -1,6 +1,7 @@
 # Progress: UniHub Workshop
 
 ## Completed
+
 - **Project Concept**: UniHub Workshop requirements finalized.
 - **System Design**: Technical Blueprint (design.md) established.
 - **Context Setup**: Reorganized project context documents.
@@ -58,11 +59,17 @@
 - **Requirement Journey Coverage**: Added a full live-HTTP real-service test for weekly workshop browse, room-layout metadata, free registration, paid registration, QR retrieval, and staff check-in; added room `layout_url` support so the API now carries the room-map data already rendered by the web UI.
 - **Admin/RBAC Requirement Coverage**: Added backend workshop-validation unit tests, web protected-route tests, live-HTTP admin RBAC matrix coverage, and an opt-in real-service organizer lifecycle test covering create, room/time update, stats, and workshop cancellation. Also aligned the stub test Redis client with suite cleanup by adding a no-op `disconnect`.
 - **Payment-Outage Resilience Coverage**: Added unit tests for payment circuit-breaker success/timeout/fail-fast behavior, failed-response idempotency replay, live HTTP coverage proving workshop browse remains available during paid-registration timeout, and an opt-in real-service replay test that verifies one failed payment attempt yields one cancelled registration, one failed payment, restored seat capacity, and stable retry behavior. Also changed the breaker fallback to reject asynchronously so timeout failures propagate as controlled promise rejections.
+- **Student Notification Inbox**: Added authenticated student notification list/read endpoints backed by persisted notifications, read receipts, API contract docs, and React banner/history screens that fetch real backend notifications instead of localStorage.
+- **Grader Setup Docs**: Added root `README.md` with fresh-machine UniHub demo setup using `supabase/migrations/*`, `supabase/seed.sql`, API, notification worker, web app, and optional mobile check-in. Updated API/web docs and stale architecture references to match current pg/BullMQ/JWT/atomic-seat runtime.
+- **Hosted Runtime Cleanup**: Confirmed API env targets Supabase Postgres and Upstash Redis, removed the obsolete local Redis compose file and tracked generated load-test outputs, moved the web favicon into app assets, and removed unused Vite/React/public SVG assets.
+- **Workshop API Response Normalization**: Workshop API responses now normalize PostgreSQL numeric prices to JSON numbers and `startTime` to ISO strings, matching the React contract and preserving accurate response logs.
 - **Demo Planning Guide**: Added `docs/demo-plan.md` with an English live-demo storyline, role-based script, and concrete proof points for every assignment requirement.
 
 ## In Progress
-- API contract still partial for future features outside the current check-in flow. QR validation is intentionally merged into check-in requests. Supabase SQL schema must be applied manually per environment.
+
+- API contract still partial for future features outside the implemented flows. QR validation is intentionally merged into check-in requests. Supabase SQL schema must be applied manually per environment.
 
 ## Next Steps
+
 - Add remaining APIs only when new product scope requires them; keep QR validation merged into check-in unless requirements change.
 - Apply the new notifications migration per environment and configure Gmail App Password credentials wherever outbound email should be enabled.

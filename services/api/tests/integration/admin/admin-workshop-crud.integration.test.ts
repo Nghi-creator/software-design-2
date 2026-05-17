@@ -96,7 +96,8 @@ test('PUT /api/workshops/:id updates organizer-owned workshop data and preserves
   assert.equal(body.title, `Updated ${suffix}`);
   assert.equal(body.capacity, 35);
   assert.equal(body.seatsRemaining, 32);
-  assert.equal(body.price, '75.00');
+  assert.equal(body.price, 75);
+  assert.equal(body.startTime, '2026-07-01T09:00:00.000Z');
 });
 
 test('PUT /api/workshops/:id rejects non-organizers and impossible capacity reductions', async () => {

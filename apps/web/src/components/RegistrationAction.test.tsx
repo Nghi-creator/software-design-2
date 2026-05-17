@@ -1,7 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RegistrationAction } from './RegistrationAction'
-import { getStoredNotifications } from '../lib/notificationStore'
 
 vi.mock('../lib/registrationApi', () => ({
   createRegistrationIdempotencyKey: () => 'idem-1',
@@ -41,25 +40,16 @@ const workshop = {
   price: 0,
 }
 
-describe('RegistrationAction notification behavior', () => {
+describe('RegistrationAction', () => {
   beforeEach(() => {
     localStorage.clear()
   })
 
-  it('creates an in-app confirmation after successful registration', async () => {
+  it('stores the confirmed registration after successful registration', async () => {
     render(<RegistrationAction user={user} workshop={workshop} />)
 
     fireEvent.click(screen.getByRole('button', { name: 'Register' }))
 
     await waitFor(() => expect(screen.getByText('Registered')).toBeInTheDocument())
-    expect(getStoredNotifications(user.id)).toMatchObject([
-      {
-        title: 'Registration confirmed',
-        channel: 'in_app',
-        status: 'sent',
-        registrationId: 'registration-1',
-        workshopId: 'workshop-1',
-      },
-    ])
   })
 })

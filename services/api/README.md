@@ -1,96 +1,123 @@
-# UniHub Workshop - Cài đặt
+# UniHub Workshop API
 
-## Yêu cầu hệ thống
-- Node.js >= 18
-- Supabase Postgres project
-- Redis, local or hosted
+Express API for the UniHub demo. It connects directly to Supabase Postgres with `pg`, uses Redis for rate limiting/idempotency/BullMQ, starts the CSV cron import in the API process, and runs notification delivery in a separate worker process.
 
-## Cài đặt và Khởi chạy
+## Requirements
 
-1. Cài đặt các thư viện:
-\`\`\`bash
-npm install
-\`\`\`
+- Node.js 18 or newer.
+- Supabase Postgres database with the repo migrations and seed applied.
+- Upstash Redis, or another hosted Redis instance reachable through `REDIS_URL`.
+- Gmail App Password credentials when running the email notification worker.
 
-2. Khởi động Redis local nếu chưa dùng Redis hosted:
-\`\`\`bash
-docker-compose up -d
-\`\`\`
+## Database Setup
 
-3. Tạo file `.env` từ `.env.example` (Hoặc tạo mới với nội dung sau):
-\`\`\`env
+Apply the current SQL files from the repo root in this exact order:
+
+1. `supabase/migrations/20260514000000_init_supabase.sql`
+2. `supabase/migrations/20260515163034_csv_process.sql`
+3. `supabase/migrations/20260516141950_more_workshops.sql`
+4. `supabase/migrations/20260517000000_room_layout_urls.sql`
+5. `supabase/migrations/20260517090000_notifications.sql`
+6. `supabase/migrations/20260517120000_notification_read_receipts.sql`
+7. `supabase/seed.sql`
+
+Supabase Dashboard -> SQL Editor is the simplest path for a demo environment. With `psql`, use:
+
+```bash
+for file in ../../supabase/migrations/*.sql; do psql "$DATABASE_URL" -f "$file"; done
+psql "$DATABASE_URL" -f ../../supabase/seed.sql
+```
+
+## Environment
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env`:
+
+```env
 DATABASE_URL="postgresql://postgres.<project-ref>:<password>@<region>.pooler.supabase.com:6543/postgres"
 DATABASE_SSL="true"
-REDIS_URL="redis://localhost:6379"
-GEMINI_API_KEY="your_api_key_here"
+REDIS_URL="rediss://<upstash-host>:6379"
+GEMINI_API_KEY="optional_for_live_ai_summary"
 MAIL_USER="your_gmail_address@gmail.com"
 MAIL_PASS="your_gmail_app_password"
+JWT_SECRET="replace-with-at-least-32-characters"
+JWT_EXPIRES_IN_SECONDS=86400
+AUTH_ALLOW_ROLE_REGISTRATION=true
 PORT=3000
-\`\`\`
+```
 
-4. Tạo schema trong Supabase bằng SQL Editor:
-- Mở Supabase Dashboard -> SQL Editor.
-- Chạy nội dung file `sql/001_init_supabase.sql`.
+`MAIL_USER` and `MAIL_PASS` are required by the notification worker when it processes email jobs. Use a Gmail App Password, not the normal account password.
 
-5. Khởi chạy server:
-\`\`\`bash
+## Local Development
+
+```bash
+npm install
 npm run dev
-\`\`\`
+```
 
-6. Khởi chạy worker gửi thông báo ở terminal khác:
-\`\`\`bash
+The API connects to Supabase Postgres and hosted Redis from `.env`, then listens on `http://localhost:3000` by default. Check it with:
+
+```bash
+curl http://localhost:3000/health
+```
+
+Run the notification worker in a second terminal:
+
+```bash
 npm run worker:notifications
-\`\`\`
+```
 
-## Các tính năng kỹ thuật chính
+## Seed Data
 
-- **Supabase Postgres:** Backend kết nối trực tiếp tới Supabase Postgres bằng `pg` và `DATABASE_URL`; không còn dùng Prisma Client.
-- **Concurrency (Tranh chấp chỗ ngồi):** Sử dụng `SELECT ... FOR UPDATE` trong transaction ngắn để giữ chỗ. Không gọi Payment Gateway khi đang giữ DB lock.
-- **Spike Load (Chịu tải đột biến):** Sử dụng Redis + Lua Script triển khai token bucket kép ở API đăng ký: một bucket toàn cục để bảo vệ backend, một bucket theo sinh viên để giữ công bằng giữa các client.
-- **Thanh toán lỗi (Circuit Breaker):** Sử dụng thư viện `opossum`. Nếu cổng thanh toán mock fail ngẫu nhiên quá 50%, Circuit Breaker sẽ chuyển sang trạng thái Open và ngắt sớm các request tiếp theo, giúp hệ thống không bị treo.
-- **Trừ tiền 2 lần (Idempotency):** Header `Idempotency-Key` là bắt buộc với API đăng ký. Redis cache response 24h, PostgreSQL lưu trạng thái `IN_PROGRESS`/`COMPLETED` để chặn request trùng đang chạy.
-- **Check-in Offline:** API `/api/checkin/sync` nhận batch item `{ localId?, qrCode, scannedAt? }` và trả kết quả theo từng item để mobile app biết item nào xoá, retry, hoặc đối soát.
-- **AI Summary:** Khi tạo Workshop, upload file PDF. Middleware sẽ dùng `pdf-parse` để đọc text và truyền qua Google Gemini API để tạo tóm tắt, sau đó lưu vào DB.
-- **Event-driven notifications:** Khi registration được xác nhận, API publish job BullMQ `registration.confirmed`; worker riêng xử lý gửi thông báo và cập nhật trạng thái delivery trong bảng `notifications`.
-- **Gmail notifications:** Worker gửi email thật qua Gmail SMTP bằng `MAIL_USER` và `MAIL_PASS` trong `.env`. Với Gmail, `MAIL_PASS` nên là App Password thay vì mật khẩu đăng nhập thường.
-- **CSV Sync:** Job `node-cron` chạy lúc 2 AM mỗi ngày, đọc file CSV tại `data/students.csv` bằng `csv-parser` và dùng cơ chế UPSERT để thêm mới hoặc cập nhật thông tin sinh viên mà không gây crash nếu có 1 dòng lỗi.
+`supabase/seed.sql` creates demo users, rooms, workshops, registrations, payments, and check-ins. Seed users all use password `Password123`:
 
-## Seed data
-Bạn có thể tự insert dữ liệu workshop qua API tạo Workshop hoặc dùng script seed (nếu có). Sinh viên được load tự động từ file CSV qua cron job.
+- Student: `mai.nguyen@student.unihub.edu`
+- Organizer: `admin@unihub.edu`
+- Check-in staff: `checkin@unihub.edu`
 
-## Load test đăng ký bằng k6
+The CSV cron job reads `services/api/data/students.csv` at 2 AM server time and records import status/errors in the CSV import tables.
 
-Chỉ chạy trên môi trường test/disposable vì bài test sẽ tạo nhiều user và registration thật trong database.
+## Technical Notes
 
-1. Chạy API với Postgres + Redis thật:
+- **Supabase Postgres:** direct `pg` access through `DATABASE_URL`; Prisma is not used.
+- **Seat contention:** registration uses a short transaction with an atomic conditional seat decrement plus fast sold-out rejection. Payment calls are kept outside the hot seat update.
+- **Spike protection:** Redis-backed token buckets protect registration globally and per student/IP.
+- **Payment resilience:** `opossum` circuit breaker prevents repeated mock gateway timeouts from hanging registration.
+- **Idempotency:** `Idempotency-Key` is required for registration/payment POST flows; Redis caches completed responses and Postgres tracks in-progress/completed state.
+- **Offline check-in:** `/api/checkin/sync` accepts item batches and returns per-item results so the mobile app can delete, retry, or reconcile queued scans.
+- **AI summary:** PDF upload paths use `pdf-parse` and Google Gemini when `GEMINI_API_KEY` is configured.
+- **Notifications:** confirmed registrations publish BullMQ `registration.confirmed` jobs; the worker sends email and updates the `notifications` table.
+
+## Tests
+
+```bash
+npm test
+```
+
+Opt-in real-service tests:
+
+```bash
+RUN_INTEGRATION_TESTS=true DATABASE_URL="..." REDIS_URL="..." npm test
+```
+
+Live Gmail test:
+
+```bash
+RUN_GMAIL_TESTS=true MAIL_USER="..." MAIL_PASS="..." MAIL_TEST_TO="..." npm test
+```
+
+## k6 Registration Surge
+
+Only run this against a disposable/test database because it creates many users and registrations.
+
 ```bash
 npm run dev
-```
-
-2. Chuẩn bị token cho 12.000 sinh viên mô phỏng:
-```bash
 npm run load:prepare:registration
-```
-Lệnh này idempotent theo cohort mặc định `registration_surge`: lần chạy sau sẽ reuse sinh viên cũ, reuse workshop/room load-test, và chỉ ghi lại file token.
-Mặc định script upsert theo batch 500 user/lần; có thể chỉnh bằng `LOAD_STUDENT_BATCH_SIZE=...`.
-Workshop load-test mặc định có 60 chỗ để mô phỏng bài toán tranh chấp ghế; có thể chỉnh bằng `LOAD_WORKSHOP_CAPACITY=...`.
-
-3. Chạy mô phỏng đúng profile yêu cầu: 7.200 request trong 3 phút đầu, 4.800 request trong 7 phút tiếp theo:
-```bash
 BASE_URL=http://127.0.0.1:3000 npm run load:registration
-```
-
-Mặc định script đọc token từ `load-tests/registration-surge.tokens.json` và workshop metadata từ `load-tests/registration-surge.metadata.json`. Có thể đổi bằng `TOKENS_FILE=...` và `LOAD_TEST_METADATA_FILE=...`.
-
-5. Dọn cohort load test khi cần:
-```bash
 npm run load:cleanup:registration
 ```
 
-Có thể đặt `LOAD_TEST_COHORT=<name>` nếu muốn nhiều cohort độc lập.
-
-## Kiểm thử thông báo
-
-- `npm test`: chạy unit tests và các integration tests mặc định/skip-by-default.
-- `RUN_INTEGRATION_TESTS=true DATABASE_URL=... REDIS_URL=... npm test`: chạy kiểm thử thật với Postgres + Redis cho hàng đợi BullMQ và trạng thái delivery.
-- `RUN_GMAIL_TESTS=true MAIL_USER=... MAIL_PASS=... MAIL_TEST_TO=... npm test`: gửi một email thật qua Gmail SMTP. Bài test này cần tài khoản Gmail thật, App Password, và một inbox đích có thể nhận mail.
+The prep script writes token and workshop metadata under `services/api/load-tests/`. The default disposable workshop has 60 seats to model the assignment's contested-seat scenario.
