@@ -97,7 +97,7 @@ export function AdminWorkshopsPage() {
         <AdminStat label="Checked in" value={String(dashboardTotals.checkedInCount)} />
         <AdminStat label="Paid" value={String(dashboardTotals.successfulPaymentCount)} />
       </section>
-      <section className="grid items-start gap-theme-lg xl:grid-cols-[minmax(420px,1fr)_minmax(0,2fr)]">
+      <section className="grid min-w-0 items-start gap-theme-lg xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
         <WorkshopForm
           draft={draft}
           errors={formErrors}
@@ -229,18 +229,22 @@ function WorkshopForm({
 }) {
   return (
     <form
-      className={`${cardClass} grid self-start gap-theme-md p-theme-lg`}
+      className={`${cardClass} grid min-w-0 self-start gap-theme-md p-theme-lg`}
       onSubmit={(event) => {
         event.preventDefault()
         onSubmit()
       }}
     >
       <div className="grid gap-theme-sm sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
-        <div>
+        <div className="min-w-0">
           <h2 className="text-2xl font-extrabold text-text-primary">
             {mode === 'edit' ? 'Edit workshop' : 'Create workshop'}
           </h2>
-          {editingWorkshop ? <p className="text-text-secondary">{editingWorkshop.title}</p> : null}
+          {editingWorkshop ? (
+            <p className={truncateTextClass} title={editingWorkshop.title}>
+              {editingWorkshop.title}
+            </p>
+          ) : null}
         </div>
         {mode === 'edit' ? (
           <button className={buttonClass} type="button" onClick={onCreate}>
@@ -250,7 +254,7 @@ function WorkshopForm({
       </div>
       <FormField error={errors.title} label="Title" value={draft.title} onChange={(title) => onChange({ ...draft, title })} />
       <FormField error={errors.speaker} label="Speaker" value={draft.speaker} onChange={(speaker) => onChange({ ...draft, speaker })} />
-      <label className="grid gap-theme-xs text-sm font-bold text-text-primary">
+      <label className="grid min-w-0 gap-theme-xs text-sm font-bold text-text-primary">
         Room
         <select
           aria-invalid={Boolean(errors.roomId)}
@@ -267,14 +271,14 @@ function WorkshopForm({
         </select>
         {errors.roomId ? <span className="text-sm font-bold text-status-danger">{errors.roomId}</span> : null}
       </label>
-      <div className="grid gap-theme-md md:grid-cols-2">
+      <div className="grid min-w-0 gap-theme-md md:grid-cols-2">
         <FormField error={errors.capacity} label="Capacity" type="number" value={draft.capacity} onChange={(capacity) => onChange({ ...draft, capacity })} />
         <FormField error={errors.price} label="Fee" type="number" value={draft.price} onChange={(price) => onChange({ ...draft, price })} />
       </div>
       <FormField error={errors.startTime} label="Start time" type="datetime-local" value={draft.startTime} onChange={(startTime) => onChange({ ...draft, startTime })} />
       <FormField error={errors.pdfUrl} label="PDF URL" value={draft.pdfUrl} required={false} onChange={(pdfUrl) => onChange({ ...draft, pdfUrl })} />
       {mode === 'create' ? (
-        <label className="grid gap-theme-xs text-sm font-bold text-text-primary">
+        <label className="grid min-w-0 gap-theme-xs text-sm font-bold text-text-primary">
           PDF upload
           <input
             className={fieldClass}
@@ -321,11 +325,13 @@ function WorkshopAdminCard({
   const reservedSeats = workshop.capacity - workshop.seatsRemaining
 
   return (
-    <article className={`${cardClass} grid gap-theme-md p-theme-lg`}>
+    <article className={`${cardClass} grid min-w-0 gap-theme-md p-theme-lg`}>
       <div className="grid gap-theme-md lg:grid-cols-[minmax(0,1fr)_auto]">
-        <div>
-          <h2 className="text-2xl font-extrabold text-text-primary">{workshop.title}</h2>
-          <p className="text-text-secondary">
+        <div className="min-w-0">
+          <h2 className={`text-2xl font-extrabold text-text-primary ${truncateTextClass}`} title={workshop.title}>
+            {workshop.title}
+          </h2>
+          <p className={`text-text-secondary ${truncateTextClass}`} title={`${workshop.speaker} · ${formatDateTime(workshop.startTime)}`}>
             {workshop.speaker} · {formatDateTime(workshop.startTime)}
           </p>
         </div>
@@ -334,8 +340,9 @@ function WorkshopAdminCard({
           <button className={linkButtonClass} type="button" onClick={onDelete}>Delete</button>
         </div>
       </div>
-      <dl className="grid gap-theme-md text-sm md:grid-cols-4">
-        <InfoItem label="Room" value={`${workshop.room?.name ?? workshop.roomId} · ${workshop.room?.location ?? 'Location pending'}`} />
+      <dl className="grid min-w-0 gap-theme-md text-sm md:grid-cols-4">
+        <InfoItem label="Room" value={workshop.room?.name ?? workshop.roomId} />
+        <InfoItem label="Location" value={workshop.room?.location ?? 'Location pending'} />
         <InfoItem label="Room layout" value={workshop.room?.layoutUrl ?? 'Layout pending'} />
         <InfoItem label="Capacity" value={`${reservedSeats}/${workshop.capacity} reserved`} />
         <InfoItem label="Status" value={workshop.seatsRemaining > 0 ? 'Open' : 'Full'} />
@@ -368,7 +375,7 @@ function FormField({
   value: string
 }) {
   return (
-    <label className="grid gap-theme-xs text-sm font-bold text-text-primary">
+    <label className="grid min-w-0 gap-theme-xs text-sm font-bold text-text-primary">
       {label}
       <input
         aria-invalid={Boolean(error)}
@@ -385,9 +392,11 @@ function FormField({
 
 function InfoItem({ label, value }: { label: string; value: string }) {
   return (
-    <div>
+    <div className="min-w-0">
       <dt className="text-text-muted">{label}</dt>
-      <dd className="font-bold text-text-primary">{value}</dd>
+      <dd className={`font-bold text-text-primary ${truncateTextClass}`} title={value}>
+        {value}
+      </dd>
     </div>
   )
 }
@@ -543,4 +552,6 @@ function getAdminErrorMessage(error: unknown) {
 }
 
 const fieldClass =
-  `min-h-11 rounded-theme-md border border-border-strong bg-background-subtle px-theme-sm text-text-primary placeholder:text-text-muted focus:border-border-focus focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 ${focusClass}`
+  `box-border min-h-11 w-full min-w-0 max-w-full rounded-theme-md border border-border-strong bg-background-subtle px-theme-sm text-text-primary placeholder:text-text-muted focus:border-border-focus focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 ${focusClass}`
+
+const truncateTextClass = 'min-w-0 overflow-hidden text-ellipsis whitespace-nowrap'
