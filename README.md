@@ -1,25 +1,35 @@
-# UniHub Workshop Demo
+# Demo UniHub Workshop
 
-UniHub is a workshop management demo for university events. This repo contains:
+UniHub là hệ thống demo quản lý workshop cho trường đại học. Repository này gồm:
 
-- `supabase/migrations/*`: the PostgreSQL schema, applied in filename order.
-- `supabase/seed.sql`: demo rooms, workshops, users, registrations, payments, and check-ins.
-- `services/api`: Express REST API, CSV cron import, registration/payment/check-in logic.
-- `services/api/src/workers/notificationWorker.ts`: BullMQ notification worker.
-- `apps/web`: React/Vite web app for students and organizers.
-- `apps/mobile`: Flutter check-in app for staff QR scanning and offline sync.
+- `supabase/migrations/*`: schema PostgreSQL, cần chạy theo thứ tự tên file.
+- `supabase/seed.sql`: dữ liệu demo cho phòng, workshop, người dùng, đăng ký, thanh toán và check-in.
+- `services/api`: REST API Express, cron import CSV, logic đăng ký/thanh toán/check-in.
+- `services/api/src/workers/notificationWorker.ts`: worker thông báo dùng BullMQ.
+- `apps/web`: web app React/Vite cho sinh viên và organizer.
+- `apps/mobile`: app Flutter để nhân viên check-in quét QR và đồng bộ offline.
 
-## Prerequisites
+## Phạm vi hướng dẫn này
 
-- Node.js 18 or newer and npm.
-- Upstash Redis, or another hosted Redis instance reachable through `REDIS_URL`.
-- A Supabase Postgres project.
-- Optional: Flutter SDK for the mobile check-in app.
-- Optional but required for real email delivery: Gmail account plus an App Password.
+Hướng dẫn dưới đây dành cho **mô hình demo dùng dịch vụ hosted**:
 
-## 1. Create the Database
+- PostgreSQL trên Supabase.
+- Redis trên Upstash hoặc một Redis hosted khác.
+- API, worker, web app và mobile app chạy trực tiếp trên máy local.
 
-Apply every migration in order, then apply the seed file:
+Repository hiện **không cung cấp cấu hình Docker** như `Dockerfile` hay `docker-compose.yml`. Docker là công cụ bên ngoài, nhưng để có một luồng setup bằng Docker thì project vẫn cần các file cấu hình riêng cho chính hệ thống này.
+
+## Yêu cầu trước khi chạy
+
+- Node.js 18 trở lên và npm.
+- Một project Supabase Postgres.
+- Upstash Redis, hoặc một Redis hosted khác truy cập được qua `REDIS_URL`.
+- Tùy chọn: Flutter SDK nếu muốn chạy app mobile check-in.
+- Tùy chọn nhưng bắt buộc nếu muốn gửi email thật: tài khoản Gmail và App Password.
+
+## 1. Tạo database
+
+Chạy toàn bộ migration theo đúng thứ tự, sau đó chạy file seed:
 
 1. `supabase/migrations/20260514000000_init_supabase.sql`
 2. `supabase/migrations/20260515163034_csv_process.sql`
@@ -28,20 +38,20 @@ Apply every migration in order, then apply the seed file:
 5. `supabase/migrations/20260517120000_notification_read_receipts.sql`
 6. `supabase/seed.sql`
 
-The safest grader path is Supabase Dashboard -> SQL Editor: paste and run each file in the order above. If you prefer `psql`, use a direct Supabase Postgres connection string and run:
+Cách an toàn nhất cho người chấm là dùng Supabase Dashboard -> SQL Editor, dán và chạy từng file theo đúng thứ tự trên. Nếu muốn dùng `psql`, hãy dùng direct connection string của Supabase Postgres:
 
 ```bash
 for file in supabase/migrations/*.sql; do psql "$DATABASE_URL" -f "$file"; done
 psql "$DATABASE_URL" -f supabase/seed.sql
 ```
 
-The app itself can use the Supabase pooler URL in `services/api/.env`.
+Khi chạy ứng dụng, API có thể dùng pooler URL của Supabase trong `services/api/.env`.
 
-## 2. Configure Redis
+## 2. Cấu hình Redis
 
-Create an Upstash Redis database and copy its TLS URL. The committed demo setup expects hosted Redis rather than local Docker.
+Tạo một database Redis trên Upstash và sao chép TLS URL của nó. Bộ demo hiện tại được thiết kế để dùng Redis hosted thay vì Redis local qua Docker.
 
-## 3. Start the API
+## 3. Chạy API
 
 ```bash
 cd services/api
@@ -50,7 +60,7 @@ npm install
 npm run dev
 ```
 
-Edit `services/api/.env` before starting:
+Trước khi chạy, chỉnh `services/api/.env`:
 
 ```env
 DATABASE_URL="postgresql://postgres.<project-ref>:<password>@<region>.pooler.supabase.com:6543/postgres"
@@ -65,26 +75,26 @@ MAIL_PASS="your_gmail_app_password"
 PORT=3000
 ```
 
-Check the API:
+Kiểm tra API:
 
 ```bash
 curl http://localhost:3000/health
 ```
 
-## 4. Start the Notification Worker
+## 4. Chạy notification worker
 
-Open a second terminal:
+Mở terminal thứ hai:
 
 ```bash
 cd services/api
 npm run worker:notifications
 ```
 
-The API publishes `registration.confirmed` jobs to Redis. The worker consumes those BullMQ jobs, sends email through Gmail SMTP, and persists delivery status in the `notifications` table. Configure `MAIL_USER` and `MAIL_PASS` for the full email path; without them, registration still works but the worker cannot deliver email jobs.
+API sẽ đẩy job `registration.confirmed` vào Redis. Worker đọc các job BullMQ đó, gửi email qua Gmail SMTP và lưu trạng thái gửi vào bảng `notifications`. Nếu chưa cấu hình `MAIL_USER` và `MAIL_PASS`, luồng đăng ký vẫn chạy được nhưng worker sẽ không thể gửi email thật.
 
-## 5. Start the Web App
+## 5. Chạy web app
 
-Open a third terminal:
+Mở terminal thứ ba:
 
 ```bash
 cd apps/web
@@ -93,22 +103,22 @@ npm install
 npm run dev
 ```
 
-`apps/web/.env.example` points at `http://localhost:3000/api`, which matches the API default. Vite usually prints `http://localhost:5173/`.
+`apps/web/.env.example` mặc định trỏ tới `http://localhost:3000/api`, khớp với cấu hình mặc định của API. Vite thường in ra địa chỉ `http://localhost:5173/`.
 
-## Demo Accounts
+## Tài khoản demo
 
-All seeded accounts use password `Password123`.
+Tất cả tài khoản seed đều dùng mật khẩu `Password123`.
 
-| Role | Email | Use |
+| Vai trò | Email | Mục đích |
 | --- | --- | --- |
-| Student | `mai.nguyen@student.unihub.edu` | Browse workshops, register, view QR ticket |
-| Student | `an.tran@student.unihub.edu` | Alternate student data |
-| Organizer | `admin@unihub.edu` | Workshop CRUD, stats, imports |
-| Check-in staff | `checkin@unihub.edu` | Mobile QR check-in |
+| Sinh viên | `mai.nguyen@student.unihub.edu` | Duyệt workshop, đăng ký, xem vé QR |
+| Sinh viên | `an.tran@student.unihub.edu` | Dữ liệu sinh viên thay thế |
+| Organizer | `admin@unihub.edu` | CRUD workshop, thống kê, import |
+| Nhân viên check-in | `checkin@unihub.edu` | Check-in QR trên mobile |
 
-## Mobile Check-In App
+## App mobile check-in
 
-For the Flutter staff app:
+Để chạy app Flutter cho nhân viên:
 
 ```bash
 cd apps/mobile
@@ -116,9 +126,9 @@ flutter pub get
 flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000
 ```
 
-Use `10.0.2.2` for an Android emulator talking to the host machine. Use your computer's LAN IP for a physical phone, for example `http://192.168.1.10:3000`.
+Dùng `10.0.2.2` khi Android emulator cần gọi API trên máy host. Nếu dùng điện thoại thật, hãy thay bằng LAN IP của máy tính, ví dụ `http://192.168.1.10:3000`.
 
-## Verification Commands
+## Lệnh kiểm tra
 
 ```bash
 cd services/api
@@ -132,26 +142,26 @@ npm run build
 npm test
 ```
 
-Optional real-service API tests need live Supabase and Redis:
+Các test API dùng dịch vụ thật cần Supabase và Redis đang hoạt động:
 
 ```bash
 cd services/api
 RUN_INTEGRATION_TESTS=true DATABASE_URL="..." REDIS_URL="..." npm test
 ```
 
-Optional live Gmail verification sends a real email:
+Kiểm tra Gmail thật sẽ gửi email thật:
 
 ```bash
 cd services/api
 RUN_GMAIL_TESTS=true MAIL_USER="..." MAIL_PASS="..." MAIL_TEST_TO="..." npm test
 ```
 
-## Quick Demo Flow
+## Luồng demo nhanh
 
-1. Open the Vite URL and browse workshops.
-2. Log in as `mai.nguyen@student.unihub.edu` / `Password123`.
-3. Register for a workshop and open the QR ticket.
-4. Log out, then log in as `admin@unihub.edu` / `Password123`.
-5. Open organizer routes to create/edit workshops, view stats, and inspect import status.
-6. Keep the notification worker running while registering to show the queued email delivery path.
-7. Optional: run the mobile app as `checkin@unihub.edu` / `Password123` and scan a seeded or web-generated QR code.
+1. Mở URL của Vite và duyệt danh sách workshop.
+2. Đăng nhập bằng `mai.nguyen@student.unihub.edu` / `Password123`.
+3. Đăng ký một workshop và mở vé QR.
+4. Đăng xuất, sau đó đăng nhập bằng `admin@unihub.edu` / `Password123`.
+5. Mở các route organizer để tạo/sửa workshop, xem thống kê và kiểm tra trạng thái import.
+6. Giữ notification worker đang chạy trong lúc đăng ký để trình diễn luồng gửi email qua hàng đợi.
+7. Tùy chọn: chạy app mobile bằng `checkin@unihub.edu` / `Password123` và quét QR đã seed hoặc QR được tạo từ web.

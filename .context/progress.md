@@ -69,6 +69,7 @@
 - **Authoritative Registration Hydration**: Added authenticated `GET /api/registrations/me` and web startup reconciliation so student registration badges/My QR now refresh from backend truth instead of persisting stale localStorage-only records forever.
 - **Room Layout Demo Assets**: Added local SVG room-layout maps for Innovation Hall, AI Lab, Startup Studio, and Data Theater, wired seeded room `layout_url` values to those assets, and rendered visible layout previews on workshop cards/detail pages.
 - **Admin Room Entry Simplification**: Replaced the admin workshop room dropdown with typed room name/building fields and an SVG room-layout upload path that stores layouts on the existing room record.
+- **README Localization/Scope Clarification**: Rewrote the root README in Vietnamese and clarified that the documented setup path uses hosted Supabase/Redis services rather than a repo-provided Docker distribution.
 
 ## In Progress
 
