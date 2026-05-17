@@ -35,10 +35,31 @@ export type WorkshopFormInput = {
   pdf?: File | null
 }
 
+export type RoomFormInput = {
+  name: string
+  location: string
+  capacity: number
+  layoutUrl?: string | null
+}
+
 export type WorkshopSummaryStatus = {
   workshopId: string
   status: AiSummaryStatus
   pdfUrl?: string | null
+}
+
+export function createRoom(input: RoomFormInput) {
+  return apiRequest<Room>('/rooms', {
+    method: 'POST',
+    body: input,
+  })
+}
+
+export function updateRoom(roomId: string, input: RoomFormInput) {
+  return apiRequest<Room>(`/rooms/${roomId}`, {
+    method: 'PUT',
+    body: input,
+  })
 }
 
 export function createWorkshop(input: WorkshopFormInput) {

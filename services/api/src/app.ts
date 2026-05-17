@@ -20,7 +20,7 @@ const app = express();
 app.use(cors());
 app.use(logApiRequest);
 app.use(logApiResponse);
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 app.post('/api/workshops/:id/register', preAuthRegistrationRateLimiter);
 app.post('/api/workshops/:id/register', rejectSoldOutRegistrations);
 app.use(attachUser);

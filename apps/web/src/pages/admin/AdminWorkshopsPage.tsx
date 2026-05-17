@@ -5,23 +5,28 @@ import { ApiError } from '../../lib/api'
 import { getUserFacingError } from '../../lib/apiErrorMessages'
 import { formatCurrency, formatDateTime } from '../../lib/format'
 import {
+  createRoom,
   createWorkshop,
   deleteWorkshop,
   getWorkshopStats,
   getWorkshopSummaryStatus,
-  listRooms,
   listWorkshops,
+  updateRoom,
   updateWorkshop,
 } from '../../lib/workshopApi'
 import type { WorkshopFormInput, WorkshopSummaryStatus } from '../../lib/workshopApi'
-import type { Room, Workshop, WorkshopStats } from '../../types'
+import type { Workshop, WorkshopStats } from '../../types'
 
 type WorkshopMode = 'create' | 'edit'
 
 type WorkshopDraft = {
   title: string
   speaker: string
-  roomId: string
+  roomId: string | null
+  roomName: string
+  roomLocation: string
+  roomLayoutUrl: string | null
+  roomLayoutSvg: File | null
   capacity: string
   price: string
   startTime: string
@@ -32,12 +37,11 @@ type WorkshopFormErrors = Partial<Record<keyof WorkshopDraft, string>>
 
 export function AdminWorkshopsPage() {
   const [workshops, setWorkshops] = useState<Workshop[]>([])
-  const [rooms, setRooms] = useState<Room[]>([])
   const [stats, setStats] = useState<Record<string, WorkshopStats>>({})
   const [summaries, setSummaries] = useState<Record<string, WorkshopSummaryStatus>>({})
   const [mode, setMode] = useState<WorkshopMode>('create')
   const [editingWorkshop, setEditingWorkshop] = useState<Workshop | null>(null)
-  const [draft, setDraft] = useState<WorkshopDraft>(() => createEmptyDraft(''))
+  const [draft, setDraft] = useState<WorkshopDraft>(() => createEmptyDraft())
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
@@ -61,16 +65,11 @@ export function AdminWorkshopsPage() {
     setError(null)
 
     try {
-      const [workshopResponse, roomResponse] = await Promise.all([listWorkshops(), listRooms()])
+      const workshopResponse = await listWorkshops()
       setWorkshops(workshopResponse.items)
-      setRooms(roomResponse.items)
-      setDraft((currentDraft) =>
-        currentDraft.roomId ? currentDraft : createEmptyDraft(roomResponse.items[0]?.id ?? ''),
-      )
       await refreshStatsAndSummaries(workshopResponse.items)
     } catch (caughtError) {
       setWorkshops([])
-      setRooms([])
       setError(getUserFacingError(caughtError, { action: 'Organizer workshop data' }))
       await refreshStatsAndSummaries([])
     } finally {
@@ -101,7 +100,6 @@ export function AdminWorkshopsPage() {
           draft={draft}
           errors={formErrors}
           mode={mode}
-          rooms={rooms}
           isSaving={isSaving}
           editingWorkshop={editingWorkshop}
           onCancel={startCreate}
@@ -137,7 +135,7 @@ export function AdminWorkshopsPage() {
   function startCreate() {
     setMode('create')
     setEditingWorkshop(null)
-    setDraft(createEmptyDraft(rooms[0]?.id ?? ''))
+    setDraft(createEmptyDraft())
     setMessage(null)
     setError(null)
     setFormErrors({})
@@ -155,7 +153,7 @@ export function AdminWorkshopsPage() {
   async function saveWorkshop() {
     setMessage(null)
     setError(null)
-    const validationErrors = validateWorkshopDraft(draft, rooms)
+    const validationErrors = validateWorkshopDraft(draft)
 
     if (Object.keys(validationErrors).length > 0) {
       setFormErrors(validationErrors)
@@ -167,7 +165,10 @@ export function AdminWorkshopsPage() {
     setFormErrors({})
 
     try {
-      const input = toWorkshopFormInput(draft)
+      const room = draft.roomId
+        ? await updateRoom(draft.roomId, await toRoomFormInput(draft))
+        : await createRoom(await toRoomFormInput(draft))
+      const input = toWorkshopFormInput(draft, room.id)
       if (mode === 'edit' && editingWorkshop) {
         await updateWorkshop(editingWorkshop.id, input)
         await refreshAdminData()
@@ -209,7 +210,6 @@ function WorkshopForm({
   errors,
   isSaving,
   mode,
-  rooms,
   onCancel,
   onChange,
   onCreate,
@@ -220,7 +220,6 @@ function WorkshopForm({
   errors: WorkshopFormErrors
   isSaving: boolean
   mode: WorkshopMode
-  rooms: Room[]
   onCancel: () => void
   onChange: (draft: WorkshopDraft) => void
   onCreate: () => void
@@ -253,23 +252,10 @@ function WorkshopForm({
       </div>
       <FormField error={errors.title} label="Title" value={draft.title} onChange={(title) => onChange({ ...draft, title })} />
       <FormField error={errors.speaker} label="Speaker" value={draft.speaker} onChange={(speaker) => onChange({ ...draft, speaker })} />
-      <label className="grid min-w-0 gap-theme-xs text-sm font-bold text-text-primary">
-        Room
-        <select
-          aria-invalid={Boolean(errors.roomId)}
-          className={fieldClass}
-          disabled={rooms.length === 0}
-          value={draft.roomId}
-          onChange={(event) => onChange({ ...draft, roomId: event.target.value })}
-        >
-          {rooms.map((room) => (
-            <option key={room.id} value={room.id}>
-              {room.name} · {room.location}
-            </option>
-          ))}
-        </select>
-        {errors.roomId ? <span className="text-sm font-bold text-status-danger">{errors.roomId}</span> : null}
-      </label>
+      <div className="grid min-w-0 gap-theme-md md:grid-cols-2">
+        <FormField error={errors.roomName} label="Room name" value={draft.roomName} onChange={(roomName) => onChange({ ...draft, roomName })} />
+        <FormField error={errors.roomLocation} label="Building / location" value={draft.roomLocation} onChange={(roomLocation) => onChange({ ...draft, roomLocation })} />
+      </div>
       <div className="grid min-w-0 gap-theme-md md:grid-cols-2">
         <FormField error={errors.capacity} label="Capacity" type="number" value={draft.capacity} onChange={(capacity) => onChange({ ...draft, capacity })} />
         <FormField error={errors.price} label="Fee" type="number" value={draft.price} onChange={(price) => onChange({ ...draft, price })} />
@@ -283,6 +269,20 @@ function WorkshopForm({
           accept="application/pdf"
           onChange={(event) => onChange({ ...draft, pdf: event.target.files?.[0] ?? null })}
         />
+      </label>
+      <label className="grid min-w-0 gap-theme-xs text-sm font-bold text-text-primary">
+        Room layout SVG
+        <input
+          aria-invalid={Boolean(errors.roomLayoutSvg)}
+          className={fieldClass}
+          type="file"
+          accept="image/svg+xml,.svg"
+          onChange={(event) => onChange({ ...draft, roomLayoutSvg: event.target.files?.[0] ?? null })}
+        />
+        {draft.roomLayoutUrl && !draft.roomLayoutSvg ? (
+          <span className="text-sm text-text-muted">Current layout will be kept unless a new SVG is uploaded.</span>
+        ) : null}
+        {errors.roomLayoutSvg ? <span className="text-sm font-bold text-status-danger">{errors.roomLayoutSvg}</span> : null}
       </label>
       <p className="text-sm text-text-muted">
         Capacity reductions below already reserved seats return a conflict; the message will explain the failed edit.
@@ -401,11 +401,15 @@ function AdminStat({ label, value }: { label: string; value: string }) {
   )
 }
 
-function createEmptyDraft(roomId: string): WorkshopDraft {
+function createEmptyDraft(): WorkshopDraft {
   return {
     title: '',
     speaker: '',
-    roomId,
+    roomId: null,
+    roomName: '',
+    roomLocation: '',
+    roomLayoutUrl: null,
+    roomLayoutSvg: null,
     capacity: '80',
     price: '0',
     startTime: toDateTimeLocalValue(new Date().toISOString()),
@@ -418,6 +422,10 @@ function createDraftFromWorkshop(workshop: Workshop): WorkshopDraft {
     title: workshop.title,
     speaker: workshop.speaker,
     roomId: workshop.roomId,
+    roomName: workshop.room?.name ?? '',
+    roomLocation: workshop.room?.location ?? '',
+    roomLayoutUrl: workshop.room?.layoutUrl ?? null,
+    roomLayoutSvg: null,
     capacity: String(workshop.capacity),
     price: String(workshop.price),
     startTime: toDateTimeLocalValue(workshop.startTime),
@@ -425,11 +433,11 @@ function createDraftFromWorkshop(workshop: Workshop): WorkshopDraft {
   }
 }
 
-function toWorkshopFormInput(draft: WorkshopDraft): WorkshopFormInput {
+function toWorkshopFormInput(draft: WorkshopDraft, roomId: string): WorkshopFormInput {
   return {
     title: draft.title,
     speaker: draft.speaker,
-    roomId: draft.roomId,
+    roomId,
     capacity: Number(draft.capacity),
     price: Number(draft.price || 0),
     startTime: new Date(draft.startTime).toISOString(),
@@ -437,19 +445,51 @@ function toWorkshopFormInput(draft: WorkshopDraft): WorkshopFormInput {
   }
 }
 
-function validateWorkshopDraft(draft: WorkshopDraft, rooms: Room[]): WorkshopFormErrors {
+async function toRoomFormInput(draft: WorkshopDraft) {
+  const layoutUrl = draft.roomLayoutSvg ? await readSvgAsDataUrl(draft.roomLayoutSvg) : draft.roomLayoutUrl
+
+  return {
+    name: draft.roomName.trim(),
+    location: draft.roomLocation.trim(),
+    capacity: Number(draft.capacity),
+    layoutUrl,
+  }
+}
+
+function validateWorkshopDraft(draft: WorkshopDraft): WorkshopFormErrors {
   const errors: WorkshopFormErrors = {}
   const capacity = Number(draft.capacity)
   const price = Number(draft.price || 0)
 
   if (!draft.title.trim()) errors.title = 'Title is required.'
   if (!draft.speaker.trim()) errors.speaker = 'Speaker is required.'
-  if (!draft.roomId || !rooms.some((room) => room.id === draft.roomId)) errors.roomId = 'Choose an available room.'
+  if (!draft.roomName.trim()) errors.roomName = 'Room name is required.'
+  if (!draft.roomLocation.trim()) errors.roomLocation = 'Building or location is required.'
+  if (draft.roomLayoutSvg && !isSvgFile(draft.roomLayoutSvg)) errors.roomLayoutSvg = 'Upload an SVG file for the room layout.'
   if (!Number.isInteger(capacity) || capacity <= 0) errors.capacity = 'Capacity must be a positive whole number.'
   if (Number.isNaN(price) || price < 0) errors.price = 'Fee must be zero or higher.'
   if (!draft.startTime || Number.isNaN(Date.parse(draft.startTime))) errors.startTime = 'Start time must be valid.'
 
   return errors
+}
+
+function isSvgFile(file: File) {
+  return file.type === 'image/svg+xml' || file.name.toLowerCase().endsWith('.svg')
+}
+
+function readSvgAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.addEventListener('load', () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result)
+      } else {
+        reject(new Error('Room layout upload could not be read.'))
+      }
+    })
+    reader.addEventListener('error', () => reject(new Error('Room layout upload could not be read.')))
+    reader.readAsDataURL(file)
+  })
 }
 
 function toDateTimeLocalValue(value: string) {

@@ -6,12 +6,15 @@ import type { Workshop } from '../types'
 
 export function getRoomLayoutUrl(workshop: Workshop) {
   const roomName = workshop.room?.name?.toLowerCase()
-  const layoutUrl = workshop.room?.layoutUrl?.toLowerCase()
+  const layoutUrl = workshop.room?.layoutUrl?.trim()
+  const normalizedLayoutUrl = layoutUrl?.toLowerCase()
 
-  if (roomName?.includes('innovation hall') || layoutUrl?.includes('innovation-hall')) return innovationHallLayoutUrl
-  if (roomName?.includes('ai lab') || layoutUrl?.includes('ai-lab')) return aiLabLayoutUrl
-  if (roomName?.includes('startup studio') || layoutUrl?.includes('startup-studio')) return startupStudioLayoutUrl
-  if (roomName?.includes('data theater') || layoutUrl?.includes('data-theater')) return dataTheaterLayoutUrl
+  if (roomName?.includes('innovation hall') || normalizedLayoutUrl?.includes('innovation-hall')) return innovationHallLayoutUrl
+  if (roomName?.includes('ai lab') || normalizedLayoutUrl?.includes('ai-lab')) return aiLabLayoutUrl
+  if (roomName?.includes('startup studio') || normalizedLayoutUrl?.includes('startup-studio')) return startupStudioLayoutUrl
+  if (roomName?.includes('data theater') || normalizedLayoutUrl?.includes('data-theater')) return dataTheaterLayoutUrl
+  if (normalizedLayoutUrl?.startsWith('data:image/svg+xml')) return layoutUrl
+  if (normalizedLayoutUrl?.startsWith('http://') || normalizedLayoutUrl?.startsWith('https://')) return layoutUrl
 
   return null
 }

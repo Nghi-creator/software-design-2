@@ -4,6 +4,7 @@ const sensitiveKeys = new Set([
   'password',
   'accessToken',
   'authorization',
+  'layoutUrl',
   'token',
   'qrCode',
   'passwordHash'

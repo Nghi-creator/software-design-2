@@ -68,6 +68,7 @@
 - **Mobile Scanner Feedback Pass**: The Flutter scanner now pauses after each scan, shows an explicit result dialog before resuming, and keeps business-invalid online scans out of the offline queue. Check-in retries now follow the persisted `checkins` ledger row, so manually removed demo check-ins can be scanned again without stale `checked_in_at` blocking them.
 - **Authoritative Registration Hydration**: Added authenticated `GET /api/registrations/me` and web startup reconciliation so student registration badges/My QR now refresh from backend truth instead of persisting stale localStorage-only records forever.
 - **Room Layout Demo Assets**: Added local SVG room-layout maps for Innovation Hall, AI Lab, Startup Studio, and Data Theater, wired seeded room `layout_url` values to those assets, and rendered visible layout previews on workshop cards/detail pages.
+- **Admin Room Entry Simplification**: Replaced the admin workshop room dropdown with typed room name/building fields and an SVG room-layout upload path that stores layouts on the existing room record.
 
 ## In Progress
 
