@@ -193,6 +193,26 @@ Level 2 phân rã các container hiện có:
 
 Notification queue/worker hiện đã là một phần runtime: API publish job `registration.confirmed`, Redis/BullMQ giữ hàng đợi, và worker riêng gửi email qua Gmail SMTP.
 
+## High-Level Architecture Diagram
+
+![High-Level Architecture Diagram](diagrams/High-Level_Architecture.png)
+
+Sơ đồ này nhấn mạnh bốn luồng dữ liệu quan trọng:
+
+- **Đăng ký workshop có phí:** Web App → Backend API → PostgreSQL/Redis → Payment Gateway → QR + notification job.
+- **Check-in offline:** Mobile App lưu vào SQLite khi mất mạng, sau đó gửi batch sync về API khi kết nối trở lại.
+- **AI summary:** BTC upload PDF qua Web App, API trích text và gọi Gemini trước khi lưu summary.
+- **Legacy integration:** file CSV sinh viên được cron job trong API đọc định kỳ, không cần kết nối hai chiều tới hệ thống cũ.
+
+### Ảnh hưởng khi một thành phần gặp sự cố
+
+- **Payment Gateway lỗi:** chỉ luồng đăng ký có phí bị ảnh hưởng; circuit breaker fail fast, workshop miễn phí, browse, admin và check-in vẫn hoạt động.
+- **Redis lỗi:** rate limiter fail-open để API còn phục vụ; PostgreSQL vẫn giữ nguồn sự thật cho registration và idempotency fallback, nhưng hệ thống mất bớt lớp bảo vệ tải ngắn hạn.
+- **Notification worker hoặc Gmail lỗi:** registration vẫn thành công vì gửi email là async; job được retry và trạng thái delivery được lưu riêng.
+- **Gemini lỗi:** tạo workshop vẫn có thể tiếp tục với fallback summary, không làm sập CRUD chính.
+- **Mất mạng tại cửa phòng:** mobile app chuyển sang offline queue; dữ liệu check-in chờ sync thay vì bị mất.
+- **PostgreSQL lỗi:** các luồng nghiệp vụ chính không thể hoàn tất an toàn vì database là source of truth; API cần trả lỗi thay vì tạo trạng thái mơ hồ.
+
 ## Thiết kế cơ sở dữ liệu
 
 Hệ thống dùng **PostgreSQL** vì registration cần tính nhất quán ACID và atomic conditional updates cho bài toán ghế cuối.
