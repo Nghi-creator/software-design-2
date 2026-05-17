@@ -1,8 +1,10 @@
 import { DetailSkeleton, EmptyState, Notice, StatePanel } from '../../components/State'
 import { PageHeader } from '../../components/PageHeader'
 import { RegistrationAction } from '../../components/RegistrationAction'
+import { RoomLayoutPreview } from '../../components/RoomLayoutPreview'
 import { buttonClass, panelClass } from '../../components/styles'
 import { formatCurrency, formatDateTime } from '../../lib/format'
+import { getRoomLayoutUrl } from '../../lib/roomLayouts'
 import { getWorkshopSummaryStatus } from '../../lib/workshopCatalog'
 import { useWorkshopCatalog } from '../../lib/useWorkshopCatalog'
 import type { AiSummaryStatus, SessionUser, Workshop } from '../../types'
@@ -10,6 +12,7 @@ import type { AiSummaryStatus, SessionUser, Workshop } from '../../types'
 export function WorkshopDetailPage({ user, workshopId }: { user: SessionUser | null; workshopId: string }) {
   const { error, isLoading, source, workshops } = useWorkshopCatalog()
   const workshop = workshops.find((item) => item.id === workshopId)
+  const roomLayoutUrl = workshop ? getRoomLayoutUrl(workshop) : null
 
   if (!workshop && isLoading) {
     return <DetailSkeleton />
@@ -43,23 +46,22 @@ export function WorkshopDetailPage({ user, workshopId }: { user: SessionUser | n
       <section className="grid gap-theme-md md:grid-cols-2">
         <article className={panelClass}>
           <h2 className="mb-theme-sm text-xl font-bold text-text-primary">Room and timing</h2>
+          <RoomLayoutPreview workshop={workshop} className="mb-theme-md" />
           <dl className="grid gap-theme-sm">
             <div>
               <dt className="text-sm text-text-muted">Starts</dt>
               <dd className="font-bold text-text-primary">{formatDateTime(workshop.startTime)}</dd>
             </div>
-            <div>
-              <dt className="text-sm text-text-muted">Room layout</dt>
-              <dd className="font-bold text-text-primary">
-                {workshop.room?.layoutUrl ? (
-                  <a className="text-brand-secondary hover:underline" href={workshop.room.layoutUrl}>
-                    Open map reference
+            {roomLayoutUrl ? (
+              <div>
+                <dt className="text-sm text-text-muted">Room layout</dt>
+                <dd className="font-bold text-text-primary">
+                  <a className="text-brand-secondary hover:underline" href={roomLayoutUrl} rel="noreferrer" target="_blank">
+                    Open full map
                   </a>
-                ) : (
-                  'Layout pending'
-                )}
-              </dd>
-            </div>
+                </dd>
+              </div>
+            ) : null}
             <div>
               <dt className="text-sm text-text-muted">Fee</dt>
               <dd className="font-bold text-text-primary">{formatCurrency(workshop.price)}</dd>
