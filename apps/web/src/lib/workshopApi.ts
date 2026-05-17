@@ -32,7 +32,6 @@ export type WorkshopFormInput = {
   capacity: number
   price: number
   startTime: string
-  pdfUrl?: string
   pdf?: File | null
 }
 
@@ -57,6 +56,13 @@ export function createWorkshop(input: WorkshopFormInput) {
 }
 
 export function updateWorkshop(workshopId: string, input: WorkshopFormInput) {
+  if (input.pdf) {
+    const body = new FormData()
+    appendWorkshopFormFields(body, input)
+    body.append('pdf', input.pdf)
+    return apiRequest<Workshop>(`/workshops/${workshopId}`, { method: 'PUT', body })
+  }
+
   return apiRequest<Workshop>(`/workshops/${workshopId}`, {
     method: 'PUT',
     body: getWorkshopJsonBody(input),
@@ -82,7 +88,6 @@ function appendWorkshopFormFields(body: FormData, input: WorkshopFormInput) {
   body.append('capacity', String(input.capacity))
   body.append('price', String(input.price))
   body.append('startTime', input.startTime)
-  if (input.pdfUrl) body.append('pdfUrl', input.pdfUrl)
 }
 
 function getWorkshopJsonBody(input: WorkshopFormInput) {
@@ -93,6 +98,5 @@ function getWorkshopJsonBody(input: WorkshopFormInput) {
     capacity: input.capacity,
     price: input.price,
     startTime: input.startTime,
-    pdfUrl: input.pdfUrl || undefined,
   }
 }

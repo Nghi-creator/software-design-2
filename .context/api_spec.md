@@ -99,7 +99,7 @@ Response: { items: Workshop[] with room included, pagination: { page, pageSize, 
 ```text
 POST /api/workshops
 Auth: ORGANIZER
-Request: multipart/form-data or JSON with { title, speaker, roomId, capacity, price?, startTime, pdfUrl?, pdf? }
+Request: multipart/form-data or JSON with { title, speaker, roomId, capacity, price?, startTime, pdf? }
 Response: Workshop
 Errors: 401, 403, 400
 Notes: uploaded PDF is summarized synchronously into aiSummary for now.
@@ -108,12 +108,13 @@ Notes: uploaded PDF is summarized synchronously into aiSummary for now.
 ```text
 PUT /api/workshops/:id
 Auth: ORGANIZER
-Request: { title, speaker, roomId, capacity, price?, startTime, pdfUrl? }
+Request: multipart/form-data or JSON with { title, speaker, roomId, capacity, price?, startTime, pdf? }
 Response: Workshop
 Errors: 401, 403, 400, 404, 409
 Notes:
 - Capacity edits preserve the number of already-reserved seats by recalculating seatsRemaining.
 - Reducing capacity below the current reserved-seat count returns 409.
+- If a PDF file is included, the backend extracts text, cleans it, sends it to the AI summary service, and stores the generated aiSummary.
 ```
 
 ```text

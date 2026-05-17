@@ -25,7 +25,6 @@ type WorkshopDraft = {
   capacity: string
   price: string
   startTime: string
-  pdfUrl: string
   pdf: File | null
 }
 
@@ -276,22 +275,15 @@ function WorkshopForm({
         <FormField error={errors.price} label="Fee" type="number" value={draft.price} onChange={(price) => onChange({ ...draft, price })} />
       </div>
       <FormField error={errors.startTime} label="Start time" type="datetime-local" value={draft.startTime} onChange={(startTime) => onChange({ ...draft, startTime })} />
-      <FormField error={errors.pdfUrl} label="PDF URL" value={draft.pdfUrl} required={false} onChange={(pdfUrl) => onChange({ ...draft, pdfUrl })} />
-      {mode === 'create' ? (
-        <label className="grid min-w-0 gap-theme-xs text-sm font-bold text-text-primary">
-          PDF upload
-          <input
-            className={fieldClass}
-            type="file"
-            accept="application/pdf"
-            onChange={(event) => onChange({ ...draft, pdf: event.target.files?.[0] ?? null })}
-          />
-        </label>
-      ) : (
-        <p className="rounded-theme-md border border-border-subtle bg-background-subtle px-theme-md py-theme-sm text-sm text-text-secondary">
-          PDF file upload is available when creating a workshop. Existing workshops can edit PDF URL metadata.
-        </p>
-      )}
+      <label className="grid min-w-0 gap-theme-xs text-sm font-bold text-text-primary">
+        PDF upload
+        <input
+          className={fieldClass}
+          type="file"
+          accept="application/pdf"
+          onChange={(event) => onChange({ ...draft, pdf: event.target.files?.[0] ?? null })}
+        />
+      </label>
       <p className="text-sm text-text-muted">
         Capacity reductions below already reserved seats return a conflict; the message will explain the failed edit.
       </p>
@@ -352,7 +344,6 @@ function WorkshopAdminCard({
         <InfoItem label="Successful payments" value={String(stats?.successfulPaymentCount ?? 0)} />
         <InfoItem label="Fee" value={formatCurrency(workshop.price)} />
         <InfoItem label="Seats remaining" value={String(workshop.seatsRemaining)} />
-        <InfoItem label="PDF" value={summary?.pdfUrl ?? workshop.pdfUrl ?? 'No PDF'} />
         <InfoItem label="AI summary" value={formatSummaryStatus(summary, workshop)} />
       </dl>
     </article>
@@ -418,7 +409,6 @@ function createEmptyDraft(roomId: string): WorkshopDraft {
     capacity: '80',
     price: '0',
     startTime: toDateTimeLocalValue(new Date().toISOString()),
-    pdfUrl: '',
     pdf: null,
   }
 }
@@ -431,7 +421,6 @@ function createDraftFromWorkshop(workshop: Workshop): WorkshopDraft {
     capacity: String(workshop.capacity),
     price: String(workshop.price),
     startTime: toDateTimeLocalValue(workshop.startTime),
-    pdfUrl: workshop.pdfUrl ?? '',
     pdf: null,
   }
 }
@@ -444,7 +433,6 @@ function toWorkshopFormInput(draft: WorkshopDraft): WorkshopFormInput {
     capacity: Number(draft.capacity),
     price: Number(draft.price || 0),
     startTime: new Date(draft.startTime).toISOString(),
-    pdfUrl: draft.pdfUrl.trim(),
     pdf: draft.pdf,
   }
 }
@@ -460,18 +448,8 @@ function validateWorkshopDraft(draft: WorkshopDraft, rooms: Room[]): WorkshopFor
   if (!Number.isInteger(capacity) || capacity <= 0) errors.capacity = 'Capacity must be a positive whole number.'
   if (Number.isNaN(price) || price < 0) errors.price = 'Fee must be zero or higher.'
   if (!draft.startTime || Number.isNaN(Date.parse(draft.startTime))) errors.startTime = 'Start time must be valid.'
-  if (draft.pdfUrl.trim() && !isValidUrl(draft.pdfUrl.trim())) errors.pdfUrl = 'PDF URL must be a valid URL.'
 
   return errors
-}
-
-function isValidUrl(value: string) {
-  try {
-    new URL(value)
-    return true
-  } catch {
-    return false
-  }
 }
 
 function toDateTimeLocalValue(value: string) {
