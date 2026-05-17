@@ -89,6 +89,7 @@ Add feature-level checks in services when RBAC alone is too coarse.
 
 - `data_models.md`: schema and entity ownership.
 - `api_spec.md`: actual endpoint contracts.
-- `specs/payment.md`: payment and idempotency flow details.
-- `specs/checkin.md`: offline check-in flow details.
+- `../blueprint/specs/payment.md`: paid registration and idempotency flow details.
+- `../blueprint/specs/checkin.md`: offline check-in flow details.
+- `../blueprint/specs/csv-import.md`: nightly legacy CSV sync flow details.
 - `decisions.md`: dated architecture decisions and rationale.

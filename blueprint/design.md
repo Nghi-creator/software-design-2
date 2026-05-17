@@ -164,69 +164,6 @@ CSV sync chạy bằng `node-cron` trong API process:
 
 Đây là import job nội bộ, phù hợp ràng buộc tích hợp một chiều vì hệ thống cũ chỉ export CSV và không có API.
 
-## Luồng nghiệp vụ quan trọng
-
-### Đăng ký workshop
-
-`POST /api/workshops/:id/register`
-
-1. Client gửi request với `Idempotency-Key` header và optional `paymentToken`.
-2. `attachUser` xác thực bearer token và gắn user hiện tại từ database.
-3. `requireRole(STUDENT)` chỉ cho sinh viên đăng ký.
-4. Redis token bucket giới hạn request trước và sau xác thực.
-5. Redis sold-out marker có thể reject nhanh workshop đã hết ghế.
-6. Idempotency middleware kiểm tra Redis trước, sau đó bảng `idempotency_keys`.
-7. Registration service mở transaction.
-8. API kiểm tra workshop tồn tại, user chưa đăng ký workshop đó, và giữ ghế bằng atomic conditional update:
-
-```sql
-update workshops
-set seats_remaining = seats_remaining - 1
-where id = $1 and seats_remaining > 0
-returning id, price, seats_remaining;
-```
-
-9. API tạo `registrations` status `PENDING`, tạo `payments` status `PENDING` nếu cần.
-10. Nếu workshop có phí, API yêu cầu `paymentToken` và gọi `paymentCircuitBreaker.fire`.
-11. Nếu payment thành công, API update payment `SUCCESS` và registration `CONFIRMED`.
-12. Nếu payment fail hoặc thiếu token, API cancel reservation, trả ghế lại, payment `FAILED`, registration `CANCELLED`.
-13. Response được lưu vào Redis TTL 24h và bảng `idempotency_keys`.
-
-Cơ chế này giải quyết spike traffic, double submit/double charge và race condition ở ghế cuối.
-
-### Check-in online và offline sync
-
-`POST /api/checkin`
-
-- Chỉ role `CHECKIN_STAFF` được gọi.
-- API tìm `Registration` theo `qrCode`.
-- Nếu QR không tồn tại hoặc registration chưa `CONFIRMED`, trả trạng thái invalid.
-- Nếu đã có `checked_in_at` hoặc bản ghi `checkins`, trả `already_checked_in`.
-- Nếu hợp lệ, transaction update `registrations.checked_in_at` và insert `checkins` với source `ONLINE`.
-
-`POST /api/checkin/sync`
-
-- Chỉ role `CHECKIN_STAFF` được gọi.
-- Payload có thể là `{ items: [...] }` hoặc `{ qrCodes: [...] }`.
-- API xử lý từng item, gọi cùng logic check-in với source `OFFLINE_SYNC`.
-- Mỗi item trả kết quả riêng: `checked_in`, `already_checked_in`, `invalid` hoặc `failed`.
-
-Luồng sync an toàn khi retry vì registration đã check-in sẽ không bị tạo check-in trùng.
-
-### Nhập dữ liệu sinh viên từ CSV hằng đêm
-
-`startCsvSyncJob()`
-
-1. `node-cron` chạy lúc 02:00 mỗi ngày.
-2. Job đọc `services/api/data/students.csv`.
-3. Nếu file không tồn tại, job log và skip.
-4. Job parse CSV bằng stream.
-5. Mỗi dòng được upsert vào `users` theo `student_id`, role mặc định `STUDENT`.
-6. Dòng lỗi được log riêng, không làm dừng toàn bộ job.
-7. Job in tổng số dòng thành công và lỗi.
-
-Luồng này đáp ứng ràng buộc legacy integration một chiều: chỉ đọc CSV export theo lịch cố định, không gọi API hệ thống cũ.
-
 ## C4 Diagram
 
 ### Level 1 - System Context

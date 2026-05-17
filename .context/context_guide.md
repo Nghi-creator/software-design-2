@@ -19,8 +19,9 @@ Then read only what the task needs:
 | Architecture/backend design | `design.md`, `decisions.md` |
 | Database/schema work | `data_models.md`, `design.md` |
 | API/frontend/mobile integration | `api_spec.md`, related file in `specs/` |
-| Payment flow | `specs/payment.md`, `api_spec.md`, `decisions.md` |
-| Offline check-in | `specs/checkin.md`, `api_spec.md`, `data_models.md` |
+| Payment flow | `../blueprint/specs/payment.md`, `api_spec.md`, `decisions.md` |
+| Offline check-in | `../blueprint/specs/checkin.md`, `api_spec.md`, `data_models.md` |
+| Legacy CSV import | `../blueprint/specs/csv-import.md`, `api_spec.md`, `data_models.md` |
 | Planning/prioritization | `roadmap.md`, `progress.md` |
 
 ## File Roles
@@ -34,7 +35,7 @@ Then read only what the task needs:
 - `roadmap.md`: planned build order.
 - `progress.md`: completed work, current work, blockers, next steps.
 - `decisions.md`: accepted technical decisions and important tradeoffs.
-- `specs/`: focused flow specs for complex features.
+- `../blueprint/specs/`: focused flow specs for complex assignment/business flows.
 
 ## Maintenance Rules
 
@@ -43,7 +44,7 @@ Then read only what the task needs:
 - Update `data_models.md` when schema, fields, indexes, or relationships change.
 - Update `design.md` only for architecture-level changes.
 - Add to `decisions.md` only for non-obvious decisions that future agents might re-debate.
-- Add a new file under `specs/` only when a feature flow is complex enough that it would bloat another document.
+- Add a new file under `../blueprint/specs/` only when a feature flow is complex enough that it would bloat another document.
 
 ## Context Budget
 
