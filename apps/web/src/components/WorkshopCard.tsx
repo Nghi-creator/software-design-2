@@ -11,7 +11,7 @@ export function WorkshopCard({ user, workshop }: { user: SessionUser | null; wor
   const summaryStatus = getWorkshopSummaryStatus(workshop)
 
   return (
-    <article className={`${cardClass} p-theme-lg transition hover:border-border-strong hover:bg-surface-cardHover`}>
+    <article className={`${cardClass} min-w-0 p-theme-lg transition hover:border-border-strong hover:bg-surface-cardHover`}>
       <div className="mb-theme-md flex items-center justify-between gap-theme-sm">
         <span className="inline-flex min-h-8 items-center rounded-full bg-background-overlay px-theme-sm text-xs font-extrabold uppercase text-text-secondary">
           {formatDateTime(workshop.startTime)}
@@ -21,22 +21,30 @@ export function WorkshopCard({ user, workshop }: { user: SessionUser | null; wor
           {seatStatus.label}
         </span>
       </div>
-      <h2 className="mb-theme-sm break-words text-xl font-bold text-text-primary">{workshop.title}</h2>
-      <p className="text-text-secondary">{workshop.speaker}</p>
-      <dl className="my-theme-lg grid gap-theme-sm md:grid-cols-2">
-        <div>
+      <h2 className={`mb-theme-sm text-xl font-bold text-text-primary ${truncateTextClass}`} title={workshop.title}>
+        {workshop.title}
+      </h2>
+      <p className={`text-text-secondary ${truncateTextClass}`} title={workshop.speaker}>
+        {workshop.speaker}
+      </p>
+      <dl className="my-theme-lg grid min-w-0 gap-theme-sm md:grid-cols-2">
+        <div className="min-w-0">
           <dt className="text-sm text-text-muted">Room</dt>
-          <dd className="font-bold text-text-primary">{workshop.room?.name ?? workshop.roomId}</dd>
+          <dd className={`font-bold text-text-primary ${truncateTextClass}`} title={workshop.room?.name ?? workshop.roomId}>
+            {workshop.room?.name ?? workshop.roomId}
+          </dd>
         </div>
-        <div>
+        <div className="min-w-0">
           <dt className="text-sm text-text-muted">Location</dt>
-          <dd className="font-bold text-text-primary">{workshop.room?.location ?? 'To be announced'}</dd>
+          <dd className={`font-bold text-text-primary ${truncateTextClass}`} title={workshop.room?.location ?? 'To be announced'}>
+            {workshop.room?.location ?? 'To be announced'}
+          </dd>
         </div>
-        <div>
+        <div className="min-w-0">
           <dt className="text-sm text-text-muted">Fee</dt>
           <dd className="font-bold text-text-primary">{formatCurrency(workshop.price)}</dd>
         </div>
-        <div>
+        <div className="min-w-0">
           <dt className="text-sm text-text-muted">Room layout</dt>
           <dd className="font-bold text-text-primary">
             {workshop.room?.layoutUrl ? (
@@ -48,7 +56,7 @@ export function WorkshopCard({ user, workshop }: { user: SessionUser | null; wor
             )}
           </dd>
         </div>
-        <div>
+        <div className="min-w-0">
           <dt className="text-sm text-text-muted">AI summary</dt>
           <dd className="font-bold text-text-primary">{formatSummaryStatus(summaryStatus)}</dd>
         </div>
@@ -68,6 +76,8 @@ export function WorkshopCard({ user, workshop }: { user: SessionUser | null; wor
     </article>
   )
 }
+
+const truncateTextClass = 'min-w-0 overflow-hidden text-ellipsis whitespace-nowrap'
 
 function getSeatStatus(workshop: Workshop) {
   if (workshop.seatsRemaining === 0) {

@@ -6,7 +6,7 @@ Express API for the UniHub demo. It connects directly to Supabase Postgres with 
 
 - Node.js 18 or newer.
 - Supabase Postgres database with the repo migrations and seed applied.
-- Redis, either local Docker or hosted.
+- Upstash Redis, or another hosted Redis instance reachable through `REDIS_URL`.
 - Gmail App Password credentials when running the email notification worker.
 
 ## Database Setup
@@ -39,7 +39,7 @@ Edit `.env`:
 ```env
 DATABASE_URL="postgresql://postgres.<project-ref>:<password>@<region>.pooler.supabase.com:6543/postgres"
 DATABASE_SSL="true"
-REDIS_URL="redis://localhost:6379"
+REDIS_URL="rediss://<upstash-host>:6379"
 GEMINI_API_KEY="optional_for_live_ai_summary"
 MAIL_USER="your_gmail_address@gmail.com"
 MAIL_PASS="your_gmail_app_password"
@@ -55,11 +55,10 @@ PORT=3000
 
 ```bash
 npm install
-docker compose up -d redis
 npm run dev
 ```
 
-The API listens on `http://localhost:3000` by default. Check it with:
+The API connects to Supabase Postgres and hosted Redis from `.env`, then listens on `http://localhost:3000` by default. Check it with:
 
 ```bash
 curl http://localhost:3000/health

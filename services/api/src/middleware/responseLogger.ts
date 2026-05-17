@@ -29,6 +29,10 @@ const redact = (value: unknown): unknown => {
     return value;
   }
 
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
   return Object.fromEntries(
     Object.entries(value).map(([key, entryValue]) => [
       key,

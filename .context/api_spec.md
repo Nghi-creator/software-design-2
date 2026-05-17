@@ -75,6 +75,11 @@ Errors: 401, 403, 404
 
 ## Workshops
 
+Workshop response shape:
+- `price` is a JSON number even though PostgreSQL stores it as `numeric`.
+- `startTime` is an ISO 8601 string.
+- `room` is included on list responses and includes `layoutUrl`.
+
 ```text
 GET /api/workshops
 Auth: public
