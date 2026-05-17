@@ -23,11 +23,10 @@ Apply every migration in order, then apply the seed file:
 
 1. `supabase/migrations/20260514000000_init_supabase.sql`
 2. `supabase/migrations/20260515163034_csv_process.sql`
-3. `supabase/migrations/20260516141950_more_workshops.sql`
-4. `supabase/migrations/20260517000000_room_layout_urls.sql`
-5. `supabase/migrations/20260517090000_notifications.sql`
-6. `supabase/migrations/20260517120000_notification_read_receipts.sql`
-7. `supabase/seed.sql`
+3. `supabase/migrations/20260517000000_room_layout_urls.sql`
+4. `supabase/migrations/20260517090000_notifications.sql`
+5. `supabase/migrations/20260517120000_notification_read_receipts.sql`
+6. `supabase/seed.sql`
 
 The safest grader path is Supabase Dashboard -> SQL Editor: paste and run each file in the order above. If you prefer `psql`, use a direct Supabase Postgres connection string and run:
 
