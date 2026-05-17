@@ -261,6 +261,26 @@ These are the moments that make the demo feel engineering-heavy rather than cosm
 | AI summary | Upload PDF, then show generated summary from that content |
 | CSV integration | Show import status, partial failure handling, and a successful registration using imported student data |
 
+## Payment Outage Recording Helper
+
+Use these commands from `services/api` while the API is running:
+
+```bash
+npm run demo:payment:normal
+npm run demo:payment:timeout
+npm run demo:payment:down
+npm run demo:payment:proof
+```
+
+Suggested video flow:
+
+1. Start API, notification worker if needed, and web.
+2. Run `npm run demo:payment:normal`, log in as a student, and show that the workshop schedule loads normally.
+3. Run `npm run demo:payment:timeout`, then attempt a paid registration in the web UI. The payment request times out and the UI shows the payment-unavailable message.
+4. Without touching payment again, browse the schedule and open a workshop detail page to show graceful degradation: non-payment features still work while the payment gateway is down.
+5. Run `npm run demo:payment:proof`. Narrate the printed proof: the first paid request fails, the replay with the same `Idempotency-Key` returns the same failure, gateway attempts stay at `1`, payment is `FAILED`, registration is `CANCELLED`, and seats are restored.
+6. Run `npm run demo:payment:normal` before continuing other demos. If the circuit breaker was open, wait about 10 seconds for it to half-open/close.
+
 ## Suggested Demo Order for a 10–12 Minute Presentation
 
 1. **1 min** — problem statement and role setup  
@@ -285,4 +305,3 @@ Prioritize this cut:
 6. one quick slide/terminal proof for payment idempotency, AI summary, and CSV import
 
 That shorter version still covers the soul of the assignment.
-
