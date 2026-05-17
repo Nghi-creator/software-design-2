@@ -14,7 +14,12 @@ export function getRoomLayoutUrl(workshop: Workshop) {
   if (roomName?.includes('startup studio') || normalizedLayoutUrl?.includes('startup-studio')) return startupStudioLayoutUrl
   if (roomName?.includes('data theater') || normalizedLayoutUrl?.includes('data-theater')) return dataTheaterLayoutUrl
   if (normalizedLayoutUrl?.startsWith('data:image/svg+xml')) return layoutUrl
-  if (normalizedLayoutUrl?.startsWith('http://') || normalizedLayoutUrl?.startsWith('https://')) return layoutUrl
+  if (
+    (normalizedLayoutUrl?.startsWith('http://') || normalizedLayoutUrl?.startsWith('https://')) &&
+    normalizedLayoutUrl.endsWith('.svg')
+  ) {
+    return layoutUrl
+  }
 
   return null
 }
