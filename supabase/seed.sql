@@ -8,7 +8,8 @@ values
   ('11111111-1111-1111-1111-111111111114', 'khoa.le@student.unihub.edu', 'Khoa Le', 'STUDENT', 'UNI2026004', 'scrypt$unihub-demo-salt$ii9kjjGb70tIEhkY3MICyUgzrNq_8BmBjLtDew0-C7Mr1JFmzhEd8WYWE1f_7YTUMoquYTZs5WwyibdCQnQrMw'),
   ('11111111-1111-1111-1111-111111111115', 'nhi.vo@student.unihub.edu', 'Nhi Vo', 'STUDENT', 'UNI2026005', 'scrypt$unihub-demo-salt$ii9kjjGb70tIEhkY3MICyUgzrNq_8BmBjLtDew0-C7Mr1JFmzhEd8WYWE1f_7YTUMoquYTZs5WwyibdCQnQrMw'),
   ('11111111-1111-1111-1111-111111111116', 'admin@unihub.edu', 'UniHub Admin', 'ORGANIZER', null, 'scrypt$unihub-demo-salt$ii9kjjGb70tIEhkY3MICyUgzrNq_8BmBjLtDew0-C7Mr1JFmzhEd8WYWE1f_7YTUMoquYTZs5WwyibdCQnQrMw'),
-  ('11111111-1111-1111-1111-111111111117', 'checkin@unihub.edu', 'Check-in Staff', 'CHECKIN_STAFF', null, 'scrypt$unihub-demo-salt$ii9kjjGb70tIEhkY3MICyUgzrNq_8BmBjLtDew0-C7Mr1JFmzhEd8WYWE1f_7YTUMoquYTZs5WwyibdCQnQrMw')
+  ('11111111-1111-1111-1111-111111111117', 'checkin@unihub.edu', 'Check-in Staff', 'CHECKIN_STAFF', null, 'scrypt$unihub-demo-salt$ii9kjjGb70tIEhkY3MICyUgzrNq_8BmBjLtDew0-C7Mr1JFmzhEd8WYWE1f_7YTUMoquYTZs5WwyibdCQnQrMw'),
+  ('11111111-1111-1111-1111-111111111118', 'ngnghi23@clc.fitus.edu.vn', 'Ng Nghi', 'STUDENT', 'UNI2026023', 'scrypt$unihub-demo-salt$ii9kjjGb70tIEhkY3MICyUgzrNq_8BmBjLtDew0-C7Mr1JFmzhEd8WYWE1f_7YTUMoquYTZs5WwyibdCQnQrMw')
 on conflict (id) do update
 set
   email = excluded.email,
