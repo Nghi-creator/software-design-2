@@ -14,10 +14,10 @@ File này mô tả hành vi nghiệp vụ. Contract endpoint, request, response,
 ## Luồng chính
 1. Mobile app quét QR code.
 2. App kiểm tra kết nối mạng.
-3. Nếu có mạng: gửi API check-in online với QR code và thông tin staff. Server xác thực QR, kiểm tra quyền `CHECKIN_STAFF`, sau đó cập nhật `Registration.checked_in_at` nếu còn null và tạo `Checkin(source=ONLINE)`.
+3. Nếu có mạng: gửi API check-in online với QR code và thông tin staff. Server xác thực QR, kiểm tra quyền `CHECKIN_STAFF`, kiểm tra scan xảy ra cùng ngày lịch với workshop, sau đó cập nhật `Registration.checked_in_at` nếu còn null và tạo `Checkin(source=ONLINE)`.
 4. Nếu không có mạng: app lưu scan vào queue cục bộ bền vững, ví dụ SQLite/AsyncStorage. Mỗi item nên có `local_id`, `qr_code`, `scanned_at`, và `sync_status`.
 5. Background sync: khi app có mạng lại hoặc khi mở app, app gửi batch các item chưa sync lên API sync.
-6. Server xử lý từng QR idempotently: chỉ check-in registration hợp lệ, đã `CONFIRMED`, và `checked_in_at IS NULL`; tạo `Checkin(source=OFFLINE_SYNC)` với timestamp phù hợp.
+6. Server xử lý từng QR idempotently: chỉ check-in registration hợp lệ, đã `CONFIRMED`, có `scanned_at` cùng ngày lịch với workshop, và `checked_in_at IS NULL`; tạo `Checkin(source=OFFLINE_SYNC)` với timestamp phù hợp.
 7. Server trả kết quả theo từng item. App chỉ xoá/đánh dấu synced các item thành công hoặc đã được server xác nhận là duplicate an toàn.
 
 ## Kịch bản lỗi

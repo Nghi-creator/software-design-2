@@ -109,16 +109,19 @@ const checkInOne = async (
   dependencies: CheckinDependencies = checkinDependencies
 ) => {
   const registration = await findRegistrationForCheckin(qrCode, dependencies);
+  const checkinTime = scannedAt ? new Date(scannedAt) : new Date();
 
   if (!registration || registration.status !== 'CONFIRMED') {
     return { status: 'invalid', registrationId: registration?.id };
   }
 
+  if (!isSameWorkshopDay(registration.workshopStartTime, checkinTime)) {
+    return { status: 'invalid', registrationId: registration.id };
+  }
+
   if (registration.checkedInAt || registration.checkinId) {
     return { status: 'already_checked_in', registrationId: registration.id };
   }
-
-  const checkinTime = scannedAt ? new Date(scannedAt) : new Date();
 
   const wasCheckedIn = await createCheckinIfPending(
     {
@@ -131,4 +134,19 @@ const checkInOne = async (
   );
 
   return { status: wasCheckedIn ? 'checked_in' : 'already_checked_in', registrationId: registration.id };
+};
+
+const UNIVERSITY_TIME_ZONE = process.env.UNIVERSITY_TIME_ZONE ?? 'Asia/Bangkok';
+
+const formatCalendarDay = (date: Date) => {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: UNIVERSITY_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(date);
+};
+
+const isSameWorkshopDay = (workshopStartTime: Date, checkinTime: Date) => {
+  return formatCalendarDay(workshopStartTime) === formatCalendarDay(checkinTime);
 };

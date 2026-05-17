@@ -64,6 +64,7 @@
 - **Hosted Runtime Cleanup**: Confirmed API env targets Supabase Postgres and Upstash Redis, removed the obsolete local Redis compose file and tracked generated load-test outputs, moved the web favicon into app assets, and removed unused Vite/React/public SVG assets.
 - **Workshop API Response Normalization**: Workshop API responses now normalize PostgreSQL numeric prices to JSON numbers and `startTime` to ISO strings, matching the React contract and preserving accurate response logs.
 - **Demo Planning Guide**: Added `docs/demo-plan.md` with an English live-demo storyline, role-based script, and concrete proof points for every assignment requirement.
+- **Same-Day Check-In Guard**: Online and offline QR check-ins now reject valid registrations scanned outside the workshop's calendar day, using the offline scan timestamp when present and defaulting the university calendar timezone to `Asia/Bangkok`.
 
 ## In Progress
 

@@ -10,7 +10,8 @@ test('offline sync is item-level and idempotent for duplicate QR scans', async (
         id: 'registration-1',
         status: 'CONFIRMED',
         checkedInAt: null as Date | null,
-        checkinId: null as string | null
+        checkinId: null as string | null,
+        workshopStartTime: new Date('2026-05-15T02:00:00.000Z')
       }
     ],
     [
@@ -19,7 +20,8 @@ test('offline sync is item-level and idempotent for duplicate QR scans', async (
         id: 'registration-2',
         status: 'CANCELLED',
         checkedInAt: null as Date | null,
-        checkinId: null as string | null
+        checkinId: null as string | null,
+        workshopStartTime: new Date('2026-05-15T02:00:00.000Z')
       }
     ]
   ]);
@@ -40,7 +42,8 @@ test('offline sync is item-level and idempotent for duplicate QR scans', async (
                 id: registration.id,
                 status: registration.status,
                 checkedInAt: registration.checkedInAt,
-                checkinId: registration.checkinId
+                checkinId: registration.checkinId,
+                workshopStartTime: registration.workshopStartTime
               }
             ] as T[])
           : []
@@ -118,7 +121,8 @@ test('offline sync reports already checked in when concurrent update wins the ra
           id: 'registration-1',
           status: 'CONFIRMED',
           checkedInAt: null,
-          checkinId: null
+          checkinId: null,
+          workshopStartTime: new Date()
         }
       ] as T[]
     }),
@@ -168,7 +172,8 @@ test('offline sync reports transient item failures and continues later scans for
             id: 'registration-2',
             status: 'CONFIRMED',
             checkedInAt: null,
-            checkinId: null
+            checkinId: null,
+            workshopStartTime: new Date()
           }
         ] as T[]
       };
@@ -223,7 +228,8 @@ test('online check-in records ONLINE source and does not use offline scannedAt t
           id: 'registration-1',
           status: 'CONFIRMED',
           checkedInAt: null,
-          checkinId: null
+          checkinId: null,
+          workshopStartTime: new Date()
         }
       ] as T[]
     }),
@@ -259,4 +265,38 @@ test('online check-in records ONLINE source and does not use offline scannedAt t
   assert.equal(insertedCheckins[0].source, 'ONLINE');
   assert.ok(insertedCheckins[0].checkinTime.getTime() >= beforeCheckin);
   assert.ok(insertedCheckins[0].checkinTime.getTime() <= afterCheckin);
+});
+
+test('offline sync rejects scans recorded on a different workshop day', async () => {
+  const dependencies = {
+    query: async <T = any>() => ({
+      rows: [
+        {
+          id: 'registration-1',
+          status: 'CONFIRMED',
+          checkedInAt: null,
+          checkinId: null,
+          workshopStartTime: new Date('2026-05-15T02:00:00.000Z')
+        }
+      ] as T[]
+    }),
+    withTransaction: async <T>() => {
+      throw new Error('wrong-day scans must not open a transaction');
+    }
+  };
+
+  const results = await syncOfflineCheckins(
+    [{ localId: 'scan-1', qrCode: 'qr-confirmed', scannedAt: '2026-05-16T02:00:00.000Z' }],
+    'staff-1',
+    dependencies
+  );
+
+  assert.deepEqual(results, [
+    {
+      localId: 'scan-1',
+      qrCode: 'qr-confirmed',
+      status: 'invalid',
+      registrationId: 'registration-1'
+    }
+  ]);
 });
