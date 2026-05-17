@@ -41,8 +41,10 @@ export const findRegistrationForCheckin = async (
         r.id,
         r.status,
         r.checked_in_at as "checkedInAt",
-        c.id as "checkinId"
+        c.id as "checkinId",
+        w.start_time as "workshopStartTime"
       from registrations r
+      join workshops w on w.id = r.workshop_id
       left join checkins c on c.registration_id = r.id
       where r.qr_code = $1
     `,
@@ -54,6 +56,7 @@ export const findRegistrationForCheckin = async (
     status: string;
     checkedInAt: Date | null;
     checkinId: string | null;
+    workshopStartTime: Date;
   } | undefined) ?? null;
 };
 

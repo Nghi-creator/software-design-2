@@ -186,7 +186,7 @@ Auth: CHECKIN_STAFF
 Request: { qrCode }
 Response: { success: true, result: { status, registrationId } }
 Errors: 400, 401, 403, 404, 500
-Notes: sets Registration.checkedInAt and creates Checkin(source=ONLINE).
+Notes: only scans on the workshop's calendar day are accepted; valid wrong-day QR scans return `status: invalid`. Successful requests set Registration.checkedInAt and create Checkin(source=ONLINE).
 ```
 
 ```text
@@ -196,7 +196,7 @@ Request: { items: [{ localId?, qrCode, scannedAt? }] }
 Response: { success: true, results: [{ localId?, qrCode, status, registrationId? }] }
 Compatibility: { qrCodes: string[] } is accepted and converted to items.
 Errors: 400, 401, 403, 500
-Notes: item statuses include checked_in, already_checked_in, invalid, failed. Invalid payload shape, missing qrCode, non-string localId, and invalid scannedAt values return 400 before sync runs.
+Notes: item statuses include checked_in, already_checked_in, invalid, failed. Valid QR scans recorded outside the workshop's calendar day return `invalid`. Invalid payload shape, missing qrCode, non-string localId, and invalid scannedAt values return 400 before sync runs.
 ```
 
 ## CSV Imports

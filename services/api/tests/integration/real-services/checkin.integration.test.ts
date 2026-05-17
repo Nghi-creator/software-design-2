@@ -20,14 +20,15 @@ test('real Postgres offline check-in sync is idempotent for repeated QR scans', 
   const fixture = await createFixture();
   const qrCode = `qr-sync-${fixture.suffix}`;
   const registration = await createConfirmedRegistration(fixture, qrCode);
+  const workshopDayScan = fixture.workshopStartTime.toISOString();
 
   try {
     const first = await syncOfflineCheckins(
-      [{ localId: 'scan-1', qrCode, scannedAt: '2026-05-16T08:00:00.000Z' }],
+      [{ localId: 'scan-1', qrCode, scannedAt: workshopDayScan }],
       fixture.staffId
     );
     const second = await syncOfflineCheckins(
-      [{ localId: 'scan-2', qrCode, scannedAt: '2026-05-16T08:01:00.000Z' }],
+      [{ localId: 'scan-2', qrCode, scannedAt: workshopDayScan }],
       fixture.staffId
     );
     const checkins = await query<{ count: string }>(

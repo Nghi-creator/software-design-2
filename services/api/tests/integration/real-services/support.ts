@@ -14,6 +14,7 @@ export type Fixture = {
   staffId: string;
   roomId: string;
   workshopId: string;
+  workshopStartTime: Date;
 };
 
 export const skipReason = getRealServicesSkipReason();
@@ -48,11 +49,11 @@ export const createFixture = async ({ capacity = 20 }: { capacity?: number } = {
     'insert into rooms (name, location, capacity, layout_url) values ($1, $2, $3, $4) returning id',
     [`Room ${suffix}`, `Building ${suffix}`, capacity, `https://example.test/maps/${suffix}`]
   );
-  const workshop = await query<{ id: string }>(
+  const workshop = await query<{ id: string; startTime: Date }>(
     `
       insert into workshops (title, speaker, room_id, capacity, seats_remaining, price, start_time)
       values ($1, $2, $3, $4, $4, 0, now() + interval '1 day')
-      returning id
+      returning id, start_time as "startTime"
     `,
     [`Workshop ${suffix}`, `Speaker ${suffix}`, room.rows[0].id, capacity]
   );
@@ -62,7 +63,8 @@ export const createFixture = async ({ capacity = 20 }: { capacity?: number } = {
     studentId: student.rows[0].id,
     staffId: staff.rows[0].id,
     roomId: room.rows[0].id,
-    workshopId: workshop.rows[0].id
+    workshopId: workshop.rows[0].id,
+    workshopStartTime: workshop.rows[0].startTime
   };
 };
 
