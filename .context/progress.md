@@ -61,6 +61,7 @@
 - **Student Notification Inbox**: Added authenticated student notification list/read endpoints backed by persisted notifications, read receipts, API contract docs, and React banner/history screens that fetch real backend notifications instead of localStorage.
 - **Grader Setup Docs**: Added root `README.md` with fresh-machine UniHub demo setup using `supabase/migrations/*`, `supabase/seed.sql`, API, notification worker, web app, and optional mobile check-in. Updated API/web docs and stale architecture references to match current pg/BullMQ/JWT/atomic-seat runtime.
 - **Hosted Runtime Cleanup**: Confirmed API env targets Supabase Postgres and Upstash Redis, removed the obsolete local Redis compose file and tracked generated load-test outputs, moved the web favicon into app assets, and removed unused Vite/React/public SVG assets.
+- **Workshop API Response Normalization**: Workshop API responses now normalize PostgreSQL numeric prices to JSON numbers and `startTime` to ISO strings, matching the React contract and preserving accurate response logs.
 
 ## In Progress
 - API contract still partial for future features outside the implemented flows. QR validation is intentionally merged into check-in requests. Supabase SQL schema must be applied manually per environment.
