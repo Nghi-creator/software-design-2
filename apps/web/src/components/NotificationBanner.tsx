@@ -5,7 +5,7 @@ import type { SessionUser, StoredNotification } from '../types'
 import { linkButtonClass } from './styles'
 
 export function NotificationBanner({
-  autoReadDelayMs = 10_000,
+  autoReadDelayMs = 5_000,
   user,
 }: {
   autoReadDelayMs?: number

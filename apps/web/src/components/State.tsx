@@ -1,5 +1,8 @@
+import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { cardClass, panelClass } from './styles'
+
+const NOTICE_AUTO_HIDE_MS = 5_000
 
 export function EmptyState({ title, message }: { title: string; message: string }) {
   return (
@@ -11,17 +14,29 @@ export function EmptyState({ title, message }: { title: string; message: string 
 }
 
 export function Notice({
+  autoHideMs = NOTICE_AUTO_HIDE_MS,
   message,
   tone,
 }: {
+  autoHideMs?: number
   message: string
   tone: 'danger' | 'success' | 'warning'
 }) {
+  const [hiddenMessage, setHiddenMessage] = useState<string | null>(null)
   const className = {
     danger: 'border-status-danger/40 bg-status-dangerBg text-status-danger',
     success: 'border-status-success/40 bg-status-successBg text-status-success',
     warning: 'border-status-warning/40 bg-status-warningBg text-status-warning',
   }[tone]
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => setHiddenMessage(message), autoHideMs)
+    return () => window.clearTimeout(timeoutId)
+  }, [autoHideMs, message])
+
+  if (hiddenMessage === message) {
+    return null
+  }
 
   return (
     <p className={`rounded-theme-md border px-theme-md py-theme-sm text-sm font-bold ${className}`} role={tone === 'danger' ? 'alert' : 'status'}>

@@ -12,7 +12,7 @@ export function useAuthSession() {
   useEffect(() => {
     if (!authNotice) return undefined
 
-    const timeoutId = window.setTimeout(() => setAuthNotice(null), 3000)
+    const timeoutId = window.setTimeout(() => setAuthNotice(null), 5_000)
     return () => window.clearTimeout(timeoutId)
   }, [authNotice])
 
