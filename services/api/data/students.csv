@@ -1,4 +1,6 @@
 studentId,name,email
-21127001,Nguyen Van A,21127001@student.hcmus.edu.vn
-21127002,Tran Thi B,21127002@student.hcmus.edu.vn
-21127003,Le Van C,21127003@student.hcmus.edu.vn
+8f4f0f63-7d8f-4e57-9c1e-5e9f2b2b6d71,Nguyen Van A,21127001@student.hcmus.edu.vn
+1a7c9e24-3d5b-4c92-a8f4-0c7d913e2f58,Tran Thi B,21127002@student.hcmus.edu.vn
+92aaab6d-98eb-4098-ace1-9f173ffdeb7d,student khoa,takhoa23@clc.fitus.edu.vn
+99999,invalid student,invalid-email
+c6b2d8f1-91ab-4f73-b2de-7f0a4c8e15d3,Le Van C,21127003@student.hcmus.edu.vn

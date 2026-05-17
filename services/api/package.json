@@ -6,6 +6,7 @@
   "scripts": {
     "test": "node tests/run-tests.cjs",
     "dev": "ts-node-dev --transpile-only src/index.ts",
+    "import:csv": "ts-node-dev --transpile-only src/scripts/runCsvImport.ts",
     "worker:notifications": "ts-node-dev --transpile-only src/workers/notificationWorker.ts",
     "load:prepare:registration": "node load-tests/prepare-registration-surge.cjs",
     "load:registration": "k6 run load-tests/registration-surge.js",
