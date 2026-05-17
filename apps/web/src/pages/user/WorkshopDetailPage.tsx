@@ -1,7 +1,7 @@
 import { DetailSkeleton, EmptyState, Notice, StatePanel } from '../../components/State'
 import { PageHeader } from '../../components/PageHeader'
 import { RegistrationAction } from '../../components/RegistrationAction'
-import { RoomLayoutPreview } from '../../components/RoomLayoutPreview'
+import { RoomLayoutLink, RoomLayoutPreview } from '../../components/RoomLayoutPreview'
 import { buttonClass, panelClass } from '../../components/styles'
 import { formatCurrency, formatDateTime } from '../../lib/format'
 import { getRoomLayoutUrl } from '../../lib/roomLayouts'
@@ -12,7 +12,7 @@ import type { AiSummaryStatus, SessionUser, Workshop } from '../../types'
 export function WorkshopDetailPage({ user, workshopId }: { user: SessionUser | null; workshopId: string }) {
   const { error, isLoading, source, workshops } = useWorkshopCatalog()
   const workshop = workshops.find((item) => item.id === workshopId)
-  const roomLayoutUrl = workshop ? getRoomLayoutUrl(workshop) : null
+  const hasRoomLayout = workshop ? Boolean(getRoomLayoutUrl(workshop)) : false
 
   if (!workshop && isLoading) {
     return <DetailSkeleton />
@@ -52,13 +52,11 @@ export function WorkshopDetailPage({ user, workshopId }: { user: SessionUser | n
               <dt className="text-sm text-text-muted">Starts</dt>
               <dd className="font-bold text-text-primary">{formatDateTime(workshop.startTime)}</dd>
             </div>
-            {roomLayoutUrl ? (
+            {hasRoomLayout ? (
               <div>
                 <dt className="text-sm text-text-muted">Room layout</dt>
                 <dd className="font-bold text-text-primary">
-                  <a className="text-brand-secondary hover:underline" href={roomLayoutUrl} rel="noreferrer" target="_blank">
-                    Open full map
-                  </a>
+                  <RoomLayoutLink label="Open full map" workshop={workshop} />
                 </dd>
               </div>
             ) : null}
