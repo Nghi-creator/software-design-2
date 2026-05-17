@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" role="img" aria-labelledby="title desc">
+  <title id="title">Innovation Hall room layout</title>
+  <desc id="desc">Large lecture room with a main stage, center seating blocks, side aisles, exits, registration desk, and accessible seating.</desc>
+  <rect width="960" height="560" fill="#141126"/>
+  <rect x="34" y="34" width="892" height="492" rx="28" fill="#1d1932" stroke="#8b5cf6" stroke-width="4"/>
+  <rect x="116" y="64" width="728" height="86" rx="14" fill="#6d28d9"/>
+  <text x="480" y="116" fill="#ffffff" font-family="Arial, sans-serif" font-size="30" font-weight="700" text-anchor="middle">STAGE / PRESENTATION WALL</text>
+  <rect x="82" y="188" width="58" height="242" rx="10" fill="#312a50" stroke="#a78bfa" stroke-width="2"/>
+  <text x="111" y="315" fill="#ddd6fe" font-family="Arial, sans-serif" font-size="19" font-weight="700" text-anchor="middle" transform="rotate(-90 111 315)">LEFT AISLE</text>
+  <rect x="820" y="188" width="58" height="242" rx="10" fill="#312a50" stroke="#a78bfa" stroke-width="2"/>
+  <text x="849" y="315" fill="#ddd6fe" font-family="Arial, sans-serif" font-size="19" font-weight="700" text-anchor="middle" transform="rotate(90 849 315)">RIGHT AISLE</text>
+  <g fill="#0ea5e9" stroke="#bae6fd" stroke-width="2">
+    <rect x="184" y="198" width="78" height="44" rx="8"/>
+    <rect x="284" y="198" width="78" height="44" rx="8"/>
+    <rect x="384" y="198" width="78" height="44" rx="8"/>
+    <rect x="498" y="198" width="78" height="44" rx="8"/>
+    <rect x="598" y="198" width="78" height="44" rx="8"/>
+    <rect x="698" y="198" width="78" height="44" rx="8"/>
+    <rect x="184" y="266" width="78" height="44" rx="8"/>
+    <rect x="284" y="266" width="78" height="44" rx="8"/>
+    <rect x="384" y="266" width="78" height="44" rx="8"/>
+    <rect x="498" y="266" width="78" height="44" rx="8"/>
+    <rect x="598" y="266" width="78" height="44" rx="8"/>
+    <rect x="698" y="266" width="78" height="44" rx="8"/>
+    <rect x="184" y="334" width="78" height="44" rx="8"/>
+    <rect x="284" y="334" width="78" height="44" rx="8"/>
+    <rect x="384" y="334" width="78" height="44" rx="8"/>
+    <rect x="498" y="334" width="78" height="44" rx="8"/>
+    <rect x="598" y="334" width="78" height="44" rx="8"/>
+    <rect x="698" y="334" width="78" height="44" rx="8"/>
+  </g>
+  <g fill="#f59e0b" stroke="#fde68a" stroke-width="2">
+    <rect x="184" y="418" width="108" height="42" rx="10"/>
+    <rect x="668" y="418" width="108" height="42" rx="10"/>
+  </g>
+  <text x="238" y="446" fill="#111827" font-family="Arial, sans-serif" font-size="18" font-weight="700" text-anchor="middle">ACCESS</text>
+  <text x="722" y="446" fill="#111827" font-family="Arial, sans-serif" font-size="18" font-weight="700" text-anchor="middle">ACCESS</text>
+  <rect x="384" y="420" width="192" height="42" rx="10" fill="#10b981" stroke="#bbf7d0" stroke-width="2"/>
+  <text x="480" y="448" fill="#052e16" font-family="Arial, sans-serif" font-size="18" font-weight="700" text-anchor="middle">REGISTRATION DESK</text>
+  <rect x="64" y="470" width="150" height="34" rx="8" fill="#ef4444"/>
+  <rect x="746" y="470" width="150" height="34" rx="8" fill="#ef4444"/>
+  <text x="139" y="493" fill="#ffffff" font-family="Arial, sans-serif" font-size="18" font-weight="700" text-anchor="middle">EXIT</text>
+  <text x="821" y="493" fill="#ffffff" font-family="Arial, sans-serif" font-size="18" font-weight="700" text-anchor="middle">EXIT</text>
+</svg>

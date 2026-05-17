@@ -55,6 +55,7 @@ export type WorkshopUpdateInput = {
   price: number;
   startTime: Date;
   pdfUrl?: string | null;
+  aiSummary: string | null;
 };
 
 export const findWorkshops = async ({
@@ -212,7 +213,7 @@ export const findWorkshopById = async (workshopId: string) => {
 
 export const updateWorkshop = (
   workshopId: string,
-  { title, speaker, roomId, capacity, seatsRemaining, price, startTime, pdfUrl }: WorkshopUpdateInput
+  { title, speaker, roomId, capacity, seatsRemaining, price, startTime, pdfUrl, aiSummary }: WorkshopUpdateInput
 ) => {
   return query<WorkshopRow>(
     `
@@ -226,13 +227,14 @@ export const updateWorkshop = (
         price = $7,
         start_time = $8,
         pdf_url = $9,
+        ai_summary = $10,
         updated_at = now()
       where id = $1
       returning
         id, title, speaker, room_id as "roomId", capacity, seats_remaining as "seatsRemaining",
         price, start_time as "startTime", pdf_url as "pdfUrl", ai_summary as "aiSummary"
     `,
-    [workshopId, title, speaker, roomId, capacity, seatsRemaining, price, startTime, pdfUrl]
+    [workshopId, title, speaker, roomId, capacity, seatsRemaining, price, startTime, pdfUrl, aiSummary]
   ).then((result) => result.rows[0] ? mapWorkshopRow(result.rows[0]) : null);
 };
 

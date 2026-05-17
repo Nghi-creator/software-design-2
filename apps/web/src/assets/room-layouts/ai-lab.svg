@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" role="img" aria-labelledby="title desc">
+  <title id="title">AI Lab room layout</title>
+  <desc id="desc">Computer lab with instructor station, clustered worktables, equipment wall, and two exits.</desc>
+  <rect width="960" height="560" fill="#111827"/>
+  <rect x="36" y="36" width="888" height="488" rx="26" fill="#172033" stroke="#38bdf8" stroke-width="4"/>
+  <rect x="94" y="76" width="286" height="72" rx="14" fill="#0369a1"/>
+  <text x="237" y="121" fill="#ffffff" font-family="Arial, sans-serif" font-size="25" font-weight="700" text-anchor="middle">INSTRUCTOR</text>
+  <rect x="438" y="76" width="428" height="72" rx="14" fill="#0f172a" stroke="#38bdf8" stroke-width="3"/>
+  <text x="652" y="121" fill="#e0f2fe" font-family="Arial, sans-serif" font-size="24" font-weight="700" text-anchor="middle">SCREEN / MODEL DEMO</text>
+  <g fill="#2563eb" stroke="#bfdbfe" stroke-width="2">
+    <rect x="112" y="204" width="150" height="86" rx="14"/>
+    <rect x="306" y="204" width="150" height="86" rx="14"/>
+    <rect x="500" y="204" width="150" height="86" rx="14"/>
+    <rect x="694" y="204" width="150" height="86" rx="14"/>
+    <rect x="112" y="344" width="150" height="86" rx="14"/>
+    <rect x="306" y="344" width="150" height="86" rx="14"/>
+    <rect x="500" y="344" width="150" height="86" rx="14"/>
+    <rect x="694" y="344" width="150" height="86" rx="14"/>
+  </g>
+  <g fill="#e0f2fe">
+    <text x="187" y="253" font-family="Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle">PODS 1-2</text>
+    <text x="381" y="253" font-family="Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle">PODS 3-4</text>
+    <text x="575" y="253" font-family="Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle">PODS 5-6</text>
+    <text x="769" y="253" font-family="Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle">PODS 7-8</text>
+    <text x="187" y="393" font-family="Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle">PODS 9-10</text>
+    <text x="381" y="393" font-family="Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle">PODS 11-12</text>
+    <text x="575" y="393" font-family="Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle">PODS 13-14</text>
+    <text x="769" y="393" font-family="Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle">PODS 15-16</text>
+  </g>
+  <rect x="82" y="464" width="222" height="34" rx="8" fill="#16a34a"/>
+  <text x="193" y="487" fill="#ffffff" font-family="Arial, sans-serif" font-size="18" font-weight="700" text-anchor="middle">EQUIPMENT WALL</text>
+  <rect x="670" y="464" width="100" height="34" rx="8" fill="#ef4444"/>
+  <rect x="790" y="464" width="100" height="34" rx="8" fill="#ef4444"/>
+  <text x="720" y="487" fill="#ffffff" font-family="Arial, sans-serif" font-size="18" font-weight="700" text-anchor="middle">EXIT</text>
+  <text x="840" y="487" fill="#ffffff" font-family="Arial, sans-serif" font-size="18" font-weight="700" text-anchor="middle">EXIT</text>
+</svg>

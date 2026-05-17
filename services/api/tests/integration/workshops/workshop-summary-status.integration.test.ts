@@ -15,6 +15,7 @@ let server: ReturnType<typeof app.listen>;
 let organizerAccessToken = '';
 let studentAccessToken = '';
 let readyWorkshopId = '';
+let readyWithoutPdfWorkshopId = '';
 let notUploadedWorkshopId = '';
 let processingWorkshopId = '';
 
@@ -38,6 +39,10 @@ before(async () => {
     pdfUrl: `https://example.test/${suffix}.pdf`,
     aiSummary: 'Concise workshop summary.'
   });
+  const readyWithoutPdfWorkshop = await createWorkshop(room.id, {
+    pdfUrl: null,
+    aiSummary: 'Summary generated from an uploaded PDF.'
+  });
   const notUploadedWorkshop = await createWorkshop(room.id, {
     pdfUrl: null,
     aiSummary: null
@@ -46,8 +51,9 @@ before(async () => {
     pdfUrl: `https://example.test/${suffix}-processing.pdf`,
     aiSummary: null
   });
-  createdWorkshopIds.push(readyWorkshop.id, notUploadedWorkshop.id, processingWorkshop.id);
+  createdWorkshopIds.push(readyWorkshop.id, readyWithoutPdfWorkshop.id, notUploadedWorkshop.id, processingWorkshop.id);
   readyWorkshopId = readyWorkshop.id;
+  readyWithoutPdfWorkshopId = readyWithoutPdfWorkshop.id;
   notUploadedWorkshopId = notUploadedWorkshop.id;
   processingWorkshopId = processingWorkshop.id;
 });
@@ -85,6 +91,22 @@ test('GET /api/workshops/:id/summary-status returns ready when a summary exists'
     workshopId: readyWorkshopId,
     status: 'ready',
     pdfUrl: `https://example.test/${suffix}.pdf`
+  });
+});
+
+test('GET /api/workshops/:id/summary-status returns ready when an uploaded PDF generated a summary without a public URL', async () => {
+  const response = await fetch(`${baseUrl}/api/workshops/${readyWithoutPdfWorkshopId}/summary-status`, {
+    headers: {
+      authorization: `Bearer ${organizerAccessToken}`
+    }
+  });
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(body, {
+    workshopId: readyWithoutPdfWorkshopId,
+    status: 'ready',
+    pdfUrl: null
   });
 });
 

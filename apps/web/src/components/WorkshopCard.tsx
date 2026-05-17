@@ -1,7 +1,9 @@
 import { formatCurrency, formatDateTime } from '../lib/format'
+import { getRoomLayoutUrl } from '../lib/roomLayouts'
 import { getWorkshopSummaryStatus } from '../lib/workshopCatalog'
 import type { SessionUser, Workshop } from '../types'
 import { RegistrationAction } from './RegistrationAction'
+import { RoomLayoutPreview } from './RoomLayoutPreview'
 import { buttonClass, cardClass } from './styles'
 
 export function WorkshopCard({ user, workshop }: { user: SessionUser | null; workshop: Workshop }) {
@@ -9,6 +11,7 @@ export function WorkshopCard({ user, workshop }: { user: SessionUser | null; wor
   const fillPercent = Math.round((seatsUsed / workshop.capacity) * 100)
   const seatStatus = getSeatStatus(workshop)
   const summaryStatus = getWorkshopSummaryStatus(workshop)
+  const roomLayoutUrl = getRoomLayoutUrl(workshop)
 
   return (
     <article className={`${cardClass} min-w-0 p-theme-lg transition hover:border-border-strong hover:bg-surface-cardHover`}>
@@ -27,6 +30,7 @@ export function WorkshopCard({ user, workshop }: { user: SessionUser | null; wor
       <p className={`text-text-secondary ${truncateTextClass}`} title={workshop.speaker}>
         {workshop.speaker}
       </p>
+      <RoomLayoutPreview compact workshop={workshop} className="mt-theme-md" />
       <dl className="my-theme-lg grid min-w-0 gap-theme-sm md:grid-cols-2">
         <div className="min-w-0">
           <dt className="text-sm text-text-muted">Room</dt>
@@ -44,18 +48,16 @@ export function WorkshopCard({ user, workshop }: { user: SessionUser | null; wor
           <dt className="text-sm text-text-muted">Fee</dt>
           <dd className="font-bold text-text-primary">{formatCurrency(workshop.price)}</dd>
         </div>
-        <div className="min-w-0">
-          <dt className="text-sm text-text-muted">Room layout</dt>
-          <dd className="font-bold text-text-primary">
-            {workshop.room?.layoutUrl ? (
-              <a className="text-brand-secondary hover:underline" href={workshop.room.layoutUrl}>
-                Map reference
+        {roomLayoutUrl ? (
+          <div className="min-w-0">
+            <dt className="text-sm text-text-muted">Room layout</dt>
+            <dd className="font-bold text-text-primary">
+              <a className="text-brand-secondary hover:underline" href={roomLayoutUrl} rel="noreferrer" target="_blank">
+                Open map
               </a>
-            ) : (
-              'Layout pending'
-            )}
-          </dd>
-        </div>
+            </dd>
+          </div>
+        ) : null}
         <div className="min-w-0">
           <dt className="text-sm text-text-muted">AI summary</dt>
           <dd className="font-bold text-text-primary">{formatSummaryStatus(summaryStatus)}</dd>

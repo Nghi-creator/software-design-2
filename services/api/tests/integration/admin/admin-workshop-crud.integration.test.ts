@@ -162,6 +162,35 @@ test('PUT /api/workshops/:id preserves existing PDF URL when omitted', async () 
   assert.equal(body.pdfUrl, `https://example.test/${suffix}.pdf`);
 });
 
+test('PUT /api/workshops/:id accepts a PDF upload and refreshes the AI summary', async () => {
+  const form = new FormData();
+  form.append('title', `Pdf Upload ${suffix}`);
+  form.append('speaker', `Speaker ${suffix}`);
+  form.append('roomId', roomId);
+  form.append('capacity', '35');
+  form.append('price', '75');
+  form.append('startTime', '2026-07-01T09:00:00.000Z');
+  form.append('pdf', new Blob(['not a real pdf'], { type: 'application/pdf' }), 'summary.pdf');
+
+  const originalConsoleError = console.error;
+  console.error = () => undefined;
+  const response = await fetch(`${baseUrl}/api/workshops/${workshopId}`, {
+    method: 'PUT',
+    headers: {
+      authorization: `Bearer ${organizerAccessToken}`
+    },
+    body: form
+  }).finally(() => {
+    console.error = originalConsoleError;
+  });
+  console.error = originalConsoleError;
+  const body = await response.json();
+
+  assert.equal(response.status, 200);
+  assert.equal(body.title, `Pdf Upload ${suffix}`);
+  assert.equal(body.aiSummary, 'Lỗi khi tạo tóm tắt tự động.');
+});
+
 test('POST /api/workshops rejects invalid create input before DB insert', async () => {
   const response = await fetch(`${baseUrl}/api/workshops`, {
     method: 'POST',

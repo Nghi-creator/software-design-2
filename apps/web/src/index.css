@@ -5,3 +5,8 @@
   outline: 2px solid var(--color-border-focus);
   outline-offset: 2px;
 }
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}

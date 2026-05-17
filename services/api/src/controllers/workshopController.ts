@@ -53,7 +53,8 @@ export const putWorkshop = async (req: Request, res: Response) => {
       capacity: Number(capacity),
       price: price === undefined ? undefined : Number(price),
       startTime,
-      pdfUrl
+      pdfUrl,
+      pdfBuffer: req.file?.buffer
     });
 
     res.json(workshop);

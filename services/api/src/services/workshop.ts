@@ -21,7 +21,7 @@ type CreateWorkshopInput = {
   pdfBuffer?: Buffer;
 };
 
-type UpdateWorkshopInput = Omit<CreateWorkshopInput, 'pdfBuffer'>;
+type UpdateWorkshopInput = CreateWorkshopInput;
 
 type ListWorkshopsOptions = {
   q?: string;
@@ -139,7 +139,7 @@ export const createWorkshop = async ({
 
 export const updateWorkshop = async (
   workshopId: string,
-  { title, speaker, roomId, capacity, price, startTime, pdfUrl }: UpdateWorkshopInput
+  { title, speaker, roomId, capacity, price, startTime, pdfUrl, pdfBuffer }: UpdateWorkshopInput
 ) => {
   const currentWorkshop = await findWorkshopById(workshopId);
 
@@ -155,6 +155,8 @@ export const updateWorkshop = async (
     throw Object.assign(new Error('capacity cannot be less than reserved seat count'), { statusCode: 409 });
   }
 
+  const aiSummary = pdfBuffer ? await generateWorkshopSummary(pdfBuffer) : currentWorkshop.aiSummary;
+
   return updateWorkshopRecord(workshopId, {
     title,
     speaker,
@@ -163,7 +165,8 @@ export const updateWorkshop = async (
     seatsRemaining: capacity - reservedSeatCount,
     price: price ?? 0,
     startTime: new Date(startTime),
-    pdfUrl: pdfUrl === undefined ? currentWorkshop.pdfUrl : pdfUrl
+    pdfUrl: pdfUrl === undefined ? currentWorkshop.pdfUrl : pdfUrl,
+    aiSummary
   });
 };
 
@@ -205,7 +208,7 @@ export const getWorkshopSummaryStatus = async (workshopId: string) => {
 
   return {
     workshopId: workshop.id,
-    status: !workshop.pdfUrl ? 'not_uploaded' : workshop.aiSummary ? 'ready' : 'processing',
+    status: workshop.aiSummary ? 'ready' : workshop.pdfUrl ? 'processing' : 'not_uploaded',
     pdfUrl: workshop.pdfUrl
   };
 };
