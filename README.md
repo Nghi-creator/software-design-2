@@ -12,7 +12,7 @@ UniHub is a workshop management demo for university events. This repo contains:
 ## Prerequisites
 
 - Node.js 18 or newer and npm.
-- Docker, or another Redis instance.
+- Upstash Redis, or another hosted Redis instance reachable through `REDIS_URL`.
 - A Supabase Postgres project.
 - Optional: Flutter SDK for the mobile check-in app.
 - Optional but required for real email delivery: Gmail account plus an App Password.
@@ -38,16 +38,9 @@ psql "$DATABASE_URL" -f supabase/seed.sql
 
 The app itself can use the Supabase pooler URL in `services/api/.env`.
 
-## 2. Start Redis
+## 2. Configure Redis
 
-From the API folder:
-
-```bash
-cd services/api
-docker compose up -d redis
-```
-
-If your Docker uses the older Compose binary, `docker-compose up -d redis` also works.
+Create an Upstash Redis database and copy its TLS URL. The committed demo setup expects hosted Redis rather than local Docker.
 
 ## 3. Start the API
 
@@ -63,7 +56,7 @@ Edit `services/api/.env` before starting:
 ```env
 DATABASE_URL="postgresql://postgres.<project-ref>:<password>@<region>.pooler.supabase.com:6543/postgres"
 DATABASE_SSL="true"
-REDIS_URL="redis://localhost:6379"
+REDIS_URL="rediss://<upstash-host>:6379"
 JWT_SECRET="replace-with-at-least-32-characters"
 JWT_EXPIRES_IN_SECONDS=86400
 AUTH_ALLOW_ROLE_REGISTRATION=true
