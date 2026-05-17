@@ -53,24 +53,24 @@ test('offline sync is item-level and idempotent for duplicate QR scans', async (
       const clientQuery = async <R = any>(text: string, params: unknown[] = []) => {
         const sql = text.replace(/\s+/g, ' ').trim();
 
-        if (sql.startsWith('update registrations set checked_in_at')) {
-          const [registrationId, checkinTime] = params as [string, Date];
-          const registration = [...registrations.values()].find((item) => item.id === registrationId);
-          if (!registration || registration.checkedInAt) {
-            return { rows: [] as R[], rowCount: 0 };
-          }
-
-          registration.checkedInAt = checkinTime;
-          return { rows: [{ id: registrationId }] as R[], rowCount: 1 };
-        }
-
         if (sql.startsWith('insert into checkins')) {
           const [registrationId, staffId, checkinTime, source] = params as [string, string, Date, string];
           const registration = [...registrations.values()].find((item) => item.id === registrationId);
-          assert.ok(registration);
+          if (!registration || registration.checkinId) {
+            return { rows: [] as R[], rowCount: 0 };
+          }
+
           registration.checkinId = `checkin-${insertedCheckins.length + 1}`;
           insertedCheckins.push({ registrationId, staffId, checkinTime, source });
-          return { rows: [] as R[] };
+          return { rows: [{ id: registration.checkinId }] as R[], rowCount: 1 };
+        }
+
+        if (sql.startsWith('update registrations set checked_in_at')) {
+          const [registrationId, checkinTime] = params as [string, Date];
+          const registration = [...registrations.values()].find((item) => item.id === registrationId);
+          assert.ok(registration);
+          registration.checkedInAt = checkinTime;
+          return { rows: [] as R[], rowCount: 1 };
         }
 
         throw new Error(`Unexpected query: ${sql}`);
@@ -131,7 +131,7 @@ test('offline sync reports already checked in when concurrent update wins the ra
         query: async <R = any>(text: string) => {
           const sql = text.replace(/\s+/g, ' ').trim();
 
-          if (sql.startsWith('update registrations set checked_in_at')) {
+          if (sql.startsWith('insert into checkins')) {
             return { rows: [] as R[], rowCount: 0 };
           }
 
@@ -183,12 +183,12 @@ test('offline sync reports transient item failures and continues later scans for
         query: async <R = any>(text: string) => {
           const sql = text.replace(/\s+/g, ' ').trim();
 
-          if (sql.startsWith('update registrations set checked_in_at')) {
-            return { rows: [{ id: 'registration-2' }] as R[], rowCount: 1 };
+          if (sql.startsWith('insert into checkins')) {
+            return { rows: [{ id: 'checkin-1' }] as R[], rowCount: 1 };
           }
 
-          if (sql.startsWith('insert into checkins')) {
-            return { rows: [] as R[] };
+          if (sql.startsWith('update registrations set checked_in_at')) {
+            return { rows: [] as R[], rowCount: 1 };
           }
 
           throw new Error(`Unexpected query: ${sql}`);
@@ -238,14 +238,14 @@ test('online check-in records ONLINE source and does not use offline scannedAt t
         query: async <R = any>(text: string, params: unknown[] = []) => {
           const sql = text.replace(/\s+/g, ' ').trim();
 
-          if (sql.startsWith('update registrations set checked_in_at')) {
-            return { rows: [{ id: 'registration-1' }] as R[], rowCount: 1 };
-          }
-
           if (sql.startsWith('insert into checkins')) {
             const [_registrationId, _staffId, checkinTime, source] = params as [string, string, Date, string];
             insertedCheckins.push({ source, checkinTime });
-            return { rows: [] as R[] };
+            return { rows: [{ id: 'checkin-1' }] as R[], rowCount: 1 };
+          }
+
+          if (sql.startsWith('update registrations set checked_in_at')) {
+            return { rows: [] as R[], rowCount: 1 };
           }
 
           throw new Error(`Unexpected query: ${sql}`);
@@ -299,4 +299,46 @@ test('offline sync rejects scans recorded on a different workshop day', async ()
       registrationId: 'registration-1'
     }
   ]);
+});
+
+test('online check-in can be recorded again when the check-in ledger row was removed', async () => {
+  const insertedCheckins: string[] = [];
+  const dependencies = {
+    query: async <T = any>() => ({
+      rows: [
+        {
+          id: 'registration-1',
+          status: 'CONFIRMED',
+          checkedInAt: new Date('2026-05-17T03:00:00.000Z'),
+          checkinId: null,
+          workshopStartTime: new Date()
+        }
+      ] as T[]
+    }),
+    withTransaction: async <T>(callback: (client: { query: any }) => Promise<T>) => {
+      const client = {
+        query: async <R = any>(text: string) => {
+          const sql = text.replace(/\s+/g, ' ').trim();
+
+          if (sql.startsWith('insert into checkins')) {
+            insertedCheckins.push('inserted');
+            return { rows: [{ id: 'checkin-1' }] as R[], rowCount: 1 };
+          }
+
+          if (sql.startsWith('update registrations set checked_in_at')) {
+            return { rows: [] as R[], rowCount: 1 };
+          }
+
+          throw new Error(`Unexpected query: ${sql}`);
+        }
+      };
+
+      return callback(client);
+    }
+  };
+
+  const result = await checkInOnline('qr-confirmed', 'staff-1', dependencies);
+
+  assert.deepEqual(result, { status: 'checked_in', registrationId: 'registration-1' });
+  assert.equal(insertedCheckins.length, 1);
 });

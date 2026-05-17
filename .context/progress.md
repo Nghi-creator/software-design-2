@@ -65,6 +65,7 @@
 - **Workshop API Response Normalization**: Workshop API responses now normalize PostgreSQL numeric prices to JSON numbers and `startTime` to ISO strings, matching the React contract and preserving accurate response logs.
 - **Demo Planning Guide**: Added `docs/demo-plan.md` with an English live-demo storyline, role-based script, and concrete proof points for every assignment requirement.
 - **Same-Day Check-In Guard**: Online and offline QR check-ins now reject valid registrations scanned outside the workshop's calendar day, using the offline scan timestamp when present and defaulting the university calendar timezone to `Asia/Bangkok`.
+- **Mobile Scanner Feedback Pass**: The Flutter scanner now pauses after each scan, shows an explicit result dialog before resuming, and keeps business-invalid online scans out of the offline queue. Check-in retries now follow the persisted `checkins` ledger row, so manually removed demo check-ins can be scanned again without stale `checked_in_at` blocking them.
 - **Room Layout Demo Assets**: Added local SVG room-layout maps for Innovation Hall, AI Lab, Startup Studio, and Data Theater, wired seeded room `layout_url` values to those assets, and rendered visible layout previews on workshop cards/detail pages.
 
 ## In Progress

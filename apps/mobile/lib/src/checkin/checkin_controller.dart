@@ -42,20 +42,27 @@ class CheckinController extends ChangeNotifier {
     if (isOnline) await syncPending();
   }
 
-  Future<void> handleScan(String qrCode) async {
-    if (qrCode.trim().isEmpty) return;
+  Future<ScanOutcome?> handleScan(String qrCode) async {
+    if (qrCode.trim().isEmpty) return null;
     if (await _hasConnectivity()) {
       try {
         final status = await _api.checkInOnline(token: token, qrCode: qrCode);
         lastMessage = _messageFor(status);
+        scans = await _repository.listAll();
+        notifyListeners();
+        return ScanOutcome(status: status, message: lastMessage!);
       } catch (_) {
         await _queueOffline(qrCode, error: 'Online check-in failed; queued.');
+        scans = await _repository.listAll();
+        notifyListeners();
+        return ScanOutcome(status: 'queued', message: lastMessage!);
       }
     } else {
       await _queueOffline(qrCode);
+      scans = await _repository.listAll();
+      notifyListeners();
+      return ScanOutcome(status: 'queued', message: lastMessage!);
     }
-    scans = await _repository.listAll();
-    notifyListeners();
   }
 
   Future<void> syncPending() async {
@@ -148,4 +155,13 @@ class CheckinController extends ChangeNotifier {
     _connectivitySubscription?.cancel();
     super.dispose();
   }
+}
+
+class ScanOutcome {
+  const ScanOutcome({required this.status, required this.message});
+
+  final String status;
+  final String message;
+
+  bool get isSuccess => status == 'checked_in';
 }

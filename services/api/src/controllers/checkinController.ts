@@ -21,10 +21,6 @@ export const postCheckin = async (req: Request, res: Response) => {
   try {
     const user = getRequestUser(req);
     const result = await checkInOnline(req.body.qrCode, user.id);
-    if (result.status === 'invalid') {
-      return res.status(404).json({ success: false, error: 'QR Code not found or not confirmed' });
-    }
-
     res.json({ success: true, result });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });

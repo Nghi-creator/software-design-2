@@ -119,7 +119,7 @@ const checkInOne = async (
     return { status: 'invalid', registrationId: registration.id };
   }
 
-  if (registration.checkedInAt || registration.checkinId) {
+  if (registration.checkinId) {
     return { status: 'already_checked_in', registrationId: registration.id };
   }
 

@@ -27,7 +27,7 @@ class _CheckinHomeScreenState extends State<CheckinHomeScreen> {
   late final CheckinController _controller;
   final _scannerController = MobileScannerController();
   int _selectedIndex = 0;
-  String? _lastQrCode;
+  bool _isHandlingScan = false;
 
   @override
   void initState() {
@@ -46,14 +46,47 @@ class _CheckinHomeScreenState extends State<CheckinHomeScreen> {
   }
 
   Future<void> _onDetect(BarcodeCapture capture) async {
+    if (_isHandlingScan) return;
     final qrCode = capture.barcodes.isEmpty
         ? null
         : capture.barcodes.first.rawValue;
-    if (qrCode == null || qrCode == _lastQrCode) return;
-    _lastQrCode = qrCode;
-    await _controller.handleScan(qrCode);
-    await Future<void>.delayed(const Duration(seconds: 2));
-    _lastQrCode = null;
+    if (qrCode == null) return;
+
+    _isHandlingScan = true;
+    await _scannerController.stop();
+    final outcome = await _controller.handleScan(qrCode);
+
+    if (!mounted) return;
+    if (outcome != null) {
+      await _showScanResult(outcome);
+    }
+
+    if (mounted) {
+      await _scannerController.start();
+      _isHandlingScan = false;
+    }
+  }
+
+  Future<void> _showScanResult(ScanOutcome outcome) {
+    final isSuccess = outcome.isSuccess;
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        icon: Icon(
+          isSuccess ? Icons.check_circle : Icons.error,
+          color: isSuccess ? UniHubColors.success : UniHubColors.danger,
+        ),
+        title: Text(isSuccess ? 'Check-in successful' : 'Check-in failed'),
+        content: Text(outcome.message),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Scan next'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override

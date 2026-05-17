@@ -72,18 +72,23 @@ export const createCheckinIfPending = async ({
   source: CheckinSource;
 }, dependencies: CheckinDependencies = checkinDependencies) => {
   return dependencies.withTransaction(async (client) => {
-    const updated = await client.query(
-      'update registrations set checked_in_at = $2 where id = $1 and checked_in_at is null returning id',
-      [registrationId, checkinTime]
+    const inserted = await client.query(
+      `
+        insert into checkins (registration_id, staff_id, checkin_time, source)
+        values ($1, $2, $3, $4)
+        on conflict (registration_id) do nothing
+        returning id
+      `,
+      [registrationId, staffId, checkinTime, source]
     );
 
-    if (updated.rowCount === 0) {
+    if (inserted.rowCount === 0) {
       return false;
     }
 
     await client.query(
-      'insert into checkins (registration_id, staff_id, checkin_time, source) values ($1, $2, $3, $4)',
-      [registrationId, staffId, checkinTime, source]
+      'update registrations set checked_in_at = $2 where id = $1',
+      [registrationId, checkinTime]
     );
 
     return true;

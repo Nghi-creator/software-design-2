@@ -186,8 +186,8 @@ POST /api/checkin
 Auth: CHECKIN_STAFF
 Request: { qrCode }
 Response: { success: true, result: { status, registrationId } }
-Errors: 400, 401, 403, 404, 500
-Notes: only scans on the workshop's calendar day are accepted; valid wrong-day QR scans return `status: invalid`. Successful requests set Registration.checkedInAt and create Checkin(source=ONLINE).
+Errors: 400, 401, 403, 500
+Notes: business-invalid scans return `200` with `status: invalid` so online clients do not misclassify them as transport failures. Only scans on the workshop's calendar day are accepted. Successful requests set Registration.checkedInAt and create Checkin(source=ONLINE).
 ```
 
 ```text
