@@ -1,89 +1,64 @@
-import type { NotificationChannel, StoredNotification } from '../types'
+import type { NotificationChannel, NotificationDeliveryStatus, PaginatedResponse, StoredNotification } from '../types'
+import { apiRequest } from './api'
 
-const NOTIFICATION_STORAGE_KEY = 'unihub.notifications'
-const NOTIFICATION_EVENT = 'unihub:notifications-changed'
-
-export function getStoredNotifications(userId: string) {
-  return readStoredNotifications()
-    .filter((notification) => notification.userId === userId)
-    .sort((first, second) => new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime())
-}
-
-export function addStoredNotification(input: {
+type ApiNotification = {
+  id: string
   userId: string
-  title: string
-  message: string
-  channel?: NotificationChannel
-  registrationId?: string
-  workshopId?: string
-}) {
-  const now = new Date().toISOString()
-  const notification: StoredNotification = {
-    id: `notification-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    userId: input.userId,
-    title: input.title,
-    message: input.message,
-    channel: input.channel ?? 'in_app',
-    status: 'sent',
-    createdAt: now,
-    registrationId: input.registrationId,
-    workshopId: input.workshopId,
-  }
-
-  writeStoredNotifications([notification, ...readStoredNotifications()])
-  return notification
+  registrationId?: string | null
+  workshopId?: string | null
+  channel: 'EMAIL'
+  subject: string
+  body: string
+  status: 'PENDING' | 'SENT' | 'FAILED'
+  createdAt: string
+  sentAt?: string | null
+  readAt?: string | null
 }
 
-export function markNotificationRead(notificationId: string) {
-  const now = new Date().toISOString()
-  const nextNotifications = readStoredNotifications().map((notification) =>
-    notification.id === notificationId ? { ...notification, readAt: now } : notification,
-  )
-
-  writeStoredNotifications(nextNotifications)
+type NotificationListResponse = PaginatedResponse<ApiNotification> & {
+  success: true
 }
 
-export function subscribeToNotificationChanges(listener: () => void) {
-  window.addEventListener(NOTIFICATION_EVENT, listener)
-  window.addEventListener('storage', listener)
-
-  return () => {
-    window.removeEventListener(NOTIFICATION_EVENT, listener)
-    window.removeEventListener('storage', listener)
-  }
+type NotificationReadResponse = {
+  success: true
+  notification: ApiNotification
 }
 
-function readStoredNotifications(): StoredNotification[] {
-  const rawNotifications = localStorage.getItem(NOTIFICATION_STORAGE_KEY)
-  if (!rawNotifications) return []
+export async function getStoredNotifications() {
+  const response = await apiRequest<NotificationListResponse>('/notifications?pageSize=50')
+  return response.items.map(toStoredNotification)
+}
 
-  try {
-    const notifications = JSON.parse(rawNotifications) as StoredNotification[]
-    return Array.isArray(notifications) ? notifications.filter(isStoredNotification) : []
-  } catch {
-    localStorage.removeItem(NOTIFICATION_STORAGE_KEY)
-    return []
+export async function markNotificationRead(notificationId: string) {
+  const response = await apiRequest<NotificationReadResponse>(`/notifications/${notificationId}/read`, {
+    method: 'PATCH',
+  })
+
+  return toStoredNotification(response.notification)
+}
+
+function toStoredNotification(notification: ApiNotification): StoredNotification {
+  return {
+    id: notification.id,
+    userId: notification.userId,
+    title: notification.subject,
+    message: notification.body,
+    channel: toNotificationChannel(notification.channel),
+    status: toNotificationDeliveryStatus(notification.status),
+    createdAt: notification.createdAt,
+    readAt: notification.readAt,
+    registrationId: notification.registrationId ?? undefined,
+    workshopId: notification.workshopId ?? undefined,
   }
 }
 
-function writeStoredNotifications(notifications: StoredNotification[]) {
-  localStorage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(notifications))
-  window.dispatchEvent(new Event(NOTIFICATION_EVENT))
+function toNotificationChannel(channel: ApiNotification['channel']): NotificationChannel {
+  if (channel === 'EMAIL') return 'email'
+  return 'in_app'
 }
 
-function isStoredNotification(value: unknown): value is StoredNotification {
-  if (!value || typeof value !== 'object') return false
-  const notification = value as Partial<StoredNotification>
-
-  return (
-    typeof notification.id === 'string' &&
-    typeof notification.userId === 'string' &&
-    typeof notification.title === 'string' &&
-    typeof notification.message === 'string' &&
-    isNotificationChannel(notification.channel)
-  )
-}
-
-function isNotificationChannel(value: unknown): value is NotificationChannel {
-  return value === 'in_app' || value === 'email' || value === 'telegram'
+function toNotificationDeliveryStatus(status: ApiNotification['status']): NotificationDeliveryStatus {
+  if (status === 'PENDING') return 'queued'
+  if (status === 'FAILED') return 'failed'
+  return 'sent'
 }

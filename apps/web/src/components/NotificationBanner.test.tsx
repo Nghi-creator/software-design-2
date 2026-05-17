@@ -1,7 +1,34 @@
-import { act, render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { addStoredNotification, getStoredNotifications } from '../lib/notificationStore'
 import { NotificationBanner } from './NotificationBanner'
+
+const notificationStore = vi.hoisted(() => ({
+  markNotificationRead: vi.fn(async (notificationId: string) => ({
+    id: notificationId,
+    userId: 'student-1',
+    title: 'Registration confirmed',
+    message: 'You are confirmed.',
+    channel: 'email' as const,
+    status: 'sent' as const,
+    createdAt: '2026-05-17T09:00:00.000Z',
+    readAt: '2026-05-17T09:00:10.000Z',
+  })),
+}))
+
+vi.mock('../lib/notificationStore', () => ({
+  getStoredNotifications: async () => [
+    {
+      id: 'notification-1',
+      userId: 'student-1',
+      title: 'Registration confirmed',
+      message: 'You are confirmed.',
+      channel: 'email',
+      status: 'sent',
+      createdAt: '2026-05-17T09:00:00.000Z',
+    },
+  ],
+  markNotificationRead: (notificationId: string) => notificationStore.markNotificationRead(notificationId),
+}))
 
 const user = {
   id: 'student-1',
@@ -12,23 +39,13 @@ const user = {
 
 describe('NotificationBanner', () => {
   beforeEach(() => {
-    localStorage.clear()
-    vi.useFakeTimers()
+    notificationStore.markNotificationRead.mockClear()
   })
 
-  it('shows the latest unread in-app notification and auto-marks it read', () => {
-    addStoredNotification({
-      userId: user.id,
-      title: 'Registration confirmed',
-      message: 'You are confirmed.',
-    })
+  it('shows the latest unread notification and auto-marks it read', async () => {
+    render(<NotificationBanner autoReadDelayMs={1} user={user} />)
 
-    render(<NotificationBanner user={user} />)
-
-    expect(screen.getByText('Registration confirmed')).toBeInTheDocument()
-    act(() => {
-      vi.advanceTimersByTime(10_000)
-    })
-    expect(getStoredNotifications(user.id)[0].readAt).toBeTruthy()
+    expect(await screen.findByText('Registration confirmed')).toBeInTheDocument()
+    await waitFor(() => expect(notificationStore.markNotificationRead).toHaveBeenCalledWith('notification-1'))
   })
 })

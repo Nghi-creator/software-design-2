@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { ApiError } from "../lib/api";
 import { getUserFacingError } from "../lib/apiErrorMessages";
 import { formatCurrency } from "../lib/format";
-import { addStoredNotification } from "../lib/notificationStore";
 import {
   createRegistrationIdempotencyKey,
   getQrTicket,
@@ -183,13 +182,6 @@ export function RegistrationAction({
       });
 
       saveStoredRegistration(storedRegistration);
-      addStoredNotification({
-        userId: studentUser.id,
-        title: "Registration confirmed",
-        message: `You are confirmed for ${workshop.title}. ${qrTicket ? "Your QR ticket is ready." : "Open My QR to retry QR retrieval."}`,
-        registrationId: storedRegistration.id,
-        workshopId: workshop.id,
-      });
       setRegistration(storedRegistration);
       setMessage(
         qrTicket
