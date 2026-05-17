@@ -27,7 +27,7 @@ VITE_API_BASE_URL=http://localhost:3000/api
 ```
 
 The default assumes the API service is running from `services/api` on port `3000`.
-Apply the Supabase migration and seed SQL for a seed-backed demo, then start the API before logging in from the web app.
+Apply every SQL file in `../../supabase/migrations/` in filename order, then apply `../../supabase/seed.sql` for a seed-backed demo before logging in from the web app.
 
 ## Local Development
 

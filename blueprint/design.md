@@ -2,18 +2,19 @@
 
 ## Kiến trúc tổng thể
 
-UniHub Workshop hiện được triển khai theo mô hình **modular monolith backend + client prototypes**. Thiết kế này giữ hệ thống đủ đơn giản để chạy local và demo, nhưng vẫn đặt các cơ chế quan trọng đúng vị trí: RBAC ở API boundary, rate limiting trước luồng đăng ký, idempotency cho đăng ký/thanh toán, transaction và row-level locking cho tranh chấp ghế, circuit breaker cho thanh toán, và batch sync cho check-in offline.
+UniHub Workshop hiện được triển khai theo mô hình **modular monolith backend + client prototypes + notification worker**. Thiết kế này giữ hệ thống đủ đơn giản để chạy local và demo, nhưng vẫn đặt các cơ chế quan trọng đúng vị trí: RBAC ở API boundary, rate limiting trước luồng đăng ký, idempotency cho đăng ký/thanh toán, transaction ngắn với atomic seat decrement cho tranh chấp ghế, circuit breaker cho thanh toán, queue worker cho notification, và batch sync cho check-in offline.
 
 Các thành phần chính:
 
 - **Web App**: Vite, React, TypeScript. Là prototype UI cho sinh viên và BTC, thể hiện lịch workshop, số ghế còn lại, đăng ký có phí, QR/check-in và admin dashboard preview.
 - **Mobile Check-in App**: Flutter, Material 3. Là prototype UI cho nhân sự check-in, gồm scanner, offline queue, history và staff profile.
 - **Backend API**: Node.js, Express, TypeScript. Là service nghiệp vụ trung tâm, cung cấp REST API cho workshop, phòng, đăng ký, check-in và đồng bộ offline.
-- **PostgreSQL / Supabase-compatible SQL**: database chính, được khởi tạo bằng `services/api/sql/001_init_supabase.sql`.
-- **Redis**: in-memory store cho token-bucket rate limiting và idempotency response cache.
+- **PostgreSQL / Supabase-compatible SQL**: database chính, được khởi tạo bằng `supabase/migrations/*` và `supabase/seed.sql`.
+- **Redis**: in-memory store cho token-bucket rate limiting, idempotency response cache, sold-out cache, và BullMQ notification jobs.
 - **CSV import job**: `node-cron` job chạy trong Backend API process để đồng bộ dữ liệu sinh viên từ file CSV hằng đêm.
+- **Notification worker**: BullMQ worker riêng chạy bằng `npm run worker:notifications` trong `services/api`.
 
-Implementation hiện tại không có message broker/worker service riêng. `bullmq` đã có trong `package.json`, và hướng hoàn thiện đã chọn là thêm worker riêng dùng BullMQ trên Upstash Redis cho notification jobs; runtime hiện tại vẫn xử lý CSV sync trong API process.
+Runtime hiện tại vẫn xử lý CSV sync trong API process, còn notification delivery chạy ở worker riêng dùng BullMQ trên Redis.
 
 ## Architectural Style
 
@@ -26,6 +27,7 @@ Kiến trúc thực tế là **layered modular monolith**:
 - Middleware layer xử lý RBAC, Redis rate limiting và idempotency.
 - Data layer dùng `pg` Pool trong `services/api/src/lib/db.ts` để truy cập PostgreSQL bằng SQL trực tiếp.
 - Scheduled job layer nằm trong API process và đồng bộ CSV mỗi ngày lúc 02:00.
+- Worker layer nằm ở `services/api/src/workers` và xử lý notification jobs.
 
 Cách tiếp cận này phù hợp với quy mô đồ án: dễ chạy, dễ debug, ít overhead vận hành, nhưng vẫn thể hiện các quyết định kỹ thuật bắt buộc trong yêu cầu.
 
@@ -95,7 +97,7 @@ Khi server start, `src/index.ts` gọi `startCsvSyncJob()` để schedule CSV sy
 
 ### 4. PostgreSQL
 
-**Schema:** `services/api/sql/001_init_supabase.sql`
+**Schema:** `supabase/migrations/*`; demo data: `supabase/seed.sql`
 
 Database lưu các bảng chính:
 
@@ -107,7 +109,7 @@ Database lưu các bảng chính:
 - `checkins`: log điểm danh, staff, thời gian check-in và nguồn `ONLINE` hoặc `OFFLINE_SYNC`.
 - `idempotency_keys`: trạng thái idempotency `IN_PROGRESS` hoặc `COMPLETED`, response và status code.
 
-PostgreSQL được chọn vì luồng đăng ký cần ACID transaction và row-level locking để không overbook khi nhiều sinh viên tranh ghế cuối.
+PostgreSQL được chọn vì luồng đăng ký cần ACID transaction và atomic conditional updates để không overbook khi nhiều sinh viên tranh ghế cuối.
 
 ### 5. Redis
 
@@ -169,22 +171,22 @@ CSV sync chạy bằng `node-cron` trong API process:
 `POST /api/workshops/:id/register`
 
 1. Client gửi request với `Idempotency-Key` header và optional `paymentToken`.
-2. `attachUser` lấy user từ `x-user-id`/`x-user-role` hoặc body theo cơ chế demo.
+2. `attachUser` xác thực bearer token và gắn user hiện tại từ database.
 3. `requireRole(STUDENT)` chỉ cho sinh viên đăng ký.
-4. Redis token bucket giới hạn request theo IP.
-5. Idempotency middleware kiểm tra Redis trước, sau đó bảng `idempotency_keys`.
-6. Registration service mở transaction.
-7. API lock workshop row:
+4. Redis token bucket giới hạn request trước và sau xác thực.
+5. Redis sold-out marker có thể reject nhanh workshop đã hết ghế.
+6. Idempotency middleware kiểm tra Redis trước, sau đó bảng `idempotency_keys`.
+7. Registration service mở transaction.
+8. API kiểm tra workshop tồn tại, user chưa đăng ký workshop đó, và giữ ghế bằng atomic conditional update:
 
 ```sql
-select id, price, seats_remaining
-from workshops
-where id = $1
-for update;
+update workshops
+set seats_remaining = seats_remaining - 1
+where id = $1 and seats_remaining > 0
+returning id, price, seats_remaining;
 ```
 
-8. API kiểm tra workshop tồn tại, còn ghế và user chưa đăng ký workshop đó.
-9. API trừ `seats_remaining`, tạo `registrations` status `PENDING`, tạo `payments` status `PENDING`.
+9. API tạo `registrations` status `PENDING`, tạo `payments` status `PENDING` nếu cần.
 10. Nếu workshop có phí, API yêu cầu `paymentToken` và gọi `paymentCircuitBreaker.fire`.
 11. Nếu payment thành công, API update payment `SUCCESS` và registration `CONFIRMED`.
 12. Nếu payment fail hoặc thiếu token, API cancel reservation, trả ghế lại, payment `FAILED`, registration `CANCELLED`.
@@ -245,15 +247,16 @@ Level 2 phân rã các container hiện có:
 - Web App: Vite + React + TypeScript.
 - Mobile App: Flutter.
 - Backend API: Express + TypeScript.
-- PostgreSQL: persistent data và row-level locking.
-- Redis: rate limiting và idempotency cache.
+- PostgreSQL: persistent data và atomic seat updates.
+- Redis: rate limiting, idempotency cache, sold-out cache, và BullMQ jobs.
+- Notification Worker: gửi email confirmation và cập nhật trạng thái delivery.
 - Student CSV File: input cho cron sync job.
 
-Không vẽ Message Broker như runtime container bắt buộc vì implementation hiện tại chưa có queue worker riêng; bước hoàn thiện còn lại là thêm BullMQ worker trên Upstash Redis cho notification jobs.
+Notification queue/worker hiện đã là một phần runtime: API publish job `registration.confirmed`, Redis/BullMQ giữ hàng đợi, và worker riêng gửi email qua Gmail SMTP.
 
 ## Thiết kế cơ sở dữ liệu
 
-Hệ thống dùng **PostgreSQL** vì registration cần tính nhất quán ACID và row-level locking.
+Hệ thống dùng **PostgreSQL** vì registration cần tính nhất quán ACID và atomic conditional updates cho bài toán ghế cuối.
 
 ### `users`
 
@@ -329,7 +332,7 @@ Hệ thống dùng RBAC với ba vai trò đúng theo yêu cầu:
 
 Implementation hiện tại có middleware:
 
-- `attachUser`: gắn user demo từ `x-user-id`, `x-user-role` hoặc body.
+- `attachUser`: xác thực bearer token, tra user hiện tại từ database và gắn vào request.
 - `requireRole(...)`: trả `401` nếu chưa có user, trả `403` nếu role không được phép.
 
 Route đang enforce role:
@@ -339,7 +342,7 @@ Route đang enforce role:
 - `POST /api/rooms`, `PUT /api/rooms/:id`, `DELETE /api/rooms/:id`: `ORGANIZER`.
 - `POST /api/checkin`, `POST /api/checkin/sync`: `CHECKIN_STAFF`.
 
-Vì đây là đồ án/demo, authentication hiện chưa phải JWT/session thật. Nếu productionize, `attachUser` cần được thay bằng xác thực thật và token ký số.
+Seed accounts đăng nhập qua `/api/auth/login` và nhận JWT HS256. Legacy `x-user-id` / `x-user-role` headers không còn được chấp nhận.
 
 ## Cơ chế bảo vệ hệ thống
 
@@ -360,11 +363,11 @@ Middleware yêu cầu `Idempotency-Key` cho registration endpoint. Request trùn
 
 **Trade-off:** Cần thêm storage cho response cache, nhưng giảm rủi ro double charge/double ticket khi client retry.
 
-### PostgreSQL locking cho ghế cuối
+### PostgreSQL atomic update cho ghế cuối
 
-Đăng ký workshop lock row `workshops` bằng `FOR UPDATE`. Vì vậy hai request tranh ghế cuối sẽ được serialize tại database. Sau khi lock, API kiểm tra `seats_remaining`, unique registration, rồi mới giữ ghế.
+Đăng ký workshop dùng precheck sold-out nhanh, sau đó thực hiện `UPDATE workshops SET seats_remaining = seats_remaining - 1 WHERE id = $1 AND seats_remaining > 0` trong transaction ngắn. Vì vậy hai request tranh ghế cuối được database serialize tại update condition mà không giữ lock lâu quanh các bước không cần thiết.
 
-**Trade-off:** Lock row làm giảm throughput trên cùng một workshop hot, nhưng đảm bảo không overbook.
+**Trade-off:** Cùng một workshop hot vẫn là điểm tranh chấp, nhưng critical section ngắn hơn và vẫn đảm bảo không overbook.
 
 ### Payment circuit breaker
 
@@ -376,5 +379,5 @@ Payment mock gateway được bọc bằng Opossum. Khi gateway lỗi liên tụ
 
 - **BullMQ + Upstash Redis worker riêng**: Phù hợp cho email notification, retry queue và job volume của scope hiện tại; giữ kiến trúc queue + worker dễ giải thích mà không cần thêm RabbitMQ chỉ cho một feature còn lại. Nếu chuyển sang serverless hoàn toàn và không giữ được worker process, QStash là phương án thay thế phù hợp hơn.
 - **Microservices**: Chưa cần thiết cho scope hiện tại; modular monolith giúp dễ debug và giữ transaction registration đơn giản.
-- **NoSQL database cho registration**: Không phù hợp bằng PostgreSQL cho bài toán ghế cuối vì cần ACID transaction và row-level locking.
+- **NoSQL database cho registration**: Không phù hợp bằng PostgreSQL cho bài toán ghế cuối vì cần ACID transaction và conditional updates đáng tin cậy.
 - **Chỉ disable button ở frontend để chống double click**: Không đủ vì retry mạng/API client vẫn có thể gửi trùng. Backend idempotency vẫn là bắt buộc cho paid registration.
